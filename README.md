@@ -33,14 +33,14 @@ every holder keeps trading an IOU that is already worth less than its face value
 ### Solution
 
 Ballast defines **pUSDC-test**, a clearly labelled test asset on the Assets pallet, meant to be backed 1:1 by test USDC in a small vault
-contract on an EVM chain (Sepolia is the target; the drills use a local anvil chain). Safety comes from role separation that the pallet
-enforces, not from promises:
+contract on an EVM chain (Sepolia is the target; the drills use a local anvil chain). Safety comes from role separation that the runtime
+enforces (thresholds and roles), plus a reserve gate in an off-chain bot:
 
 1. **Breaker.** The Assets *freezer* is a 1-of-N watcher multisig (`M_watch`, `Multisig.as_multi_threshold_1`). A watcher that sees the
-   reserve fall below supply freezes the asset; every transfer is then refused (`Assets.AssetNotLive` on the stand-in). The freezing
+   reserve fall below supply freezes the asset; a holder's `Assets.transfer` is then refused (`Assets.AssetNotLive` on the stand-in, measured; other transfer paths while frozen were not drilled). The freezing
    extrinsic carries the reason as a `BALLAST/1|freeze` remark.
-2. **Inert freezer.** A watcher's thaw attempts (`thaw_asset` and `thaw` of one account) fail with `Assets.NoPermission` (measured). The freezer slot carries freeze-type calls
-   only (`freeze_asset`, `freeze`, `block`); mint and re-team stay with `M_mint`, and no drill has yet tried a watcher mint or `set_team`.
+2. **Inert freezer.** A watcher's thaw attempts (`thaw_asset` and `thaw` of one account) fail with `Assets.NoPermission` (measured). The freezer role is for freeze-type calls (`freeze_asset`, `freeze`, `block`; other
+   freezer-origin calls such as `touch_other` exist and were not drilled); mint and re-team stay with `M_mint`, and no drill has yet tried a watcher mint or `set_team`.
 3. **Reserve-gated mint.** The issuer is a 2-of-2 multisig (`M_mint`, {operator A, reserve bot B}). The bot co-signs a mint only if
    *finalized* reserves cover supply plus the amount, and never while the asset is frozen.
 4. **Gated thaw.** The asset admin is a 2-of-3 multisig (`M_admin`). The bot co-signs a thaw only after finality has passed the drain block
@@ -157,7 +157,7 @@ plan needs, so **no `ReserveVault` has been deployed or funded on Sepolia and no
 ## Installation & Setup
 
 **Requirements:** Python 3.11+, Node.js and npm (tested on v22), [Foundry](https://getfoundry.sh) (`forge`, `anvil`), `curl`, `lsof`. The stand-in node needs
-the prebuilt `substrate-node` for `polkadot-stable2606-3` (release URL and sha256 in the header of `scripts/standin_node.sh`); tested on macOS arm64
+the prebuilt `substrate-node` for `polkadot-stable2606-3` (release URL in the header comment of `scripts/standin_node.sh`, sha256 as its `SHA256=` default); tested on macOS arm64
 only. The unit tests need no node.
 
 ```bash
@@ -182,12 +182,14 @@ ballast drill --scenario drain              # drain a local vault -> a watcher f
 ballast drill --scenario outage             # every provider unreachable -> fail-closed freeze (15 s drill override)
 ballast drill --scenario heartbeat          # the bot goes silent -> freeze (K = 10 blocks, drill override)
 
+rm deployments/standin-upstream.json        # only on a NEW chain: the committed manifest is from the author's chain, setup_roles refuses to overwrite it
 python scripts/setup_roles.py               # ONCE per chain: role split, control asset, vault, oracle -> deployments/<profile>.json
 python scripts/role_drill.py                # gated mint, refused over-mint, freeze, gated thaw, team gate
 python scripts/attest_drill.py              # attestations, oracle mirror, `ballast verify`, forged remark REJECTED
+python scripts/oracle_standin.py            # ReserveOracle on the stand-in's Revive: isBacked false -> true -> false (values copied from a drill)
 
 ballast verify                              # re-check every BALLAST/1 remark on both chains
-python scripts/check_receipts.py            # re-fetch every receipt by extrinsic id
+python scripts/check_receipts.py            # re-fetch receipts by extrinsic id (matches only the node that recorded them: on a new chain the committed rows MISMATCH, your own new runs match)
 scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 ```
 
@@ -201,10 +203,10 @@ is not written because V3 did not resolve. There is no frontend to launch.
 - **Video:** coming at check-in (≤ 3 min, stand-in labelled on screen).
 - **Live demo:** none. The stand-in chain is local and the V3 testnet did not resolve.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
-  and the commands above on a fresh node.
+  and the commands above on a fresh chain (they produce new ids and hashes; the committed receipts re-fetch only against the author's node).
 - **The drill in numbers** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
-  drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s) and 6.33 s in the latest
-  scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over the whole stand-in history: 25/25 bot attestations pass on both chains, 6 forged
+  drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s; the earlier four ran on older or uncommitted code) and 6.33 s in the latest
+  scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over blocks #4076 to #7035 (role-split setup to the last drill): 25/25 bot attestations pass on both chains, 6 forged
   remarks REJECTED, 0 FAIL or FLAGGED ([`evidence/verify-standin-upstream-p5-fullrange.json`](evidence/verify-standin-upstream-p5-fullrange.json)).
 - **Test accounts / data:** deterministic dev keys on the stand-in only. Public role addresses are in
   [`deployments/standin-upstream.json`](deployments/standin-upstream.json).

@@ -202,7 +202,7 @@ class JsonLog:
                 msg = fields.get("message") or summary or ""
                 head = f" #{fields['head']}" if "head" in fields else ""
                 lost = f" [log file: {self.dropped} record(s) dropped]" if self.dropped else ""
-                print(f"[watchdog {self.context.get('profile', '?')}] {event}{head} {msg}{lost}".rstrip(),
+                print(f"[{self.context.get('role', 'watchdog')} {self.context.get('profile', '?')}] {event}{head} {msg}{lost}".rstrip(),
                       file=sys.stderr)
             except Exception:  # noqa: BLE001
                 self.dropped += 1

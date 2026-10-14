@@ -474,6 +474,8 @@ def build_parser() -> argparse.ArgumentParser:
     ba.add_argument("--heartbeat-blocks", type=int, help="H (default: the profile's measured H)")
     ba.add_argument("--poll-blocks", type=int, help="check every N blocks (default: the profile's N)")
     ba.add_argument("--no-oracle", action="store_true", help="do not mirror to ReserveOracle")
+    ba.add_argument("--announce", action="store_true",
+                    help="first post the one-off binding remarks: watcher set (t, members) and evm-attester")
     ba.add_argument("--max-seconds", type=float, help="stop after this many seconds")
     ba.add_argument("--max-posts", type=int, help="stop after this many remarks")
     ba.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")

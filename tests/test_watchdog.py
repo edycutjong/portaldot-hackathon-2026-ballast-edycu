@@ -17,6 +17,7 @@ from ballast.watchdog import (  # noqa: I001
     DEFICIT,
     FAIL_CLOSED,
     LEVEL,
+    NO_HEARTBEAT,
     OUTAGE,
     REMARK_MAX_BYTES,
     Decision,
@@ -149,12 +150,13 @@ class FakeSubstrate:
     def __init__(self, assets, metadata=None, free=10**18):
         self.assets, self.metadata_, self.free = assets, metadata or {}, free
         self.composed = []
+        self.nonce = 7
 
     def query(self, module, item, params, block_hash=None):
         if item == "Asset":
             return SimpleNamespace(value=self.assets.get(params[0]))
         if item == "Account":
-            return SimpleNamespace(value={"data": {"free": self.free}})
+            return SimpleNamespace(value={"data": {"free": self.free}, "nonce": self.nonce})
         return SimpleNamespace(value=self.metadata_.get(params[0]))
 
     def get_constant(self, module, name):
@@ -553,3 +555,47 @@ def test_log_file_failure_still_echoes(monkeypatch, tmp_path, capsys):
     log("freeze-error", level="critical", message="pool full")
     err = capsys.readouterr().err
     assert "freeze-error" in err and "pool full" in err and "1 record(s) dropped" in err
+
+
+# --- I8: heartbeat freeze ---------------------------------------------------------------------------------
+def hb(stale, k=600):
+    return {"bot": W1, "nonce": 7, "since": 100, "stale_blocks": stale, "k": k}
+
+
+def test_heartbeat_stale_for_k_blocks_freezes():
+    d, _ = decide(100, False, compare([ok("a", 100)]), None, 0.0, heartbeat=hb(599))
+    assert d.action == LEVEL
+    d, _ = decide(100, False, compare([ok("a", 100)]), None, 0.0, heartbeat=hb(600))
+    assert d.action == NO_HEARTBEAT and d.freeze and d.heartbeat["k"] == 600
+
+
+def test_heartbeat_freeze_even_when_every_provider_is_down_and_deficit_wins_first():
+    d, _ = decide(100, False, compare([down("a")]), None, 0.0, heartbeat=hb(600))
+    assert d.action == NO_HEARTBEAT
+    d, _ = decide(100, False, compare([ok("a", 1)]), None, 0.0, heartbeat=hb(600))
+    assert d.action == DEFICIT
+    d, _ = decide(100, True, compare([ok("a", 100)]), None, 0.0, heartbeat=hb(10_000))
+    assert d.action == ALREADY_FROZEN
+
+
+def test_heartbeat_freeze_remark_names_the_bot_nonce_and_window():
+    d, _ = decide(2**64, False, compare([ok("a", 2**64)]), None, 0.0, heartbeat=hb(99_999_999, 99_999_999))
+    text = freeze_remark(4_294_967_295, d, ["a"])
+    f = parse_remark(text)
+    assert f["reason"] == "no-heartbeat" and f["b"] == W1 and f["n"] == "7" and f["since"] == "100"
+    assert len(text.encode()) <= REMARK_MAX_BYTES
+
+
+def test_watchdog_counts_heartbeat_in_blocks_and_resets_on_a_new_nonce(monkeypatch):
+    # the state head of each check comes from the poller: #10, #20, #22, #30
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=100, heads=(10, 20, 22, 30))
+    dog.cfg.bot, dog.cfg.heartbeat_k = W1, 3
+    dog.check(10, H)  # first sight: nonce 7 at #10
+    substrate.nonce = 8  # the bot posted
+    dog.check(20, H)  # new nonce: the window restarts at #20
+    dog.check(22, H)  # 2 blocks < K
+    assert not submitted and dog.hb_since == 20
+    dog.check(30, H)  # 10 blocks >= K
+    assert submitted, "nonce unchanged for K blocks must freeze"
+    remark = submitted[0][2]["calls"][0]["params"]["remark"]
+    assert "|reason=no-heartbeat|" in remark and "|n=8|" in remark

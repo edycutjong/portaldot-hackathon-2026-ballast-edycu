@@ -164,7 +164,7 @@ def render_drill_section(run: dict) -> list[str]:
         lines += [f"Watcher reserve reads: {reserve['watcher_read']}.", ""]
     if run.get("watchdog_cmd"):
         params = {k: v for k, v in zip(run["watchdog_cmd"].split()[:-1], run["watchdog_cmd"].split()[1:])
-                  if k in ("--poll-blocks", "--fail-closed-after", "--max-block-age", "--timeout")}
+                  if k in ("--poll-blocks", "--fail-closed-after", "--max-block-age", "--timeout", "--heartbeat-k")}
         if "--max-block-age" in params:
             params["--max-block-age"] += " (stale-block check off: anvil mines only when a tx lands)"
         lines += ["Watcher parameters: " + ", ".join(f"`{k} {v}`" for k, v in params.items()) + ".", ""]

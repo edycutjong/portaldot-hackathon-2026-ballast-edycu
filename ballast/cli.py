@@ -177,7 +177,8 @@ def cmd_watch(args: argparse.Namespace) -> int:
         if not cfg.url.startswith(("ws://", "wss://")):
             # submitting with wait-for-inclusion needs a websocket: an http URL would arm a watcher that cannot freeze
             raise ValueError(f"node URL {cfg.url!r}: the watcher needs a ws:// or wss:// URL")
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=args.poll_blocks is None)
+        need_counts = args.poll_blocks is None or (args.bot and args.heartbeat_k is None)
+        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=bool(need_counts))
         poll_blocks = args.poll_blocks
         if poll_blocks is None:
             if ident.counts is None:
@@ -185,6 +186,11 @@ def cmd_watch(args: argparse.Namespace) -> int:
             poll_blocks = ident.counts.poll_n
         keypair = _watcher_key(ident.profile, args.watcher)
         watchers = _addresses(ident.profile, args.watchers.split(","))
+        bot = _addresses(ident.profile, [args.bot])[0] if args.bot else None
+        heartbeat_k = args.heartbeat_k if args.heartbeat_k is not None else (
+            ident.counts.heartbeat_freeze_k if bot else None)
+        if heartbeat_k is not None and heartbeat_k < 1:
+            raise ValueError("--heartbeat-k must be >= 1")
     except OSError as exc:
         print(f"ballast: node unreachable: {exc}", file=sys.stderr)
         return 3
@@ -203,6 +209,8 @@ def cmd_watch(args: argparse.Namespace) -> int:
         poll_interval_s=args.poll_interval,
         max_block_age_s=args.max_block_age or None,
         read_deadline_s=2 * args.timeout,  # two requests per reading, each bounded by --timeout
+        bot=bot,
+        heartbeat_k=heartbeat_k if bot else None,
     )
     try:
         log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
@@ -224,6 +232,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
             return 2
         log.context["reserve"] = pre["reserve"]
         log("start", **pre, poll_blocks=poll_blocks, fail_closed_after=args.fail_closed_after,
+            heartbeat={"bot": bot, "k": heartbeat_k} if bot else "off",
             max_block_age=args.max_block_age or "off",
             supply_ids=supply_ids, providers=[p.name for p in providers], erc20=args.token, holder=args.holder,
             message=f"armed: M_watch {pre['m_watch']} · reserve {pre['reserve']} · freeze if reserves < supply of "
@@ -440,6 +449,9 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--max-block-age", type=float, default=120.0,
                    help="a provider whose latest block is older than this (s) counts as down; 0 = off "
                    "(only for an instant-mining local anvil, whose blocks exist only when a tx lands)")
+    w.add_argument("--bot", help="reserve bot account (SS58, or //Dev on a stand-in): freeze if its nonce does not "
+                   "move for K blocks (I8, heartbeat)")
+    w.add_argument("--heartbeat-k", type=int, help="K in blocks (default: the profile's measured K = 3 x H)")
     w.add_argument("--until-frozen", action="store_true", help="exit 0 once the breaker asset is frozen")
     w.add_argument("--max-seconds", type=float, help="stop after this many seconds (exit 4 if --until-frozen)")
     w.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")
@@ -488,8 +500,11 @@ def build_parser() -> argparse.ArgumentParser:
     b.set_defaults(func=cmd_bot)
 
     d = sub.add_parser("drill", help="breaker drill on a stand-in against a local anvil reserve")
-    d.add_argument("--scenario", choices=("drain", "outage"), default="drain",
-                   help="drain: release 30%% of the vault; outage: every provider unreachable (fail-closed)")
+    d.add_argument("--scenario", choices=("drain", "outage", "heartbeat"), default="drain",
+                   help="drain: release 30%% of the vault; outage: every provider unreachable (fail-closed); "
+                   "heartbeat: the bot never signs (I8)")
+    d.add_argument("--heartbeat-k", type=int, default=10,
+                   help="heartbeat scenario: K in blocks — a drill override; production K = 3 x H (profile)")
     d.add_argument("--evm-url", default="http://127.0.0.1:49545", help="local anvil (chain id 31337)")
     d.add_argument("--drain-pct", type=int, default=30)
     d.add_argument("--fail-closed-after", type=float, default=15.0,

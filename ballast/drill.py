@@ -14,6 +14,9 @@ Scenario `drain` (the kill-rule flow):
   6. the judge's transfer of the breaker asset is refused while frozen; the control asset is untouched.
 Scenario `outage`: same setup, but the watchdog's only providers are unreachable local URLs; with nothing to
 read it fails closed after `--fail-closed-after` seconds (production 300 s) and freezes with reason=providers-down.
+Scenario `heartbeat` (I8): same setup, reserves level the whole time, but the watcher is told the reserve bot is a
+fresh key that never signs; with its nonce frozen for `--heartbeat-k` blocks (a drill override; production K = 3 x H
+from the measured block time) the watcher freezes with reason=no-heartbeat.
 
 Receipts: evidence/drill-<scenario>-<profile>-asset<id>.json (+ the watchdog's JSON-lines log), docs/RECEIPTS.md.
 """
@@ -272,7 +275,7 @@ def run_drill(args: argparse.Namespace) -> int:
               vault.functions.reserves().call(), level_hash)
 
         # 3. The watchdog, as its own process with its own key.
-        providers = [f"anvil={args.evm_url}"] if args.scenario == "drain" else list(UNREACHABLE)
+        providers = list(UNREACHABLE) if args.scenario == "outage" else [f"anvil={args.evm_url}"]
         cmd = [sys.executable, "-m", "ballast.cli", "--profile", profile.name, "--url", cfg.url, "watch",
                "--breaker", str(breaker), "--supply-assets", f"{breaker},{control}", "--holder", vault_addr,
                "--token", usdc_addr, "--watcher", "//BallastW2", "--watchers", "//BallastW1,//BallastW2",
@@ -282,12 +285,14 @@ def run_drill(args: argparse.Namespace) -> int:
                "--max-block-age", "0"]
         for p in providers:
             cmd += ["--provider", p]
+        if args.scenario == "heartbeat":  # a bot key that never signs: its nonce never moves
+            cmd += ["--bot", f"//BallastB//{breaker}", "--heartbeat-k", str(args.heartbeat_k)]
         run["watchdog_cmd"] = " ".join(c if c != sys.executable else "python" for c in cmd)
         stderr_file = tempfile.TemporaryFile(mode="w+")  # a file, not a pipe: the watchdog can never block on it
         proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=stderr_file, text=True)
         print(f"watchdog pid {proc.pid}: {run['watchdog_cmd']}")
         deadline = time.time() + 120
-        want = "level" if args.scenario == "drain" else "outage"
+        want = "outage" if args.scenario == "outage" else "level"
         while time.time() < deadline:
             recs = read_log(log_path)
             if any(r["event"] == "not-armed" for r in recs) or proc.poll() is not None:
@@ -354,7 +359,7 @@ def run_drill(args: argparse.Namespace) -> int:
             read_starts = [epoch(rd["read_at"]) for r in levels for rd in r["reserves"]["readings"]]
             check("the watcher read level before the drain", bool(levels)
                   and all(t < drain_sent_at for t in read_starts), True, "watchdog log")
-        expected_reason = "deficit" if args.scenario == "drain" else "providers-down"
+        expected_reason = {"drain": "deficit", "outage": "providers-down", "heartbeat": "no-heartbeat"}[args.scenario]
         remark = parse_remark(freeze["remark"])
         step(f"watchdog (W2) freezes asset {breaker} via M_watch, reason on chain (reason={remark.get('reason')})",
              "Ok + inner Ok + Assets.AssetFrozen + System.Remarked", fr,
@@ -393,6 +398,18 @@ def run_drill(args: argparse.Namespace) -> int:
                 "drain_to_deficit_seen_s": round(seen_at - drain_at, 2),
                 "deficit_seen_to_submit_s": round(freeze["submitted_at"] - seen_at, 2),
                 "drain_to_freeze_included_s": round(freeze["included_at"] - drain_at, 2),
+            }
+        elif args.scenario == "heartbeat":
+            trig_hb = trigger["heartbeat"]
+            check("the triggering check saw the bot nonce unchanged for >= K blocks",
+                  trig_hb["stale_blocks"] >= args.heartbeat_k, True, "watchdog log")
+            check("reserves were level at the trigger (the freeze is the heartbeat rule alone)",
+                  trigger["decision"]["short"], [], "watchdog log")
+            timing |= {
+                f"heartbeat_k (drill override; production K = {ident.counts.heartbeat_freeze_k} on this profile)":
+                    args.heartbeat_k,
+                "nonce_first_seen_block": trig_hb["since"],
+                "blocks_nonce_still_to_freeze_included": fr["block_number"] - trig_hb["since"],
             }
         else:
             first_outage = next(r for r in recs if r["event"] == "check" and r["decision"]["action"] == "outage")

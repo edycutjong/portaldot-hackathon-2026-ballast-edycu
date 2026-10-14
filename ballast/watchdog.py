@@ -9,6 +9,8 @@ Loop (one watcher key, freeze-only):
   4. decide (`decide`, pure):
        - already frozen                         -> nothing to do (idempotent, no transaction);
        - any provider reads reserves < S        -> freeze, reason=deficit;
+       - the bot's nonce unchanged for K blocks  -> freeze, reason=no-heartbeat (I8; with `--bot`; counted in
+                                                   blocks from when this watcher first saw that nonce);
        - every provider unreachable > timeout   -> freeze, reason=providers-down (fail-closed, invariant I6);
        - otherwise                              -> level (provider disagreements are logged, never ignored);
   5. freeze = ONE atomic `Utility.batch_all` signed by the watcher:
@@ -57,7 +59,8 @@ RECONNECT_AFTER = 2  # consecutive failures before the node connection is rebuil
 FEE_HEADROOM = 10  # the watcher key must hold ED + 10 x the freeze extrinsic's fee
 
 LEVEL, DEFICIT, OUTAGE, FAIL_CLOSED, ALREADY_FROZEN = "level", "deficit", "outage", "fail-closed", "already-frozen"
-REMARK_REASON = {DEFICIT: "deficit", FAIL_CLOSED: "providers-down"}  # spec: BALLAST/1|freeze|reason=providers-down
+NO_HEARTBEAT = "no-heartbeat"
+REMARK_REASON = {DEFICIT: "deficit", FAIL_CLOSED: "providers-down", NO_HEARTBEAT: "no-heartbeat"}
 
 
 def reserve_label(evm_chain_id: int | None) -> str:
@@ -98,10 +101,11 @@ class Decision:
     short: list[dict] = field(default_factory=list)  # provider readings below supply
     down_for_s: float | None = None
     detail: str = ""
+    heartbeat: dict | None = None  # I8: {"bot", "nonce", "since", "stale_blocks", "k"}
 
     @property
     def freeze(self) -> bool:
-        return self.action in (DEFICIT, FAIL_CLOSED)
+        return self.action in (DEFICIT, FAIL_CLOSED, NO_HEARTBEAT)
 
     def as_dict(self) -> dict:
         return {
@@ -112,6 +116,7 @@ class Decision:
             "short": self.short,
             "down_for_s": self.down_for_s,
             "detail": self.detail,
+            "heartbeat": self.heartbeat,
         }
 
 
@@ -122,8 +127,10 @@ def decide(
     outage_since: float | None,
     now: float,
     fail_closed_after: float = FAIL_CLOSED_AFTER_S,
+    heartbeat: dict | None = None,
 ) -> tuple[Decision, float | None]:
-    """Pure decision for one check. Returns (decision, new outage_since)."""
+    """Pure decision for one check. Returns (decision, new outage_since).
+    `heartbeat` (I8): {"stale_blocks": blocks since the bot's nonce last moved, "k": K, …} — stale >= K freezes."""
     ok = comparison.ok
     outage_since = None if ok else (outage_since if outage_since is not None else now)
     reserves_min = comparison.min_reserves
@@ -140,6 +147,13 @@ def decide(
                 short=[r.as_dict() for r in short],
                 detail=f"{worst.provider} reads {worst.reserves} < supply {supply} at #{worst.block_number}",
             ),
+            outage_since,
+        )
+    if heartbeat is not None and heartbeat["stale_blocks"] >= heartbeat["k"]:
+        return (
+            Decision(NO_HEARTBEAT, supply, reserves_min, heartbeat=heartbeat,
+                     detail=f"bot nonce {heartbeat['nonce']} unchanged for {heartbeat['stale_blocks']} blocks "
+                            f">= K {heartbeat['k']} (I8)"),
             outage_since,
         )
     if not ok:
@@ -167,6 +181,9 @@ def freeze_remark(asset_id: int, decision: Decision, providers: Sequence[str]) -
         if len(names) > 120:  # user-supplied names: keep the remark within budget, never block the freeze
             names = f"{len(providers)}-providers"
         parts += [f"down={int(decision.down_for_s or 0)}s", f"p={names}"]
+    elif decision.action == NO_HEARTBEAT:
+        hb = decision.heartbeat
+        parts += [f"b={hb['bot']}", f"n={hb['nonce']}", f"since={hb['since']}", f"k={hb['k']}"]
     else:
         raise ValueError(f"no freeze for action {decision.action!r}")
     text = "|".join(parts)
@@ -226,6 +243,8 @@ class WatchConfig:
     poll_interval_s: float = 1.0
     max_block_age_s: float | None = MAX_BLOCK_AGE_S  # None/0 = off (e.g. an instant-mining local anvil)
     read_deadline_s: float | None = 20.0  # a provider still busy after this is a failed reading
+    bot: str | None = None  # I8: the reserve bot's account; its nonce must move at least every K blocks
+    heartbeat_k: int | None = None
 
 
 class Watchdog:
@@ -252,6 +271,8 @@ class Watchdog:
         self.retry_now = False  # set after a failure: check again on the next poll
         self.failures = 0  # consecutive failed checks / freezes
         self.freeze_failed = False
+        self.hb_nonce: int | None = None  # I8: the bot's nonce and the block it was first seen at
+        self.hb_since: int | None = None
 
     # --- reads -------------------------------------------------------------------------------------------
     def head(self) -> tuple[int, str]:
@@ -353,8 +374,9 @@ class Watchdog:
         supply = sum(states[i].supply for i in self.cfg.supply_ids)
         frozen = states[self.cfg.breaker_id].frozen
         comparison = compare(readings)
+        heartbeat = self.heartbeat(state_head, state_hash)
         decision, self.outage_since = decide(
-            supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after
+            supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after, heartbeat
         )
         record = self.log(
             "check",
@@ -365,11 +387,22 @@ class Watchdog:
             supplies={str(i): str(s.supply) for i, s in states.items()},
             frozen=frozen,
             reserves=comparison.as_dict(),
+            heartbeat=heartbeat,
             decision=decision.as_dict(),
         )
         if decision.freeze:
             self.freeze(decision, number)
         return record
+
+    def heartbeat(self, number: int, block_hash: str) -> dict | None:
+        """I8, counted in blocks: how long the bot's nonce has stood still (from when this watcher first saw it)."""
+        if not self.cfg.bot:
+            return None
+        nonce = self.substrate.query("System", "Account", [self.cfg.bot], block_hash=block_hash).value["nonce"]
+        if self.hb_nonce is None or nonce != self.hb_nonce:
+            self.hb_nonce, self.hb_since = nonce, number
+        return {"bot": self.cfg.bot, "nonce": nonce, "since": self.hb_since, "stale_blocks": number - self.hb_since,
+                "k": self.cfg.heartbeat_k}
 
     def freeze_calls(self, remark: str) -> list:
         from .multisig import other_signatories

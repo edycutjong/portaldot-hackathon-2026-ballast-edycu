@@ -10,6 +10,140 @@ section is a V3 measurement. The chain is a local `--dev` node: `scripts/check_r
 these rows from that node only, there is no public explorer for it, and a fresh node + spike run
 produces new hashes (same steps, same outcomes). Re-running them on V3 is planned for when V3 is reachable.
 
+### Breaker drill (drain: reserve drained -> watchdog freezes) — asset 2001 — 2026-10-14T11:20:47Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/drill-drain-standin-upstream-asset2001.json`](../evidence/drill-drain-standin-upstream-asset2001.json) · watchdog log: [`evidence/drill-drain-standin-upstream-asset2001.watchdog.jsonl`](../evidence/drill-drain-standin-upstream-asset2001.watchdog.jsonl) · result: **PASS** (14/14 steps as expected, 8/8 state checks)
+
+Reason remark (in the freeze extrinsic): `BALLAST/1|freeze|a=2001|why=deficit|s=100000000|r=70000000|p=anvil|eb=4|eh=0x56c447a205b3bce3ffeee23c57f8e221c56d4df5386c1218abd018cd0484c6dc`
+
+Timing (wall-clock on one machine; stand-in chain + local anvil reserve (not V3, not Sepolia)):
+
+- `deficit_seen_head`: 2475
+- `freeze_block`: 2476
+- `freeze_block_timestamp_ms`: 1791976881004
+- `submit_to_inclusion_s`: 2.93
+- `pd_head_at_drain`: 2473
+- `blocks_drain_to_freeze`: 3
+- `drain_to_deficit_seen_s`: 3.9
+- `deficit_seen_to_submit_s`: 0.0
+- `drain_to_freeze_included_s`: 6.84
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`, token `0x5FbDB2315678afecb367f032d93F642f64180aa3`):
+
+| # | Step | Block | Tx hash | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 1 | `0x008aedaf7899009cc29ade804ba62b53d0e7bef7e8f2da11dd0483898b33b810` | status 1 | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc) — owner = custodian | 2 | `0x45aef6a56e11e8376da1b7362f308fbaace482f185e51d5d5748ef9b666a6dff` | status 1 | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 into the vault | 3 | `0xfac2106498c35efd8c2441bcfd1374472a5c76feb1118fd544e0d787aa82af4b` | status 1 | ✅ status 1 |
+| 4 | custodian drains 30% (30.00) — release() | 4 | `0xb256d4784847d70aeadfc99733842d334d27894a23acadbea8bfe9c692a3af8d` | status 1 + Released | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund A, W1, W2, judge, peer, M_watch (>= ED) | `Utility.batch_all[6 x Balances.transfer_keep_alive]` (Alice, stand-in funder) | `2466-2` | Ok | ✅ Ok |
+| 2 | create asset 2001 | `Assets.create` (A) | `2467-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-test (6 decimals) | `Assets.set_metadata` (A) | `2468-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | create asset 2002 | `Assets.create` (A) | `2469-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 5 | set_metadata pUSDC-ctl (6 decimals) | `Assets.set_metadata` (A) | `2470-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 6 | set_team asset 2001: freezer = M_watch (1-of-2 watchers) | `Assets.set_team` (A) | `2471-2` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | mint S1 = 50.00 of asset 2001 to the judge | `Assets.mint` (A) | `2472-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 8 | mint S2 = 50.00 of control asset 2002 to the peer | `Assets.mint` (A) | `2473-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 9 | watchdog (W2) freezes asset 2001 via M_watch, reason on chain (why=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2) | `2476-2` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 10 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `2477-2` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+
+Block and transaction hashes (full):
+
+```
+ 1    2466-2 block 0x44616a727de6f14a9a1fbd3b77cb0b0d3025dbb15756a85f56c0e930416d0447  tx 0x443537661ee82bbae0d235f7c3dfd7446d84212863795938cac90b41c157529a
+ 2    2467-2 block 0xd494ab9c7f029e15fe7395acf9fd4a9ae26b6dce895f42ccf6b0018a300bd5e6  tx 0x263c064b774cddc4672bdea2058a18267500f628010a420f49c20c2504ba368b
+ 3    2468-2 block 0x12ce2ac9e07831e9631fb4775a6929db138dbea6490c19ef253cbc56ac31185f  tx 0x37ef61fb5df0f13a02d0290170ec90a5adf4c8a1e9d238e8ce88f6588fa847fe
+ 4    2469-2 block 0x158369d51d382bd3777a99269948afc5de114682369114f233d04c2ea4036d0b  tx 0x902d1c406f459c42ee5dbc8100e558938c4172d7975d51383038337716040218
+ 5    2470-2 block 0x130888dc36529634c89ecd8529a1ea7aec930733b5b2cb57135fef3fc9727803  tx 0xefe1f0ccdecd7936ff73fd5413c1ab842e042c152998e4cdb28cb354ad9723a0
+ 6    2471-2 block 0x0ed574827eac1fc20a8673e3e820e9e654a6909f2193b7f02a3187c3be021918  tx 0xf9489261cc37e7b9f4ecd812a48182e09ac95f3dfe4d981783bf15968859d9ac
+ 7    2472-2 block 0x67b47c7c74caecf4b0335ce3fa5e9b34c11e6fc206c55f6d1bbb4c70d042d274  tx 0x91eb210c74559174cc3347c63288ae981dc8c5ecdc2f0604a10d9aa276578dc8
+ 8    2473-2 block 0xa5a2319d2a84973e35ce85a1a7e79f826dc3b6bd7011e59bb8e00ebfd041099b  tx 0xdc91d1addb1051cb76992509390026ed5a05a6157e55b527d5646bcdc8c8d4d6
+ 9    2476-2 block 0x088f5244f0d92884b08837c64c62162b49eeb59683f588a0fd5431dc86948546  tx 0x198df9e363007c4e000385a137914529d464c5fc64e9c4d9438777541b494fff
+10    2477-2 block 0x91ffb1b7ec5f588e7188f08d04339dae10f5d1f81efbec91f5e731d59da263a6  tx 0xcd857f175a95ecd8857b0261d704617e26787f293ee51f600af3c66b063913b0
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ vault reserves() after deposit: expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ supply S1 + S2 == vault reserves (level): expected `100000000`, observed `100000000` at block `0xa5a2319d2a84973e35ce85a1a7e79f826dc3b6bd7011e59bb8e00ebfd041099b`
+- ✅ watchdog armed: its M_watch == the breaker's freezer: expected `True`, observed `True` at block `watchdog start record`
+- ✅ vault reserves() after the drain < S1 + S2: expected `70000000`, observed `70000000` at block `0x56c447a205b3bce3ffeee23c57f8e221c56d4df5386c1218abd018cd0484c6dc`
+- ✅ Asset(2001).status after the freeze: expected `Frozen`, observed `Frozen` at block `0x088f5244f0d92884b08837c64c62162b49eeb59683f588a0fd5431dc86948546`
+- ✅ System.Remarked hash == blake2_256(the reason remark): expected `0x957910856543fd8cef9a34d918278a0092828413384229054a87fe38480f877a`, observed `0x957910856543fd8cef9a34d918278a0092828413384229054a87fe38480f877a` at block `0x088f5244f0d92884b08837c64c62162b49eeb59683f588a0fd5431dc86948546`
+- ✅ control asset 2002 untouched (Live): expected `Live`, observed `Live` at block `0x088f5244f0d92884b08837c64c62162b49eeb59683f588a0fd5431dc86948546`
+- ✅ judge balance unchanged after the refused transfer: expected `50000000`, observed `50000000` at block `0x91ffb1b7ec5f588e7188f08d04339dae10f5d1f81efbec91f5e731d59da263a6`
+
+
+### Breaker drill (outage: every provider down -> fail-closed freeze) — asset 2003 — 2026-10-14T11:21:35Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/drill-outage-standin-upstream-asset2003.json`](../evidence/drill-outage-standin-upstream-asset2003.json) · watchdog log: [`evidence/drill-outage-standin-upstream-asset2003.watchdog.jsonl`](../evidence/drill-outage-standin-upstream-asset2003.watchdog.jsonl) · result: **PASS** (13/13 steps as expected, 7/7 state checks)
+
+Reason remark (in the freeze extrinsic): `BALLAST/1|freeze|a=2003|why=fail-closed|s=100000000|down=16s|p=down-1,down-2`
+
+Timing (wall-clock on one machine; stand-in chain + local anvil reserve (not V3, not Sepolia)):
+
+- `deficit_seen_head`: 2495
+- `freeze_block`: 2496
+- `freeze_block_timestamp_ms`: 1791976941002
+- `submit_to_inclusion_s`: 2.8
+- `fail_closed_after_s`: 15.0
+- `first_outage_seen_to_freeze_included_s`: 18.94
+- `down_for_s_in_remark`: 16s
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x5FC8d32690cc91D4c39d9d3abcBD16989F875707`, token `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9`):
+
+| # | Step | Block | Tx hash | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 5 | `0xffea3c4d2c966395afcac88a9cdce14b19d9ff2e00261ef4fd8f7b6f55d8fda9` | status 1 | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc) — owner = custodian | 6 | `0x45fcb0f0c7783e554a5b32ff76ec79c7dd5bf92c251517689c328cbb42a70289` | status 1 | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 into the vault | 7 | `0x490d5ab528acf1f457b1aff56450095205d936efcfb92e0df710c0e8c9c3b4c6` | status 1 | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund A, W1, W2, judge, peer, M_watch (>= ED) | `Utility.batch_all[6 x Balances.transfer_keep_alive]` (Alice, stand-in funder) | `2482-2` | Ok | ✅ Ok |
+| 2 | create asset 2003 | `Assets.create` (A) | `2483-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-test (6 decimals) | `Assets.set_metadata` (A) | `2484-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | create asset 2004 | `Assets.create` (A) | `2485-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 5 | set_metadata pUSDC-ctl (6 decimals) | `Assets.set_metadata` (A) | `2486-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 6 | set_team asset 2003: freezer = M_watch (1-of-2 watchers) | `Assets.set_team` (A) | `2487-2` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | mint S1 = 50.00 of asset 2003 to the judge | `Assets.mint` (A) | `2488-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 8 | mint S2 = 50.00 of control asset 2004 to the peer | `Assets.mint` (A) | `2489-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 9 | watchdog (W2) freezes asset 2003 via M_watch, reason on chain (why=fail-closed) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2) | `2496-2` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 10 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `2497-2` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+
+Block and transaction hashes (full):
+
+```
+ 1    2482-2 block 0x19614e01786937d70ec2f1daabea2da5b8768a793f9050d7741c5262a3df5226  tx 0xf288719c371ab75ba0726e73964a5abd018b1a308f4fcfa6b3918f5dbc55ccc0
+ 2    2483-2 block 0x7784d21a88b4faf9b6230b390d8bc1e5ce53acb89c6ca84a4088b8b901fcad68  tx 0x15db8dcce6a45f4bb04dbe262dc9e72d60b7115bd89a03cc9f1c1bca1cb9f72b
+ 3    2484-2 block 0xeaff8c5ddceb57fcc6cb386c7c4e354ef4ef244e218c1eb771ca95d71f84ef93  tx 0xc053fe754776cf0bae8f222d2d4f2d4d3fb99661dc1632f4fc53aa5ca40e8f03
+ 4    2485-2 block 0xc0113aeb48c3c26dfd6fc9cf0451bf494341d372c6088b29acc36a1fee6c2f38  tx 0x309e9e8c6aad320a4729bed30aa38d1f64347326312eb9eeb79533087f569fd0
+ 5    2486-2 block 0x3ea89d3ba3955ada9764b46a14dc9980d556e5a79daf702ab0d7738251234371  tx 0xe2d5d0b7221d5128bce35e0b443a3c86617ea1883ae66abb6bdd2b50efb9cb51
+ 6    2487-2 block 0x6bb2206bc1646598e7a3086c6580c7c62ff8787d1d19ed22943d827a7a888b07  tx 0xa901413a4f6e5a4a15e8d49e006890887c3626cc9c7df1964556154ea591bac4
+ 7    2488-2 block 0x015c95431d7df05b32dd850ef9e266ed7155556d1bad07e17ab1caf3523eb28d  tx 0x9bc474d9518df33ddd78520ab1de2f03af8fcea1db40422a43130c5017e61c47
+ 8    2489-2 block 0x37ee491eadfeed25775af6f4c4b3ac0f4b3fdbbc936afafd89055364c0758eff  tx 0x716ed467f080aea3d197631d62d254c2443fff3b4d4152593885c06f686be812
+ 9    2496-2 block 0xc8e48bf66c07a4a260c11640bab8b532c5763b8b7fbf1538d3f5e31be9433d23  tx 0x2721a5190cf7a3e94f3e63e23ce87d7acd8bbcdd7c993d9c6b205d287dc41367
+10    2497-2 block 0x3e95ad7fc43888095fc1971fe80f475cbaad61e2a41b13544a817c15d86727df  tx 0xa086e1d37d47ddd36cb7ff895b735408581042dfeb064cd29ac5665e47fd244d
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ vault reserves() after deposit: expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ supply S1 + S2 == vault reserves (level): expected `100000000`, observed `100000000` at block `0x37ee491eadfeed25775af6f4c4b3ac0f4b3fdbbc936afafd89055364c0758eff`
+- ✅ watchdog armed: its M_watch == the breaker's freezer: expected `True`, observed `True` at block `watchdog start record`
+- ✅ Asset(2003).status after the freeze: expected `Frozen`, observed `Frozen` at block `0xc8e48bf66c07a4a260c11640bab8b532c5763b8b7fbf1538d3f5e31be9433d23`
+- ✅ System.Remarked hash == blake2_256(the reason remark): expected `0x910038230489a298a53d24da9a998aeefae3370c65d7970114f320465c493927`, observed `0x910038230489a298a53d24da9a998aeefae3370c65d7970114f320465c493927` at block `0xc8e48bf66c07a4a260c11640bab8b532c5763b8b7fbf1538d3f5e31be9433d23`
+- ✅ control asset 2004 untouched (Live): expected `Live`, observed `Live` at block `0xc8e48bf66c07a4a260c11640bab8b532c5763b8b7fbf1538d3f5e31be9433d23`
+- ✅ judge balance unchanged after the refused transfer: expected `50000000`, observed `50000000` at block `0x3e95ad7fc43888095fc1971fe80f475cbaad61e2a41b13544a817c15d86727df`
+
+
 ### Spike run — asset 1008 — 2026-10-14T10:01:43Z
 
 Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · genesis `0x0c4402ef4ccc34d28b16523e1cf26831716527c61a65d8e0840ab26e1636c8a2` · spec `node/268` · raw JSON: [`evidence/spike-assets-standin-upstream-asset1008.json`](../evidence/spike-assets-standin-upstream-asset1008.json) · result: **PASS** (11/11 steps as expected + 1 observation, 10/10 state checks)

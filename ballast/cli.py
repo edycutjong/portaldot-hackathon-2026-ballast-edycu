@@ -126,6 +126,87 @@ def cmd_reserves(args: argparse.Namespace) -> int:
     return 3 if down else (1 if disagree else 0)
 
 
+def _watcher_key(profile, uri: str | None):
+    """Stand-in: a //Dev URI. Anything else: the secret URI in $BALLAST_WATCHER_SURI (never logged)."""
+    import os
+
+    from substrateinterface import Keypair
+
+    from .chain import dev_keypair
+
+    if profile.is_standin:
+        return dev_keypair(profile, uri or "//BallastW1")
+    suri = os.environ.get("BALLAST_WATCHER_SURI")
+    if not suri:
+        raise ProfileError(f"profile {profile.name}: set BALLAST_WATCHER_SURI (dev URIs are stand-in only)")
+    return Keypair.create_from_uri(suri)
+
+
+def _addresses(profile, items: list[str]) -> list[str]:
+    from .chain import dev_keypair
+
+    return [dev_keypair(profile, i).ss58_address if i.startswith("//") else i for i in items]
+
+
+def cmd_watch(args: argparse.Namespace) -> int:
+    """Run one watcher: freeze the breaker asset on a reserve deficit or a total provider outage."""
+    from .chain import connect
+    from .sepolia import SEPOLIA_PROVIDERS, providers_from
+    from .watchdog import JsonLog, WatchConfig, Watchdog
+
+    try:
+        cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=args.poll_blocks is None)
+        poll_blocks = args.poll_blocks
+        if poll_blocks is None:
+            if ident.counts is None:
+                raise ProfileError("block time not measured: pass --poll-blocks")
+            poll_blocks = ident.counts.poll_n
+        keypair = _watcher_key(ident.profile, args.watcher)
+        watchers = _addresses(ident.profile, args.watchers.split(","))
+        providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
+    except (ProfileError, RpcError, ValueError, OSError) as exc:
+        print(f"ballast: {exc}", file=sys.stderr)
+        return 2
+    supply_ids = [int(x) for x in args.supply_assets.split(",")] if args.supply_assets else [args.breaker]
+    wcfg = WatchConfig(
+        breaker_id=args.breaker,
+        supply_ids=supply_ids,
+        watchers=watchers,
+        threshold=args.threshold,
+        token=args.token,
+        holder=args.holder,
+        poll_blocks=poll_blocks,
+        fail_closed_after=args.fail_closed_after,
+        poll_interval_s=args.poll_interval,
+    )
+    log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
+    try:
+        dog = Watchdog(substrate=connect(ident.profile, cfg.url), profile=ident.profile, head_rpc=HttpRpc(cfg.url),
+                       keypair=keypair, providers=providers, cfg=wcfg, log=log)
+        try:
+            pre = dog.preflight()
+        except RuntimeError as exc:
+            log("not-armed", message=str(exc))
+            return 2
+        log.context["reserve"] = pre["reserve"]
+        log("start", **pre, poll_blocks=poll_blocks, fail_closed_after=args.fail_closed_after,
+            supply_ids=supply_ids, providers=[p.name for p in providers], erc20=args.token, holder=args.holder,
+            message=f"armed: M_watch {pre['m_watch']} · reserve {pre['reserve']} · every {poll_blocks} blocks")
+        return dog.run(until_frozen=args.until_frozen, max_seconds=args.max_seconds)
+    except KeyboardInterrupt:
+        log("stop", message="interrupted")
+        return 0
+    finally:
+        log.close()
+
+
+def cmd_drill(args: argparse.Namespace) -> int:
+    from .drill import run_drill
+
+    return run_drill(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ballast", description="Reserve-gated circuit breaker on Portaldot.")
     parser.add_argument("--version", action="version", version=f"ballast {__version__}")
@@ -154,6 +235,39 @@ def build_parser() -> argparse.ArgumentParser:
     res.add_argument("--json", action="store_true")
     res.add_argument("--out", metavar="FILE", help="also write the report as JSON")
     res.set_defaults(func=cmd_reserves)
+
+    w = sub.add_parser("watch", help="run a watcher: freeze on reserve deficit or total provider outage")
+    w.add_argument("--breaker", type=int, required=True, help="asset id to freeze (asset 1)")
+    w.add_argument("--supply-assets", help="comma-separated asset ids whose supplies the reserve backs "
+                   "(default: the breaker only; e.g. 1,2 = asset 1 + control asset 2)")
+    w.add_argument("--holder", required=True, help="vault address (holder of the reserve token)")
+    w.add_argument("--token", default=SEPOLIA_USDC, help="reserve token (default: Circle test USDC on Sepolia)")
+    w.add_argument("--provider", action="append", metavar="NAME=URL",
+                   help="EVM provider, repeatable (default: Sepolia publicnode + drpc)")
+    w.add_argument("--watcher", help="this watcher's key: //Dev URI on a stand-in (default //BallastW1); "
+                   "elsewhere $BALLAST_WATCHER_SURI")
+    w.add_argument("--watchers", default="//BallastW1,//BallastW2",
+                   help="watcher-set members, comma-separated SS58 (or //Dev URIs on a stand-in)")
+    w.add_argument("--threshold", type=int, default=1)
+    w.add_argument("--poll-blocks", type=int, help="check every N Portaldot blocks (default: profile N)")
+    w.add_argument("--poll-interval", type=float, default=1.0, help="seconds between head polls")
+    w.add_argument("--fail-closed-after", type=float, default=300.0,
+                   help="seconds with every provider unreachable before freezing (I6; default 300)")
+    w.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
+    w.add_argument("--until-frozen", action="store_true", help="exit 0 once the breaker asset is frozen")
+    w.add_argument("--max-seconds", type=float, help="stop after this many seconds (exit 4 if --until-frozen)")
+    w.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")
+    w.set_defaults(func=cmd_watch)
+
+    d = sub.add_parser("drill", help="breaker drill on a stand-in against a local anvil reserve")
+    d.add_argument("--scenario", choices=("drain", "outage"), default="drain",
+                   help="drain: release 30%% of the vault; outage: every provider unreachable (fail-closed)")
+    d.add_argument("--evm-url", default="http://127.0.0.1:49545", help="local anvil (chain id 31337)")
+    d.add_argument("--drain-pct", type=int, default=30)
+    d.add_argument("--fail-closed-after", type=float, default=15.0,
+                   help="outage scenario: watcher fail-closed timeout in seconds (production default 300)")
+    d.add_argument("--timeout", type=float, default=180.0, help="max seconds to wait for the freeze")
+    d.set_defaults(func=cmd_drill)
     return parser
 
 

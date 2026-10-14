@@ -14,18 +14,23 @@ EVIDENCE = ROOT / "evidence"
 RECEIPTS_MD = ROOT / "docs" / "RECEIPTS.md"
 
 
-def load_runs(pattern: str = "spike-assets-*.json") -> list[dict]:
-    """Runs in evidence/, newest first."""
-    runs = [json.loads(p.read_text()) | {"_file": p.name} for p in sorted(EVIDENCE.glob(pattern))]
+RUN_PATTERNS = ("spike-assets-*.json", "drill-*.json")
+
+
+def load_runs(patterns: tuple[str, ...] = RUN_PATTERNS) -> list[dict]:
+    """Runs in evidence/ (spike runs and drills), newest first."""
+    paths = sorted({p for pattern in patterns for p in EVIDENCE.glob(pattern)})
+    runs = [json.loads(p.read_text()) | {"_file": p.name} for p in paths]
     return sorted(runs, key=lambda r: r["started_at"], reverse=True)
 
 
 def summarize(run: dict) -> dict:
     """Verdict = every counted step as expected AND every state check ok AND no error. Observations don't count."""
-    counted = [s for s in run["steps"] if s.get("counted", True)]
+    steps = run["steps"] + run.get("evm_steps", [])
+    counted = [s for s in steps if s.get("counted", True)]
     run["passed"] = sum(1 for s in counted if s["as_expected"])
     run["counted_steps"] = len(counted)
-    run["observation_steps"] = len(run["steps"]) - len(counted)
+    run["observation_steps"] = len(steps) - len(counted)
     checks_ok = all(c["ok"] for c in run.get("state_checks", []))
     if run.get("error"):
         run["verdict"] = "ERROR"
@@ -61,6 +66,11 @@ def render_spike_section(run: dict) -> list[str]:
         f"result: **{run['verdict']}** ({score(run)})",
         "",
     ]
+    return lines + _steps_body(run)
+
+
+def _steps_body(run: dict) -> list[str]:
+    lines: list[str] = []
     if run.get("error"):
         lines += [f"Run stopped with an error: `{run['error']}`", ""]
     lines += [
@@ -91,6 +101,41 @@ def render_spike_section(run: dict) -> list[str]:
         )
     lines.append("")
     return lines
+
+
+def render_drill_section(run: dict) -> list[str]:
+    ident, reserve = run["chain"], run["reserve"]
+    title = {"drain": "reserve drained -> watchdog freezes", "outage": "every provider down -> fail-closed freeze"}
+    lines = [
+        f"### Breaker drill ({run['scenario']}: {title.get(run['scenario'], run['scenario'])}) — asset "
+        f"{run['asset_id']} — {run['started_at']}",
+        "",
+        f"Chain: **{ident['label']}** · reserve: **{reserve['label']}** · raw JSON: "
+        f"[`evidence/{run['_file']}`](../evidence/{run['_file']}) · watchdog log: "
+        f"[`evidence/{run['watchdog_log']}`](../evidence/{run['watchdog_log']}) · result: **{run['verdict']}** "
+        f"({score(run)})",
+        "",
+    ]
+    if run.get("remark"):
+        lines += [f"Reason remark (in the freeze extrinsic): `{run['remark']}`", ""]
+    if run.get("timing"):
+        t = run["timing"]
+        lines += [f"Timing ({t['basis']}):", ""]
+        lines += [f"- `{k}`: {v}" for k, v in t.items() if k != "basis"]
+        lines.append("")
+    if run.get("evm_steps"):
+        lines += [
+            f"Reserve-chain transactions ({reserve['label']}; vault `{reserve.get('vault')}`, token "
+            f"`{reserve.get('usdc')}`):",
+            "",
+            "| # | Step | Block | Tx hash | Expected | Observed |",
+            "|---|---|---|---|---|---|",
+        ]
+        for i, row in enumerate(run["evm_steps"], 1):
+            lines.append(f"| {i} | {row['name']} | {row['block_number']} | `{row['tx_hash']}` | {row['expected']} | "
+                         f"{_mark(row['as_expected'])} status {row['status']} |")
+        lines += ["", "Portaldot extrinsics:", ""]
+    return lines + _steps_body(run)
 
 
 STANDIN_NOTE = [
@@ -125,20 +170,25 @@ def render_receipts_md() -> str:
                     f"Chain label: {group[0]['chain']['label']}", ""]
         else:
             out += [f"## V3 receipts — {profile}", "", f"Chain label: {group[0]['chain']['label']}", ""]
-        # the newest PASS run leads; every other run (any verdict) is listed below it
-        lead = next((r for r in group if r.get("verdict") == "PASS"), group[0])
-        group = [lead] + [r for r in group if r is not lead]
-        for i, run in enumerate(group):
-            if i == 0:
-                out += render_spike_section(run)
-            else:
-                if i == 1:
-                    out += ["Earlier runs (full tables in the JSON):", ""]
-                out.append(
-                    f"- asset {run['asset_id']} — {run['started_at']} — {run['verdict']} ({score(run)}) — "
-                    f"[`evidence/{run['_file']}`](../evidence/{run['_file']})"
-                )
-        out.append("")
+        kinds = (("drill", "drain"), ("drill", "outage"), ("spike-assets", None))
+        for kind, scenario in kinds:
+            runs_k = [r for r in group if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
+            if not runs_k:
+                continue
+            # the newest PASS run leads; every other run (any verdict) is listed below it
+            lead = next((r for r in runs_k if r.get("verdict") == "PASS"), runs_k[0])
+            runs_k = [lead] + [r for r in runs_k if r is not lead]
+            for i, run in enumerate(runs_k):
+                if i == 0:
+                    out += render_drill_section(run) if kind == "drill" else render_spike_section(run)
+                else:
+                    if i == 1:
+                        out += ["Earlier runs (full tables in the JSON):", ""]
+                    out.append(
+                        f"- asset {run['asset_id']} — {run['started_at']} — {run['verdict']} ({score(run)}) — "
+                        f"[`evidence/{run['_file']}`](../evidence/{run['_file']})"
+                    )
+            out.append("")
     return "\n".join(out).rstrip() + "\n"
 
 

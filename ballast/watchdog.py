@@ -36,6 +36,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from .remarks import MAX_BYTES as REMARK_MAX_BYTES
+from .remarks import PREFIX as REMARK_PREFIX
 from .remarks import parse
 from .sepolia import (
     ANVIL_CHAIN_ID,
@@ -50,8 +52,6 @@ from .sepolia import (
     token_decimals,
 )
 
-from .remarks import MAX_BYTES as REMARK_MAX_BYTES  # noqa: E402
-from .remarks import PREFIX as REMARK_PREFIX  # noqa: E402
 FAIL_CLOSED_AFTER_S = 300.0  # I6: both providers unreachable for > 5 minutes -> freeze
 MAX_BLOCK_AGE_S = 120.0  # a `latest` block older than this is a failed reading (stuck cache / lagging node; 10 Sepolia slots)
 FAST_RETRIES = 3  # consecutive failures retried at the next new head; after that, every poll_blocks (never give up)

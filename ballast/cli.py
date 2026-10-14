@@ -9,7 +9,7 @@ import sys
 from . import __version__
 from .chain_profile import MIN_SAMPLE_BLOCKS, ProfileError, identify
 from .config import load_chain_config
-from .rpc import HttpRpc
+from .rpc import HttpRpc, RpcError
 
 
 def write_pallets(cfg, ident, path: str) -> None:
@@ -41,8 +41,8 @@ def cmd_chain(args: argparse.Namespace) -> int:
     cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
     try:
         ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=not args.no_measure, sample_blocks=args.blocks)
-    except ProfileError as exc:
-        print(f"ballast: {exc}", file=sys.stderr)
+    except (ProfileError, RpcError, ValueError) as exc:
+        print(f"ballast: [{cfg.profile.name}] {exc}", file=sys.stderr)
         return 2
     except OSError as exc:
         print(f"ballast: [{cfg.profile.name}] node unreachable at {cfg.url}: {exc}", file=sys.stderr)
@@ -62,7 +62,8 @@ def cmd_chain(args: argparse.Namespace) -> int:
     counts = data["block_counts"]
     if isinstance(counts, dict):
         print(
-            f"  blocks    {counts['block_time_ms']:.0f} ms median ({counts['mean_block_time_ms']:.0f} ms mean) "
+            f"  blocks    {counts['block_time_ms']:.0f} ms (median {counts['median_block_time_ms']:.0f}, "
+            f"mean {counts['mean_block_time_ms']:.0f}) "
             f"over {counts['measured_over_blocks']} blocks "
             f"-> H={counts['H']} K={counts['K']} W={counts['W']} N={counts['N']}"
         )

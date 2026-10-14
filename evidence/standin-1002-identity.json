@@ -1,0 +1,33 @@
+{
+  "kind": "chain-identity",
+  "captured_at": "2026-10-14T09:40:16Z",
+  "command": "ballast --profile standin-1002 --url http://127.0.0.1:49933 chain --json",
+  "node": "portaldot_dev 2.0.0 (x86_64, Rosetta) --dev --tmp, scratch run on Ballast's ports, stopped after capture",
+  "profile": "standin-1002",
+  "label": "standin-1002 (portaldot_dev 2.0.0 --dev, runtime spec 1002, NOT V3)",
+  "is_standin": true,
+  "genesis_hash": "0x53c36c0fc46f5bb2429d701b5ad7a0577b343aa53c4964333f1922611974dd22",
+  "code_hash": "0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80",
+  "spec_name": "portaldot",
+  "spec_version": 1002,
+  "token_decimals": null,
+  "decimals_source": "unreported",
+  "head": 22,
+  "multisig_shape": "legacy-1002",
+  "block_counts": {
+    "block_time_ms": 6000,
+    "H": 100,
+    "K": 300,
+    "W": 14400,
+    "N": 2,
+    "block_time_basis": "median of per-block timestamp deltas, rounded to 100 ms",
+    "median_block_time_ms": 6000.5,
+    "mean_block_time_ms": 5999.75,
+    "measured_over_blocks": 20
+  },
+  "notes": [
+    "Assets Balance is u64 on spec 1002: calls and events are re-typed on connect",
+    "H/K/W/N derived from the standin-1002 block time measured over 20 blocks"
+  ],
+  "url": "http://127.0.0.1:49933"
+}

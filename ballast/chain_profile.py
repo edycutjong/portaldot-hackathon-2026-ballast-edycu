@@ -35,6 +35,7 @@ def storage_key(pallet: str, item: str) -> str:
 TIMESTAMP_NOW = storage_key("Timestamp", "Now")
 CODE_KEY = "0x" + b":code".hex()
 
+BLOCK_TIME_RESOLUTION_MS = 100  # +-1 ms timestamp jitter must not move H/K/W
 HEARTBEAT_MS = 10 * 60 * 1000
 WIND_DOWN_MS = 24 * 60 * 60 * 1000
 POLL_EVERY_BLOCKS = 2
@@ -88,18 +89,19 @@ class Profile:
 PROFILES: dict[str, Profile] = {
     "v3": Profile(
         name="v3",
-        label="Portaldot V3 testnet",
+        label=f"Portaldot V3 testnet (genesis not pinned: {UNVERIFIED})",
         is_standin=False,
         default_url="wss://testnetv3-node.feso-apps.xyz",
         genesis_hash=None,
         code_hash=None,
-        spec_name="portaldotV3",
-        spec_version=3000,
-        decimals=14,
+        spec_name="portaldotV3",  # how an unpinned V3 node is recognised until its genesis is pinned
+        spec_version=None,
+        decimals=None,
         multisig_shape=None,
         notes=(
-            f"genesis hash, :code hash, block time and as_multi shape: {UNVERIFIED}",
-            "spec portaldotV3/3000 and 14 decimals are the documented/measured V3 values",
+            f"genesis hash, :code hash, decimals, block time and as_multi shape: {UNVERIFIED}",
+            "expected from public sources, not yet verified by Ballast: 14 decimals (official V3 guide), "
+            f"spec portaldotV3/3000 (third-party measurement) — {UNVERIFIED}",
         ),
     ),
     "standin-upstream": Profile(
@@ -172,6 +174,10 @@ def derive_block_counts(block_time_ms: float) -> BlockCounts:
     )
 
 
+def round_block_time(ms: float) -> float:
+    return max(BLOCK_TIME_RESOLUTION_MS, round(ms / BLOCK_TIME_RESOLUTION_MS) * BLOCK_TIME_RESOLUTION_MS)
+
+
 @dataclass(frozen=True)
 class ChainFacts:
     """What a node says about itself. Gathered by `observe`, judged by `classify`."""
@@ -196,10 +202,18 @@ class ChainIdentity:
 
     @property
     def decimals(self) -> int | None:
-        return self.facts.token_decimals if self.facts.token_decimals is not None else self.profile.decimals
+        """Reported by the node; a pinned value is a fallback on stand-ins only, never on V3."""
+        if self.facts.token_decimals is not None:
+            return self.facts.token_decimals
+        return self.profile.decimals if self.profile.is_standin else None
 
     def banner(self) -> str:
-        tag = "STAND-IN, NOT V3" if self.profile.is_standin else "V3"
+        if self.profile.is_standin:
+            tag = "STAND-IN, NOT V3"
+        elif self.profile.genesis_hash is None:
+            tag = f"V3 by spec name only, genesis not pinned: {UNVERIFIED}"
+        else:
+            tag = "V3"
         return (
             f"[{self.profile.name} | {tag}] genesis {self.facts.genesis_hash[:10]}… "
             f"spec {self.facts.spec_name}/{self.facts.spec_version} head #{self.facts.head}"
@@ -221,12 +235,13 @@ class ChainIdentity:
             "block_counts": (
                 {
                     **self.counts.as_dict(),
-                    "block_time_basis": "median of per-block timestamp deltas",
+                    "block_time_basis": f"median of per-block timestamp deltas, rounded to {BLOCK_TIME_RESOLUTION_MS} ms",
+                    "median_block_time_ms": self.facts.block_time_ms,
                     "mean_block_time_ms": self.facts.mean_block_time_ms,
                     "measured_over_blocks": self.facts.sample_blocks,
                 }
                 if self.counts
-                else UNVERIFIED
+                else ("not measured" if self.profile.is_standin else UNVERIFIED)
             ),
             "notes": list(self.notes),
         }
@@ -327,7 +342,7 @@ def classify(facts: ChainFacts, profile_name: str) -> ChainIdentity:
         notes.append(msg)
     if facts.token_decimals is not None and profile.decimals is not None and facts.token_decimals != profile.decimals:
         raise ProfileMismatch(f"{profile.name}: tokenDecimals {facts.token_decimals} != expected {profile.decimals}")
-    counts = derive_block_counts(facts.block_time_ms) if facts.block_time_ms else None
+    counts = derive_block_counts(round_block_time(facts.block_time_ms)) if facts.block_time_ms else None
     if counts and profile.is_standin:
         notes.append(f"H/K/W/N derived from the {profile.name} block time measured over {facts.sample_blocks} blocks")
     return ChainIdentity(profile=profile, facts=facts, counts=counts, notes=tuple(notes))

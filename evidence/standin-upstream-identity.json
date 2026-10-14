@@ -1,0 +1,33 @@
+{
+  "kind": "chain-identity",
+  "captured_at": "2026-10-14T09:40:26Z",
+  "command": "ballast --profile standin-upstream chain --json",
+  "node": "scripts/standin_node.sh start",
+  "profile": "standin-upstream",
+  "label": "standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)",
+  "is_standin": true,
+  "genesis_hash": "0x0c4402ef4ccc34d28b16523e1cf26831716527c61a65d8e0840ab26e1636c8a2",
+  "code_hash": "0x72e84be232be151b059440f89710895de0cb6b71b6529f97e9c02340765f1ec0",
+  "spec_name": "node",
+  "spec_version": 268,
+  "token_decimals": 12,
+  "decimals_source": "system_properties",
+  "head": 457,
+  "multisig_shape": "weight-v2",
+  "block_counts": {
+    "block_time_ms": 3000,
+    "H": 200,
+    "K": 600,
+    "W": 28800,
+    "N": 2,
+    "block_time_basis": "median of per-block timestamp deltas, rounded to 100 ms",
+    "median_block_time_ms": 2999.5,
+    "mean_block_time_ms": 2999.85,
+    "measured_over_blocks": 20
+  },
+  "notes": [
+    "polkadot-stable2606-3 substrate-node 3.0.0-dev-9d0dc6e8fbb, aarch64-apple-darwin",
+    "H/K/W/N derived from the standin-upstream block time measured over 20 blocks"
+  ],
+  "url": "ws://127.0.0.1:49944"
+}

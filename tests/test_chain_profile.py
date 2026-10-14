@@ -67,7 +67,7 @@ class FakeRpc:
         raise AssertionError(method)
 
 
-def test_block_counts_6s_reproduce_the_1002_values():
+def test_block_counts_6s_blocks():
     c = derive_block_counts(6000)
     assert (c.heartbeat_h, c.heartbeat_freeze_k, c.wind_down_w, c.poll_n) == (100, 300, 14_400, 2)
 
@@ -116,13 +116,27 @@ def test_classify_standin_decimals_and_spec_version_are_checked():
 
 def test_v3_profile_is_a_stub_with_unverified_values():
     v3 = get_profile("v3")
-    ident = classify(facts(v3, block_time_ms=None, mean_block_time_ms=None), "v3")
+    # a node that reports spec portaldotV3/3000 and no decimals, genesis unknown to Ballast
+    ident = classify(facts(v3, spec_version=3000, token_decimals=None, block_time_ms=None, mean_block_time_ms=None), "v3")
     data = ident.as_dict()
     assert not ident.profile.is_standin
     assert data["multisig_shape"] == UNVERIFIED and data["block_counts"] == UNVERIFIED
+    assert ident.decimals is None  # never a pinned fallback on V3
+    assert "genesis not pinned" in ident.banner() and UNVERIFIED in ident.banner()
     assert any(UNVERIFIED in n for n in ident.notes)
     with pytest.raises(ProfileUnverified):
         require_multisig_shape(v3)
+
+
+def test_standin_without_a_block_sample_says_not_measured():
+    ident = classify(facts(block_time_ms=None, mean_block_time_ms=None), "standin-upstream")
+    assert ident.as_dict()["block_counts"] == "not measured"
+
+
+def test_block_time_is_rounded_so_jitter_does_not_move_the_counts():
+    a = classify(facts(block_time_ms=2999.0), "standin-upstream").counts
+    b = classify(facts(block_time_ms=3001.0), "standin-upstream").counts
+    assert a == b and a.wind_down_w == 28_800
 
 
 def test_unknown_profile_name():

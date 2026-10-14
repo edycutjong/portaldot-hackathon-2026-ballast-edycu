@@ -108,6 +108,9 @@ State checks (storage/events read at the step's block):
 - ✅ asset 1 status after the thaw: expected `Live`, observed `Live` at block `0x7d873f465444208019db575ce4151fdccadb2fd4d53d8b13dbaaa9e36b099ccb`
 - ✅ asset 1 team unchanged (ARMED): expected `[]`, observed `[]` at block `head`
 
+Other runs, newest first, any verdict (full tables in the JSON):
+
+- asset 1 — 2026-10-14T14:30:22Z — PASS (20/20 steps as expected, 19/19 state checks) — source: `8665dda` (UNCOMMITTED CHANGES) — [`evidence/roles-drill-standin-upstream-20261014T143022Z.json`](../evidence/roles-drill-standin-upstream-20261014T143022Z.json)
 
 ### Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control — 2026-10-14T12:58:10Z
 
@@ -171,6 +174,10 @@ State checks (storage/events read at the step's block):
 - ✅ the forged remark is listed REJECTED (not counted): expected `['4449-2']`, observed `['4449-2']` at block `verify`
 - ✅ watcher-set and evm-attester announcements PASS: expected `[1, 1]`, observed `[1, 1]` at block `verify`
 
+Other runs, newest first, any verdict (full tables in the JSON):
+
+- asset 1 — 2026-10-14T14:34:22Z — PASS (15/15 steps as expected, 6/6 state checks) — source: `7b6a2f8` (UNCOMMITTED CHANGES) — [`evidence/roles-attest-standin-upstream-20261014T143422Z.json`](../evidence/roles-attest-standin-upstream-20261014T143422Z.json)
+- asset 1 — 2026-10-14T14:32:00Z — FAIL (11/11 steps as expected, 5/6 state checks) — source: `7b6a2f8` (UNCOMMITTED CHANGES) — [`evidence/roles-attest-standin-upstream-20261014T143200Z.json`](../evidence/roles-attest-standin-upstream-20261014T143200Z.json) — failed: every oracle post matches a PASSing remark (I10)
 
 ### Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle — 2026-10-14T12:41:19Z
 

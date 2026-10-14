@@ -1,0 +1,224 @@
+{
+  "profile": "standin-upstream",
+  "chain": "standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)",
+  "reserve": "local-anvil (not Sepolia)",
+  "from": 6336,
+  "to": 6375,
+  "checked_at": "2026-10-14T14:36:21Z",
+  "summary": {
+    "counts": {
+      "watchers:PASS": 1,
+      "evm-attester:PASS": 1,
+      "attest:PASS": 3,
+      "heartbeat:PASS": 1,
+      "attest:REJECTED": 1,
+      "oracle-post:OK": 4
+    },
+    "attestations_counted": 4,
+    "attestations_pass": 4,
+    "rejected": 1,
+    "failures_or_flags": 0,
+    "verdict": "PASS"
+  },
+  "findings": [
+    {
+      "extrinsic_id": "6338-2",
+      "block_number": 6338,
+      "kind": "watchers",
+      "verdict": "PASS",
+      "detail": "t=1 m=2 -> 5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D == asset 1 freezer 5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D",
+      "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+      "text": "BALLAST/1|watchers|t=1|m=5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne,5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP"
+    },
+    {
+      "extrinsic_id": "6339-2",
+      "block_number": 6339,
+      "kind": "evm-attester",
+      "verdict": "PASS",
+      "detail": "oracle attester() 0x4dc969838572d068ead3ab831399049dd2269b13 == announced 0x4dc969838572d068ead3ab831399049dd2269b13",
+      "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+      "text": "BALLAST/1|evm-attester|h160=0x4dc969838572d068ead3ab831399049dd2269b13|oracle=0xe9c880d56cd82c512b873eaaea792608b651b8e2"
+    },
+    {
+      "extrinsic_id": "6340-2",
+      "block_number": 6340,
+      "kind": "attest",
+      "verdict": "PASS",
+      "detail": "S1 54000000 + S2 50000000 (frozen=False) at #6336 \u00b7 reserves 104000000 at #472 via anvil: both chains match",
+      "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+      "text": "BALLAST/1|attest|a=1|a2=2|s=54000000|s2=50000000|f=0|pb=6336|ph=0x13acc21e355fa23c68e77d3fbda3f44465a13cdf5f4343096174a49d2411c231|eb=472|eh=0xa39aacf9cd31a9b6ea97843afa92feaed50040d41552bacb12ca3a4ef8ae3479|r=104000000",
+      "checks": {
+        "pb": [
+          6336,
+          6336
+        ],
+        "s": [
+          54000000,
+          54000000
+        ],
+        "s2": [
+          50000000,
+          50000000
+        ],
+        "f": [
+          false,
+          false
+        ],
+        "eb": [
+          472,
+          472
+        ],
+        "r": [
+          104000000,
+          104000000
+        ],
+        "provider": "anvil"
+      }
+    },
+    {
+      "extrinsic_id": "6342-2",
+      "block_number": 6342,
+      "kind": "attest",
+      "verdict": "PASS",
+      "detail": "S1 54000000 + S2 50000000 (frozen=False) at #6338 \u00b7 reserves 105000000 at #539 via anvil: both chains match",
+      "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+      "text": "BALLAST/1|attest|a=1|a2=2|s=54000000|s2=50000000|f=0|pb=6338|ph=0xa17562cd6b53f19f02e172ae83c7f8d3bf5c6c94ad655da8d4f6782b646af807|eb=539|eh=0x308635e3d89cd6ed08303cc9de1de49cb6fb5b81f23c57b493876812c08be806|r=105000000",
+      "checks": {
+        "pb": [
+          6338,
+          6338
+        ],
+        "s": [
+          54000000,
+          54000000
+        ],
+        "s2": [
+          50000000,
+          50000000
+        ],
+        "f": [
+          false,
+          false
+        ],
+        "eb": [
+          539,
+          539
+        ],
+        "r": [
+          105000000,
+          105000000
+        ],
+        "provider": "anvil"
+      }
+    },
+    {
+      "extrinsic_id": "6349-2",
+      "block_number": 6349,
+      "kind": "attest",
+      "verdict": "PASS",
+      "detail": "S1 55000000 + S2 50000000 (frozen=False) at #6346 \u00b7 reserves 105000000 at #539 via anvil: both chains match",
+      "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+      "text": "BALLAST/1|attest|a=1|a2=2|s=55000000|s2=50000000|f=0|pb=6346|ph=0x432883c23503194cbdbd1b3ade58e8051a1de813caf632a50392d029d5ee9453|eb=539|eh=0x308635e3d89cd6ed08303cc9de1de49cb6fb5b81f23c57b493876812c08be806|r=105000000",
+      "checks": {
+        "pb": [
+          6346,
+          6346
+        ],
+        "s": [
+          55000000,
+          55000000
+        ],
+        "s2": [
+          50000000,
+          50000000
+        ],
+        "f": [
+          false,
+          false
+        ],
+        "eb": [
+          539,
+          539
+        ],
+        "r": [
+          105000000,
+          105000000
+        ],
+        "provider": "anvil"
+      }
+    },
+    {
+      "extrinsic_id": "6373-2",
+      "block_number": 6373,
+      "kind": "heartbeat",
+      "verdict": "PASS",
+      "detail": "S1 55000000 + S2 50000000 (frozen=False) at #6370 \u00b7 reserves 105000000 at #539 via anvil: both chains match",
+      "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+      "text": "BALLAST/1|heartbeat|a=1|a2=2|s=55000000|s2=50000000|f=0|pb=6370|ph=0xca39a761edfb000a4923f86b433119af21493e2ecfc436b300734143ea2878e1|eb=539|eh=0x308635e3d89cd6ed08303cc9de1de49cb6fb5b81f23c57b493876812c08be806|r=105000000",
+      "checks": {
+        "pb": [
+          6370,
+          6370
+        ],
+        "s": [
+          55000000,
+          55000000
+        ],
+        "s2": [
+          50000000,
+          50000000
+        ],
+        "f": [
+          false,
+          false
+        ],
+        "eb": [
+          539,
+          539
+        ],
+        "r": [
+          105000000,
+          105000000
+        ],
+        "provider": "anvil"
+      }
+    },
+    {
+      "extrinsic_id": "6374-2",
+      "block_number": 6374,
+      "kind": "attest",
+      "verdict": "REJECTED",
+      "detail": "sender 5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS: signer must be B (I5) \u2014 not counted",
+      "sender": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+      "text": "BALLAST/1|attest|a=1|a2=2|s=55000000|s2=50000000|f=0|pb=6370|ph=0xca39a761edfb000a4923f86b433119af21493e2ecfc436b300734143ea2878e1|eb=539|eh=0x308635e3d89cd6ed08303cc9de1de49cb6fb5b81f23c57b493876812c08be806|r=105000000"
+    },
+    {
+      "extrinsic_id": "6341-2",
+      "block_number": 6341,
+      "kind": "oracle-post",
+      "verdict": "OK",
+      "detail": "values match attestation 6340-2"
+    },
+    {
+      "extrinsic_id": "6343-3",
+      "block_number": 6343,
+      "kind": "oracle-post",
+      "verdict": "OK",
+      "detail": "values match attestation 6342-2"
+    },
+    {
+      "extrinsic_id": "6350-2",
+      "block_number": 6350,
+      "kind": "oracle-post",
+      "verdict": "OK",
+      "detail": "values match attestation 6349-2"
+    },
+    {
+      "extrinsic_id": "6374-3",
+      "block_number": 6374,
+      "kind": "oracle-post",
+      "verdict": "OK",
+      "detail": "values match attestation 6373-2"
+    }
+  ]
+}

@@ -11,24 +11,24 @@
         {
           "provider": "publicnode",
           "tag": "latest",
-          "block_number": 11912892,
-          "block_hash": "0xd2ceb740218956a679a9cd7bd1e864cdb8d4a1061a505f4c0f53e1f7630fb09d",
-          "block_timestamp": 1791976560,
+          "block_number": 11912974,
+          "block_hash": "0x792e7f96a670d082b0a262800f1763e7df922adb6c6ad92bec09d9807342e925",
+          "block_timestamp": 1791977556,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:16:06.820Z",
-          "seconds": 0.388
+          "read_at": "2026-10-14T11:32:45.285Z",
+          "seconds": 0.396
         },
         {
           "provider": "drpc",
           "tag": "latest",
-          "block_number": 11912892,
-          "block_hash": "0xd2ceb740218956a679a9cd7bd1e864cdb8d4a1061a505f4c0f53e1f7630fb09d",
-          "block_timestamp": 1791976560,
+          "block_number": 11912974,
+          "block_hash": "0x792e7f96a670d082b0a262800f1763e7df922adb6c6ad92bec09d9807342e925",
+          "block_timestamp": 1791977556,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:16:07.208Z",
-          "seconds": 0.558
+          "read_at": "2026-10-14T11:32:45.681Z",
+          "seconds": 0.595
         }
       ],
       "disagreements": []
@@ -38,24 +38,24 @@
         {
           "provider": "publicnode",
           "tag": "finalized",
-          "block_number": 11912815,
-          "block_hash": "0xc5eb019ad22943637a18688c43175431bb80bbe16e2261f9a89ed259829e0375",
-          "block_timestamp": 1791975636,
+          "block_number": 11912879,
+          "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
+          "block_timestamp": 1791976404,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:16:07.766Z",
-          "seconds": 0.383
+          "read_at": "2026-10-14T11:32:46.276Z",
+          "seconds": 0.382
         },
         {
           "provider": "drpc",
           "tag": "finalized",
-          "block_number": 11912815,
-          "block_hash": "0xc5eb019ad22943637a18688c43175431bb80bbe16e2261f9a89ed259829e0375",
-          "block_timestamp": 1791975636,
+          "block_number": 11912879,
+          "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
+          "block_timestamp": 1791976404,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:16:08.149Z",
-          "seconds": 0.577
+          "read_at": "2026-10-14T11:32:46.657Z",
+          "seconds": 0.481
         }
       ],
       "disagreements": []
@@ -64,21 +64,21 @@
   "cross_check": {
     "tag": "finalized",
     "anchor_provider": "publicnode",
-    "block_number": 11912815,
-    "block_hash": "0xc5eb019ad22943637a18688c43175431bb80bbe16e2261f9a89ed259829e0375",
+    "block_number": 11912879,
+    "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
     "erc20": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     "holder": "0xDEf7Cd11f524C2246571654110b43476C2BD9300",
     "providers": {
       "publicnode": {
-        "block_hash": "0xc5eb019ad22943637a18688c43175431bb80bbe16e2261f9a89ed259829e0375",
+        "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
         "reserves": "20000000"
       },
       "drpc": {
-        "block_hash": "0xc5eb019ad22943637a18688c43175431bb80bbe16e2261f9a89ed259829e0375",
+        "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
         "reserves": "20000000"
       }
     },
     "agree": true,
-    "read_at": "2026-10-14T11:16:09.728Z"
+    "read_at": "2026-10-14T11:32:48.155Z"
   }
 }

@@ -135,8 +135,8 @@ class Attester:
         if self.mirror_tries >= MIRROR_TRIES:
             self.pending_mirror = None
             self.log("mirror-dropped", level="critical", head=snap.pb, remark_tx=remark_tx,
-                     message=f"oracle mirror of {remark_tx} failed {MIRROR_TRIES} times: dropped (the next remark "
-                             "re-arms it; `verify` lists remarks without a mirror)")
+                     message=f"oracle mirror of {remark_tx} failed {MIRROR_TRIES} times: dropped — the oracle keeps its "
+                             "previous state until the next remark's mirror lands (isBacked() ages out meanwhile)")
             return {"oracle_ok": False}
         self.mirror_tries += 1
         try:
@@ -195,7 +195,7 @@ def run_attester(args: Any, *, profile: Any, substrate: Any, dep: Any, keypair: 
     log("start", heartbeat_blocks=h, poll_blocks=n, oracle=oracle, reserve=dep.reserve["label"],
         message=f"attesting asset {dep.breaker} (+ control {dep.control}) every change + heartbeat every {h} blocks"
                 f" · oracle {oracle or 'off'}")
-    started, last_checked = time.time(), None
+    started, last_checked, lag_warned = time.time(), None, False
     try:
         if args.announce:
             att.announce(dep.roles["watchers"], dep.roles["M_watch"]["threshold"])
@@ -203,13 +203,18 @@ def run_attester(args: Any, *, profile: Any, substrate: Any, dep: Any, keypair: 
             try:
                 block_hash = rpc.call("chain_getFinalizedHead", [])  # L2: attest finalized state only
                 number = int(rpc.call("chain_getHeader", [block_hash])["number"], 16)
-                best = int(rpc.call("chain_getHeader", [])["number"], 16)
-                if best - number > h:  # heartbeats ride on finality: a lag near K = 3H would trip I8
-                    log("finality-lag", level="warning", head=number,
-                        message=f"finalized head #{number} is {best - number} blocks behind best #{best} (> H={h})")
             except Exception as exc:  # noqa: BLE001 — node hiccup: keep polling
                 log("head-error", message=f"{type(exc).__name__}: {exc}")
                 number = None
+            try:  # heartbeats ride on finality: a lag near K = 3H would trip I8 — say so once per episode
+                best = int(rpc.call("chain_getHeader", [])["number"], 16)
+                lagging = number is not None and best - number > h
+                if lagging and not lag_warned:
+                    log("finality-lag", level="warning", head=number,
+                        message=f"finalized head #{number} is {best - number} blocks behind best #{best} (> H={h})")
+                lag_warned = lagging
+            except Exception:  # noqa: BLE001, S110 — advisory only: never skips an attestation round
+                pass
             if number is not None and (last_checked is None or number >= last_checked + n):
                 last_checked = number
                 try:

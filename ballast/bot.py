@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import statistics
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -196,12 +197,13 @@ def set_team_gate(current: dict, proposed: dict, m_mint: str, m_admin: str) -> G
 
 
 def lookback_blocks(substrate: Any, head: int, sample: int = 20) -> int:
-    """W (~24 h) in blocks of the block time measured over the last `sample` blocks (mean: a restart gap only makes
-    the lookback SHORTER, which refuses more, never less)."""
+    """W (~24 h) in blocks of the median block time over the last `sample` blocks (median, like `chain_profile`: one
+    stall in the sample neither shrinks nor stretches W)."""
     if head <= sample:
         return FREEZE_LOOKBACK_BLOCKS
-    ts = lambda n: substrate.query("Timestamp", "Now", block_hash=substrate.get_block_hash(n)).value  # noqa: E731
-    ms = (ts(head) - ts(head - sample)) / sample
+    stamps = [substrate.query("Timestamp", "Now", block_hash=substrate.get_block_hash(n)).value
+              for n in range(head - sample, head + 1)]
+    ms = statistics.median(b - a for a, b in zip(stamps, stamps[1:]))  # a stall in the sample can't shrink W
     return derive_block_counts(round_block_time(ms)).wind_down_w if ms > 0 else FREEZE_LOOKBACK_BLOCKS
 
 
@@ -316,9 +318,12 @@ class ReserveBot:
                  label: str, event: str) -> None:
         try:
             r = account.execute(self.substrate, self.profile, self.keypair, call, op, step=step, label=label)
-        except Exception:
-            self.store.set_exec(row, None, "signed-unknown")  # submitted or not: check the chain, never assume
-            raise
+        except Exception as exc:  # noqa: BLE001 — submitted or not: the caller must check the chain, never assume
+            self.store.set_exec(row, None, "signed-unknown")
+            out |= {"decision": "signed-unknown", "executed_ok": False,
+                    "reason": f"{out['reason']} — but the final approval raised {type(exc).__name__}: {exc}; check "
+                              f"the chain for {out['call_hash']} before retrying"}
+            return
         ok = r.outcome.ok and bool(r.inner) and all(o.ok for o in r.inner) and event in r.event_names()
         self.store.set_exec(row, r.extrinsic_id, "signed-executed" if ok else "signed-inner-failed")
         out["receipt"], out["executed_ok"] = r.as_dict(), ok

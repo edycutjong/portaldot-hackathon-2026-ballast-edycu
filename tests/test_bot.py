@@ -267,3 +267,74 @@ def test_lookback_is_w_in_measured_blocks():
             return V()
 
     assert lookback_blocks(C(), 1000) == 14_400  # 24 h of 6 s blocks
+
+
+class FrozenChain:
+    """Asset 1 frozen; AssetFrozen at `freezes` (block -> extrinsic idx); the head moves to `later` after the first
+    scan (a re-freeze while the bot scanned)."""
+
+    def __init__(self, freezes, head, later):
+        self.freezes, self.head, self.later, self.calls = freezes, head, later, 0
+        self.ss58_format = 42
+
+    def get_block_number(self, _):
+        self.calls += 1
+        return self.head if self.calls == 1 else self.later
+
+    def get_block_hash(self, n):
+        return f"0x{n:064x}"
+
+    def get_events(self, block_hash):
+        n = int(block_hash, 16)
+        return [Ev("Assets", "AssetFrozen", {"asset_id": 1}, self.freezes[n])] if n in self.freezes else []
+
+    def query(self, pallet, item, params=None, block_hash=None):
+        class V:
+            value = 1_700_000_000_000 if item == "Now" else {"status": "Frozen", "supply": 5}
+        return V()
+
+
+def test_cosign_thaw_anchors_on_a_freeze_that_lands_while_it_scans(monkeypatch, tmp_path):
+    import ballast.bot as bot_mod
+
+    rm = type("RM", (), {"a": A, "a2": W, "b": "x", "watchers": [W], "mint_signatories": [], "admin_signatories": []})
+    b = object.__new__(bot_mod.ReserveBot)
+    b.substrate = FrozenChain({100: 1, 150: 4}, head=120, later=160)
+    b.dep = type("D", (), {"breaker": 1})()
+    b.rm, b.m_admin, b.log = rm, None, lambda m: None
+    b.lock_path = tmp_path / "x.lock"
+    seen = {}
+    monkeypatch.setattr(bot_mod.ReserveBot, "compose", lambda self, f, **k: f)
+    monkeypatch.setattr(bot_mod, "call_hash", lambda c: "0xhash")
+    monkeypatch.setattr(bot_mod.ReserveBot, "_pending", lambda self, *a: object())
+    monkeypatch.setattr(bot_mod, "lookback_blocks", lambda *a: 1000)
+    monkeypatch.setattr(bot_mod, "freeze_anchor", lambda s, a, f, w: seen.__setitem__("anchor", dict(f)) or dict(f))
+
+    class Stop(Exception):  # stop at the reserve read, right after the under-lock re-check
+        pass
+
+    monkeypatch.setattr(bot_mod.ReserveBot, "supplies", lambda self, bh=None: {"s1": 0, "s2": 0, "frozen": True,
+                                                                            "status": "Frozen", "team_problems": []})
+    monkeypatch.setattr(bot_mod.ReserveBot, "reserves", lambda self: (_ for _ in ()).throw(Stop()))
+    with pytest.raises(Stop):
+        b.cosign_thaw()
+    assert seen["anchor"]["block_number"] == 150  # the newer freeze, found under the lock
+
+
+def test_execute_failure_is_signed_unknown(tmp_path):
+    import ballast.bot as bot_mod
+
+    st = Store(tmp_path / "b.db")
+    row = st.request(kind="mint", decision="signed", reason="ok", frozen=0)
+    b = object.__new__(bot_mod.ReserveBot)
+    b.substrate = b.profile = b.keypair = None
+    b.store = st
+
+    class Acct:
+        def execute(self, *a, **k):
+            raise TimeoutError("no inclusion within 60 s")
+
+    out = {"reason": "covered", "call_hash": "0xab"}
+    b._execute(Acct(), None, None, row, out, step="s", label="l", event="Assets.Issued")
+    assert out["decision"] == "signed-unknown" and not out["executed_ok"] and "check the chain" in out["reason"]
+    assert st.rows("mint_request")[0]["decision"] == "signed-unknown"

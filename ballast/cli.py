@@ -427,6 +427,8 @@ def cmd_bot(args: argparse.Namespace) -> int:
             store.close()
     out["profile"] = profile.name
     _print_json(out)
+    if out["decision"] == "signed-unknown":
+        return 3
     if out["decision"] != "signed":
         return 1
     return 0 if out.get("executed_ok") else 3

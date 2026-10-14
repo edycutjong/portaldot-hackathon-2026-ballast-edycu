@@ -21,8 +21,11 @@ def load_chain_config(path: str | os.PathLike | None = None, *, profile: str | N
     data: dict = {}
     cfg_path = Path(path or os.environ.get("BALLAST_CONFIG", "ballast.toml"))
     if cfg_path.exists():
-        with cfg_path.open("rb") as fh:
-            data = tomllib.load(fh).get("chain", {})
+        try:
+            with cfg_path.open("rb") as fh:
+                data = tomllib.load(fh).get("chain", {})
+        except tomllib.TOMLDecodeError as exc:
+            raise ProfileError(f"{cfg_path}: {exc}") from None
     name = profile or data.get("profile")
     if not name:
         raise ProfileError(f"no chain profile: pass --profile or set [chain] profile in {cfg_path}")

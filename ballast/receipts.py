@@ -39,7 +39,8 @@ def summarize(run: dict) -> dict:
 def score(run: dict) -> str:
     text = f"{run['passed']}/{run['counted_steps']} steps as expected"
     if run.get("observation_steps"):
-        text += f" + {run['observation_steps']} observation"
+        n = run["observation_steps"]
+        text += f" + {n} observation{'s' if n > 1 else ''}"
     checks = run.get("state_checks", [])
     if checks:
         text += f", {sum(1 for c in checks if c['ok'])}/{len(checks)} state checks"
@@ -96,7 +97,7 @@ STANDIN_NOTE = [
     "Measured on a **local** stand-in chain while the Portaldot V3 testnet is unreachable. Nothing in this",
     "section is a V3 measurement. The chain is a local `--dev` node: `scripts/check_receipts.py` re-fetches",
     "these rows from that node only, there is no public explorer for it, and a fresh node + spike run",
-    "produces new hashes (same steps, same outcomes). These rows are re-run on V3 once V3 is reachable.",
+    "produces new hashes (same steps, same outcomes). Re-running them on V3 is planned for when V3 is reachable.",
     "",
 ]
 

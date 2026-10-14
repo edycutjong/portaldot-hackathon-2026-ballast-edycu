@@ -1,4 +1,4 @@
-"""Minimal JSON-RPC over HTTP. Watchers poll; they never hold a subscription open."""
+"""Minimal JSON-RPC over HTTP: plain request/response polling, no subscriptions."""
 
 from __future__ import annotations
 

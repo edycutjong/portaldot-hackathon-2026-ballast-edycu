@@ -36,7 +36,7 @@ def main() -> int:
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
         ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
-    except (ProfileError, RpcError, OSError) as exc:
+    except (ProfileError, RpcError, OSError, ValueError) as exc:
         print(f"check_receipts: {exc}", file=sys.stderr)
         return 2
     print(ident.banner())

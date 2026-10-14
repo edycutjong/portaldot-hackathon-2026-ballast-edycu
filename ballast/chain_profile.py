@@ -103,8 +103,8 @@ PROFILES: dict[str, Profile] = {
             f"genesis hash, :code hash, decimals, block time and as_multi shape: {UNVERIFIED}",
             "URL and 14 decimals as published in the V3 testnet guide (github.com/ItsCogumellum/"
             f"portaldot-v3-testnet-guide@d671a32 §1.1), not yet checked by Ballast: {UNVERIFIED}",
-            "spec name portaldotV3 as reported by a third party (github.com/finfreedom/portaldot-ink-toolchain "
-            f"README, 2026-10-12), not yet checked by Ballast: {UNVERIFIED}",
+            "spec name portaldotV3 as reported by a third party (github.com/finfreedom/portaldot-ink-toolchain@33983ab "
+            f"README), not yet checked by Ballast: {UNVERIFIED}",
         ),
     ),
     "standin-upstream": Profile(

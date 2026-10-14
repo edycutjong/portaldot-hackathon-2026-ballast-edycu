@@ -99,3 +99,36 @@ def test_recorded_spike_receipts_decode_identically_offline(upstream_md):
             assert [o.as_dict() for o in multisig_inner_results(r["events"], md)] == r["inner"]
             seen.add(r["outcome"]["text"])
     assert {"Ok", "Err(Assets.NoPermission)", "Err(Assets.AssetNotLive)"} <= seen
+
+
+SPIKE_ORDER = ["fund", "create", "set_metadata", "set_team", "mint", "freeze", "watcher_thaw_asset",
+               "watcher_thaw_account", "mint_while_frozen", "transfer_frozen", "admin_thaw", "transfer_level"]
+
+
+def test_committed_spike_evidence_proves_the_role_split():
+    """Each committed run, re-scored from its own recorded receipts: a watcher alone froze the asset, no watcher could
+    thaw it, the frozen transfer failed, and only the admin's thaw let the same transfer through."""
+    import copy
+
+    from ballast.receipts import summarize
+
+    runs = [json.loads(p.read_text()) for p in sorted(EVIDENCE.glob("spike-assets-standin-upstream-*.json"))]
+    assert runs
+    for run in runs:
+        assert summarize(copy.deepcopy(run))["verdict"] == run["verdict"] == "PASS"
+        steps = {s["receipt"]["step"]: s for s in run["steps"]}
+        assert [s["receipt"]["step"] for s in run["steps"]] == SPIKE_ORDER
+        outcome = {k: s["receipt"]["outcome"]["text"] for k, s in steps.items()}
+        assert steps["freeze"]["signer_role"] == "W2" and outcome["freeze"] == "Ok"
+        assert "Assets.AssetFrozen" in steps["freeze"]["events_seen"]
+        assert outcome["watcher_thaw_asset"] == outcome["watcher_thaw_account"] == "Err(Assets.NoPermission)"
+        assert steps["watcher_thaw_asset"]["signer_role"] == steps["watcher_thaw_account"]["signer_role"] == "W1"
+        assert outcome["transfer_frozen"] == "Err(Assets.AssetNotLive)"
+        assert steps["admin_thaw"]["signer_role"] == "A" and outcome["admin_thaw"] == "Ok"
+        assert outcome["transfer_level"] == "Ok" and "Assets.Transferred" in steps["transfer_level"]["events_seen"]
+        assert all(c["ok"] for c in run["state_checks"])
+        statuses = [c["observed"] for c in run["state_checks"] if ".status " in c["what"]]
+        assert statuses == ["Frozen", "Frozen", "Live"]
+        # the frozen and the level transfer are the same call from the same holder
+        assert steps["transfer_frozen"]["receipt"]["call"] == steps["transfer_level"]["receipt"]["call"]
+        assert steps["transfer_frozen"]["receipt"]["signer"] == steps["transfer_level"]["receipt"]["signer"]

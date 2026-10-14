@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ballast"
+version = "0.0.1"
+description = "Reserve-gated wrapped-dollar circuit breaker on Portaldot's Assets + Multisig pallets"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "substrate-interface==1.8.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+ballast = "ballast.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ballast*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

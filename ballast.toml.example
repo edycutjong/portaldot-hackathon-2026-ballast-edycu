@@ -1,0 +1,5 @@
+# Copy to ballast.toml (gitignored). Every output is labelled with the profile name.
+[chain]
+# v3 | standin-upstream | standin-1002
+profile = "standin-upstream"
+url = "ws://127.0.0.1:49944"

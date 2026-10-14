@@ -2,14 +2,19 @@
 
 # Ballast
 
-**A reserve-gated circuit breaker for a test dollar, built on the Assets and Multisig pallets (so far demonstrated on a local stand-in chain, not Portaldot V3).**
+**A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. Everything measured so far ran on a local stand-in chain, not Portaldot V3.**
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
+![Tests: 259 passing](https://img.shields.io/badge/tests-259%20passing-brightgreen)
 ![Chain: stand-in, not V3](https://img.shields.io/badge/chain-stand--in%2C%20not%20V3-orange)
+![Reserve: local anvil, not Sepolia](https://img.shields.io/badge/reserve-local%20anvil%2C%20not%20Sepolia-orange)
 
-*Status: work in progress (Portaldot Hacker House 2026). The Assets + Multisig engine runs on a
-labelled local stand-in chain; the Portaldot V3 testnet was unreachable when probed on 2026-10-14 ([`evidence/v3-probe-2026-10-14.txt`](evidence/v3-probe-2026-10-14.txt)).*
+*Portaldot Hacker House 2026 · check-in build. The Portaldot V3 testnet was unreachable when probed on 2026-10-14
+([`evidence/v3-probe-2026-10-14-p5.txt`](evidence/v3-probe-2026-10-14-p5.txt)), so the breaker is demonstrated on a labelled
+local stand-in chain against a local anvil reserve chain. No Sepolia vault is deployed yet. Every receipt says which chain it came from.*
+
+![Ballast architecture](docs/architecture.png)
 
 </div>
 
@@ -22,157 +27,215 @@ labelled local stand-in chain; the Portaldot V3 testnet was unreachable when pro
 ### Problem Statement
 
 As far as we found, Portaldot has no stable unit of account. POT is volatile, so a dApp that wants to price in dollars has nothing to
-price with. The realistic first step is a **custodial wrapped dollar**, and its failure mode is silent: if the
-custodian's reserves drain, every holder keeps trading an IOU that is already worth less than its face value.
+price with. The realistic first step is a **custodial wrapped dollar**, and its failure mode is silent: if the custodian's reserves drain,
+every holder keeps trading an IOU that is already worth less than its face value.
 
 ### Solution
 
-Ballast defines **pUSDC-test**, a clearly labelled test asset on the Assets pallet (so far created only on the local
-stand-in chain, not Portaldot V3), intended to be backed 1:1 by Circle test USDC held in a small vault contract on
-Sepolia. Safety is meant to come from role separation that the pallet enforces (shown on the stand-in), not from promises; whether V3 exposes
-the same calls is `UNVERIFIED`:
+Ballast defines **pUSDC-test**, a clearly labelled test asset on the Assets pallet, meant to be backed 1:1 by test USDC in a small vault
+contract on an EVM chain (Sepolia is the target; the drills use a local anvil chain). Safety comes from role separation that the pallet
+enforces, not from promises:
 
-1. **Breaker:** the Assets *freezer* role belongs to a 1-of-N watcher multisig. A watcher can freeze the asset and
-   its thaw attempts are refused (stand-in receipts 890-2, 891-2), so a reserve shortfall cannot spread without leaving a public on-chain freeze (shown on the stand-in only; planned for V3).
-2. **Admin thaw:** the freezer cannot thaw; the asset admin can (stand-in).
-3. **Reserve-gated mint** (planned): the issuer is a multisig in which a reserve bot is a mandatory co-signer.
+1. **Breaker.** The Assets *freezer* is a 1-of-N watcher multisig (`M_watch`, `Multisig.as_multi_threshold_1`). A watcher that sees the
+   reserve fall below supply freezes the asset; every transfer is then refused (`Assets.AssetNotLive` on the stand-in). The freezing
+   extrinsic carries the reason as a `BALLAST/1|freeze` remark.
+2. **Inert freezer.** A watcher cannot thaw, mint, transfer or re-team: its thaw attempts fail with `Assets.NoPermission`.
+3. **Reserve-gated mint.** The issuer is a 2-of-2 multisig (`M_mint`, {operator A, reserve bot B}). The bot co-signs a mint only if
+   *finalized* reserves cover supply plus the amount, and never while the asset is frozen.
+4. **Gated thaw.** The asset admin is a 2-of-3 multisig (`M_admin`). The bot co-signs a thaw only after finality has passed the drain block
+   and finalized reserves cover supply again.
+5. **Public record.** The bot posts `BALLAST/1` attestations (and a heartbeat) as on-chain remarks and mirrors each one into a
+   `ReserveOracle` contract; `ballast verify` re-reads both chains by block hash and rejects remarks from the wrong signer.
 
-Only part 1 and the freezer/admin split of part 2 exist today, and only on a stand-in chain (see
-[Roadmap](#roadmap)). The core flow we are building toward is: *reserves drop on Sepolia, the watchdog freezes
-pUSDC-test on Portaldot, a holder's transfer fails, the admin multisig thaws once reserves are restored.*
+The core flow, shown end to end by `scripts/role_drill.py`: *reserves drop, a watcher freezes pUSDC-test on the Portaldot side, a holder's
+transfer fails, reserves come back, finality passes, the admin multisig thaws with the bot's co-signature.*
 
-**Trust model, stated plainly:** Ballast is **not a trustless bridge**. Custody is trusted: whoever owns the vault can
-move the reserves. Ballast does not prevent that; it makes it visible and stops the shortfall from being minted
-over or spreading. In this build one person holds the operator keys, so the separation of the bot key is a production
-property, not a property of the demo. Everything is also subject to the chain's Root origin (`force_asset_status`),
-whose holder on the V3 testnet is `UNVERIFIED`.
+**Trust model, stated plainly:** Ballast is **not a trustless bridge**. Custody is trusted: whoever owns the vault can move the reserves.
+Ballast does not prevent that; it makes it visible and stops the shortfall from being minted over or spreading. In this build one person holds
+every operator key (A, A2, B and both watchers), so the separation is enforced by the runtime, not by independent humans. Everything is also
+subject to the chain's Root origin (`force_asset_status`); who holds Root on the V3 testnet is `UNVERIFIED`.
 
 ### Blockchain Relevance
 
-The breaker is assembled from pallet-native modules (Assets roles, Multisig), demonstrated on the upstream stand-in
-(V3 availability `UNVERIFIED`), with no contract code in the enforcement path, and it freezes at the asset level, so every transfer is refused rather than one pool. An EVM
-status oracle on V3's EVM/Revive layer (if present, `UNVERIFIED`) is planned as a read-only mirror, never as the enforcement point.
+The breaker is assembled from pallet-native modules (Assets roles, Multisig, System remarks), with no contract code in the enforcement path,
+and it freezes at the asset level, so every transfer is refused rather than one pool's. The one contract that targets Portaldot's EVM layer,
+`ReserveOracle`, is a read-only mirror so EVM dApps can ask `isBacked(maxAge)`; it cannot freeze or thaw anything. It has only been deployed
+on the stand-in's `Revive` pallet; whether V3 accepts the same deployment is `UNVERIFIED`.
 
 ## Technical Architecture
 
+Full write-up generated from the code: [`ARCHITECTURE.md`](ARCHITECTURE.md) (components, role map, invariants with the file that enforces each,
+what is not built). Diagram source: [`docs/architecture.mmd`](docs/architecture.mmd).
+
 ```mermaid
 flowchart LR
-  subgraph exists["Exists today (stand-in chain, not V3)"]
-    CLI["ballast CLI + chain profiles<br/>(ballast/)"]
-    SPIKE["scripts/spike_assets.py"]
-    NODE["substrate-node --dev<br/>Assets · Multisig · Utility"]
-    REC["docs/RECEIPTS.md<br/>evidence/*.json"]
-    CLI --> NODE
-    SPIKE --> NODE
-    SPIKE --> REC
+  subgraph RES["Reserve chain (drills: local anvil, NOT Sepolia)"]
+    VAULT["ReserveVault.sol<br/>reserves() · release() owner-only"]
   end
-  subgraph planned["Planned (not built yet)"]
-    WD["watchdog"]
-    VAULT["ReserveVault.sol<br/>(Sepolia)"]
-    BOT["reserve bot<br/>(mint gate)"]
-    ORA["ReserveOracle.sol<br/>(V3 Revive)"]
+  subgraph PROC["Off-chain processes (ballast CLI, one key each)"]
+    WD["watchdog (W1, W2)<br/>freeze only"]
+    BOT["reserve bot (B)<br/>co-signs mint · thaw · set_team"]
+    ATT["attester (B)<br/>BALLAST/1 remarks + oracle mirror"]
+    OP["operator (A, A2)<br/>proposes"]
+    VER["ballast verify"]
   end
-  WD -. reads reserves .-> VAULT
-  WD -. freeze_asset .-> NODE
-  BOT -. co-signs mint .-> NODE
-  BOT -. mirrors status .-> ORA
+  subgraph PD["Portaldot chain (stand-in, NOT V3)"]
+    ASSET["Assets: pUSDC-test (asset 1)<br/>issuer M_mint · admin M_admin · freezer M_watch"]
+    MWATCH["M_watch 1-of-2"]
+    MMINT["M_mint 2-of-2 {A, B}"]
+    MADMIN["M_admin 2-of-3 {A, A2, B}"]
+    REMARK["BALLAST/1 remarks"]
+    ORACLE["ReserveOracle.sol (Revive)"]
+  end
+  VAULT -- "balanceOf" --> WD
+  VAULT -- "balanceOf, finalized + latest" --> BOT
+  WD -- "as_multi_threshold_1(freeze_asset)" --> MWATCH --> ASSET
+  OP -- "first approval" --> MMINT
+  OP -- "first approval" --> MADMIN
+  BOT -- "final approval, gated" --> MMINT
+  BOT -- "final approval, gated" --> MADMIN
+  MMINT -- "mint" --> ASSET
+  MADMIN -- "thaw_asset" --> ASSET
+  ATT --> REMARK
+  ATT -- "after inclusion" --> ORACLE
+  VER -. reads both chains .-> REMARK
 ```
 
 **Core tech stack**
 
 | Layer | Choice | State |
 |---|---|---|
-| Blockchain platform | **Portaldot V3 testnet** (target) | unreachable; not measured |
-| Chain used so far | `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** | running locally |
-| Runtime modules | Assets, Multisig, Utility (pallet-native) | used by the spike |
-| Client | Python 3.11+, `substrate-interface` 1.8.1, `scalecodec` 1.2.12 | built |
-| Contract language | Solidity (`ReserveVault` on Sepolia, `ReserveOracle` on Revive) | planned (P3–P4) |
-| Reserve chain | Ethereum Sepolia, Circle test USDC | planned (P3–P4) |
-| Frontend | none yet | planned |
+| Blockchain platform | **Portaldot V3 testnet** (target) | unreachable on 2026-10-14; nothing measured on it |
+| Chain used | `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** | running locally |
+| Runtime modules | Assets, Multisig, Utility, System, Revive (pallet-native) | used by the code and the drills |
+| Client | Python 3.11+, `substrate-interface` 1.8.1, `scalecodec` 1.2.12, `web3` 7 | built |
+| Contract language | Solidity 0.8.24: `ReserveVault` (Foundry), `ReserveOracle` (Hardhat) | built; vault on local anvil only, oracle on the stand-in's Revive only |
+| Reserve chain | local anvil (drills); Ethereum Sepolia + Circle test USDC (target) | Sepolia read-only so far |
+| Frontend | none | not built |
 
-**Chain profiles.** The code identifies the chain it is talking to by genesis hash and runtime `:code` hash and
-refuses a mismatch. Every output carries the profile label. Block-count parameters are derived from the measured
-block time of the chain in use: on the stand-in (3000 ms blocks, measured over 20 blocks) that gives a ~10 minute
-heartbeat of 200 blocks, 600 for the stale-heartbeat rule, 28,800 for the wind-down window and 2 for the polling
-interval. The `v3` profile is a stub whose unknown values read `UNVERIFIED (V3 day-0)`.
+**Chain profiles.** The code identifies the chain by genesis hash and runtime `:code` hash and refuses a mismatch; every output carries the
+profile label. Block-count parameters are derived from the measured block time of the chain in use: on the stand-in (3000 ms blocks, measured
+over 20 blocks) that is a heartbeat H = 200 blocks (~10 min), K = 600 for the stale-heartbeat rule, W = 28,800 for the wind-down window and a
+polling step N = 2. The `v3` profile is a stub whose unknown values read `UNVERIFIED (V3 day-0)`.
 
 ## Smart Contracts
 
-Ballast is **pallet-native** so far: there is no deployed contract. `contracts/` is empty on purpose.
+Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are the reserve vault and the read-only oracle.
 
 | Pallet call | Used for | Result on the stand-in |
 |---|---|---|
-| `Assets.create`, `set_metadata`, `set_team` | create `pUSDC-test`, set issuer / admin / freezer | Ok |
-| `Assets.mint` | issue test supply to a holder | Ok |
-| `Multisig.as_multi_threshold_1(Assets.freeze_asset)` | watcher freezes the asset through the 1-of-2 `M_watch` multisig | Ok, `AssetFrozen` |
-| `Multisig.as_multi_threshold_1(Assets.thaw_asset)` / `Assets.thaw` | watcher tries to thaw | refused, `Assets.NoPermission` |
+| `Assets.create`, `set_metadata`, `set_team`, `transfer_ownership` | create `pUSDC-test`, move owner/issuer to `M_mint`, admin to `M_admin`, freezer to `M_watch` | Ok |
+| `Multisig.as_multi` (first + final approval) wrapping `Assets.mint` | reserve-gated mint | executes only with the bot's final approval |
+| `Multisig.as_multi_threshold_1(Assets.freeze_asset)` | a watcher freezes through `M_watch`, inside `Utility.batch_all` with a `System.remark_with_event` reason | Ok, `AssetFrozen` |
+| `Multisig.as_multi_threshold_1(Assets.thaw_asset)` | a watcher tries to thaw | refused, `Assets.NoPermission` |
 | `Assets.transfer` while frozen | holder transfer during a freeze | refused, `Assets.AssetNotLive` |
-| `Assets.thaw_asset` by the admin, then `Assets.transfer` | control | Ok |
-| `Utility.batch_all` | fund the demo accounts | Ok |
+| `Multisig.as_multi(Assets.thaw_asset)` via `M_admin` | gated thaw | executes only with the bot's final approval |
+| `Multisig.as_multi(Assets.set_team)` via `M_mint` | team change | co-signed only if issuer stays `M_mint`, admin stays `M_admin`, freezer unchanged |
+| `System.remark_with_event` | `BALLAST/1` attestations, heartbeats, freeze reasons | Ok, `System.Remarked` |
+| `Revive.map_account`, `instantiate_with_code`, `call` | deploy and post to `ReserveOracle` | Ok, `Revive.ContractEmitted` |
 
-Every step is a real extrinsic. The latest run is tabulated with extrinsic id, block hash and tx hash in
-[`docs/RECEIPTS.md`](docs/RECEIPTS.md); all four runs are in raw JSON in [`evidence/`](evidence/). These are **stand-in receipts, not
-V3**: the stand-in is a local `--dev` node, there is no public explorer for it, and a fresh node run produces new
-hashes. V3 asset and account IDs: none yet.
+| Contract | Key functions | Tests | Where it has been deployed |
+|---|---|---|---|
+| [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) only. **Not on Sepolia** |
+| [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | the stand-in's Revive pallet only. **Not on V3** |
 
-Observed on the stand-in only (not V3): `mint` while the asset is frozen is also refused (`Assets.AssetNotLive`), and
-the 1-of-2 multisig emits `MultisigExecuted` with the locally derived multisig address.
+A multisig can report `MultisigExecuted` while the call inside it failed, so every receipt records the *inner* result; for example the freezer's
+thaw shows `Err(Assets.NoPermission)` inside an outer `Ok`.
 
-**Planned:** `contracts/ReserveVault.sol` (Sepolia, holds the test USDC) and `contracts/ReserveOracle.sol` (V3 Revive,
-read-only status mirror). Neither exists yet.
+**Receipts.** Every step is a real extrinsic or a real anvil transaction, tabulated with extrinsic id, block hash and tx hash in
+[`docs/RECEIPTS.md`](docs/RECEIPTS.md), with raw JSON in [`evidence/`](evidence/). `python scripts/check_receipts.py` re-fetches them from the
+chains that recorded them: **486/486 stand-in extrinsics and 111/111 anvil transactions** at the last run
+([`evidence/test-run-2026-10-14-p5.txt`](evidence/test-run-2026-10-14-p5.txt)). These are **stand-in receipts, not V3**: the stand-in is a local
+`--dev` node with no public explorer, and a fresh node run produces new hashes. V3 asset, account and contract IDs: none.
+
+**Sepolia.** The reserve reader works against the real Sepolia USDC contract through two keyless providers (publicnode and drpc agree on
+finalized block #11913933, `evidence/sepolia-crosscheck-2026-10-14-p5.json`). The deployer wallet holds 20.00 test USDC, below the 100.00 the
+plan needs, so **no `ReserveVault` has been deployed or funded on Sepolia and no drill has run against it.**
 
 ## Installation & Setup
 
-**Requirements:** Python 3.11+, `curl`, `lsof`. For the local stand-in node: the prebuilt `substrate-node` binary for
-`polkadot-stable2606-3` (see `scripts/standin_node.sh`: release URL in the header, sha256 in the `SHA256=` default). It was tested on
-macOS arm64 only. The tests need no node.
+**Requirements:** Python 3.11+, Node.js and npm (tested on v22), [Foundry](https://getfoundry.sh) (`forge`, `anvil`), `curl`, `lsof`. The stand-in node needs
+the prebuilt `substrate-node` for `polkadot-stable2606-3` (release URL and sha256 in the header of `scripts/standin_node.sh`); tested on macOS arm64
+only. The unit tests need no node.
 
 ```bash
-# the repo is private until submission; it goes public after a leak scan
-git clone https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu.git
+git clone --recurse-submodules https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu.git
 cd portaldot-hackathon-2026-ballast-edycu
 
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
-cp ballast.toml.example ballast.toml     # profile = standin-upstream, ws://127.0.0.1:49944
+cp ballast.toml.example ballast.toml        # profile = standin-upstream, ws://127.0.0.1:49944
 
-pytest -q                                # 52 tests, offline (metadata fixtures are sha256-pinned)
+pytest -q                                   # 224 tests, offline (metadata fixtures are sha256-pinned)
+forge test                                  # 20 ReserveVault tests
+npm ci && npx hardhat test                  # 15 ReserveOracle tests
 
-# stand-in chain (download the node binary first, see scripts/standin_node.sh)
-scripts/standin_node.sh start            # RPC on 127.0.0.1:49944, no peers
-ballast chain                            # identify the chain, print its label and block-derived constants
-python scripts/spike_assets.py           # the Assets + Multisig spike; prints one line per extrinsic
-python scripts/check_receipts.py         # re-fetch receipts by extrinsic id; matches only the node that recorded them
-scripts/standin_node.sh stop
+# the stand-in chain and the local reserve chain (download the node binary first, see scripts/standin_node.sh)
+scripts/standin_node.sh start               # RPC on 127.0.0.1:49944, no peers
+scripts/anvil_local.sh start                # local anvil on 127.0.0.1:49545, chain id 31337
+ballast chain                               # identify the chain, print its label and block-derived constants
+
+python scripts/spike_assets.py              # Assets + Multisig spike: freeze, refused thaw, refused transfer, admin thaw
+ballast drill --scenario drain              # drain a local vault -> a watcher freezes -> the judge's transfer is refused
+ballast drill --scenario outage             # every provider unreachable -> fail-closed freeze (15 s drill override)
+ballast drill --scenario heartbeat          # the bot goes silent -> freeze (K = 10 blocks, drill override)
+
+python scripts/setup_roles.py               # ONCE per chain: role split, control asset, vault, oracle -> deployments/<profile>.json
+python scripts/role_drill.py                # gated mint, refused over-mint, freeze, gated thaw, team gate
+python scripts/attest_drill.py              # attestations, oracle mirror, `ballast verify`, forged remark REJECTED
+
+ballast verify                              # re-check every BALLAST/1 remark on both chains
+python scripts/check_receipts.py            # re-fetch every receipt by extrinsic id
+scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 ```
 
-The spike regenerates `docs/RECEIPTS.md` from `evidence/` (newest run first) and writes `evidence/spike-assets-<profile>-asset<id>.json`. Demo
-accounts are deterministic dev URIs and the scripts refuse to use them on a non-stand-in profile. No deployment step
-exists yet because there are no contracts; there is no frontend to launch.
+The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
+non-stand-in profile. `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
+`SEPOLIA_*` variables from a file outside the tree (names in `.env.example`). The oracle's V3 deployment path (Hardhat against the V3 EVM RPC)
+is not written because V3 was unreachable. There is no frontend to launch.
 
 ## Demo
 
-- **Video:** coming at check-in.
+- **Video:** coming at check-in (≤ 3 min, stand-in labelled on screen).
 - **Live demo:** none. The stand-in chain is local and the V3 testnet is unreachable.
-- **Test accounts / data:** deterministic dev keys on the stand-in only; see [`docs/RECEIPTS.md`](docs/RECEIPTS.md)
-  for the latest run (asset id, extrinsic ids, hashes).
+- **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
+  and the commands above on a fresh node.
+- **The drill in numbers** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
+  drain to freeze included took 5.48 s in the latest role-split drill and 6.33 s in the latest scratch-asset drill (3 Portaldot blocks between
+  the head before the drain and the freeze). `ballast verify` over the whole stand-in history: 25/25 bot attestations pass on both chains, 6 forged
+  remarks REJECTED, 0 FAIL or FLAGGED ([`evidence/verify-standin-upstream-p5-fullrange.json`](evidence/verify-standin-upstream-p5-fullrange.json)).
+- **Test accounts / data:** deterministic dev keys on the stand-in only. Public role addresses are in
+  [`deployments/standin-upstream.json`](deployments/standin-upstream.json).
 
 ## Roadmap
 
-**Completed**
-- [x] Scaffold, MIT license, offline test suite (52 tests)
-- [x] Chain profiles (`v3` stub, `standin-upstream`, `standin-1002`) with genesis / `:code` identification and
-      block-time-derived constants
-- [x] Assets role split + watcher-set freeze, end to end on the stand-in: freeze, refused thaw by the freezer,
-      refused frozen transfer, admin thaw control (4 fresh runs, 48 receipts re-fetched by extrinsic id)
+**Completed (all on the stand-in; none on V3)**
+- [x] Chain profiles (`v3` stub, `standin-upstream`, `standin-1002`), genesis / `:code` identification, block-time-derived constants
+- [x] Assets role split + watcher-set freeze, refused freezer thaw, refused frozen transfer, admin thaw (6 spike runs, 5 PASS and 1 recorded FAIL kept as history)
+- [x] `ReserveVault` + 20 Foundry tests; reserve reader on two providers with block-hash pinning; watchdog with deficit, fail-closed and heartbeat rules
+- [x] `ReserveOracle` + 15 Hardhat tests; deployed on the stand-in's Revive pallet
+- [x] Multisig role split (`M_mint` 2-of-2, `M_admin` 2-of-3, `M_watch` 1-of-2), reserve bot with mint / thaw / set_team gates, SQLite decision log
+- [x] `BALLAST/1` attestations, oracle mirror after inclusion, `ballast verify` with per-type signers and a forged-remark negative control
+- [x] 259 automated tests (224 pytest + 20 forge + 15 Hardhat)
 
 **Next phase**
-- [ ] `ReserveVault.sol` + Foundry tests; Sepolia reader on two providers; watchdog and `ballast drill`
-- [ ] `ReserveOracle.sol` + Hardhat tests
-- [ ] Multisig role split (`M_mint`, `M_admin`, `M_watch`), reserve bot with the mint gate, Sepolia deploy
-- [ ] On-chain attestations and `ballast verify`
-- [ ] Re-run everything on the Portaldot V3 testnet once it is reachable and funded (day-0 checks are
-      `UNVERIFIED`: Multisig availability, freezer-cannot-thaw, block time)
+- [ ] Deploy `ReserveVault` on Sepolia with 100.00 test USDC and run the drill against it, including the finality wait (needs faucet claims)
+- [ ] Re-run everything on the Portaldot V3 testnet once it is reachable and funded; day-0 checks `UNVERIFIED`: Multisig availability, freezer-cannot-thaw, EVM-bytecode support in Revive, block time
+- [ ] A watcher on separate infrastructure (today both watchers run on one machine)
+- [ ] Community-watcher mode, watcher-set rotation, `M_admin` rotation, wind-down branch, `ReserveOracle.trip()`
+- [ ] Benchmarks over many drills, reserves page
+
+**Honest limitations**
+- Custody is trusted: the vault owner can move reserves. Ballast makes that visible and stops the shortfall from spreading.
+- Freezing reads **latest** reserve state and can false-trip on a reorg; recovery is a thaw by `M_admin` once finalized reserves cover supply
+  (a multisig round-trip). Mints and thaws use **finalized** state.
+- The admin multisig is 2-of-3 {A, A2, B}: A and A2 can thaw without the bot. `ballast verify` flags such a thaw unless an `override` remark
+  precedes it, but nothing on chain requires the remark. Losing B ends minting and re-teaming (owner and issuer are `M_mint`).
+- Root can override every role. The off-chain pieces (watchdog, bot, attester) enforce nothing while stopped; the heartbeat rule makes a silent
+  bot visible by freezing, but only if a watcher is running.
+- `ReserveOracle` is as fresh as the bot's last post; `isBacked(maxAge)` reads `false` when stale, never "backed" by default.
+- The drills use drill overrides where noted (fail-closed 15 s instead of 300 s, K = 10 instead of 600) and a mock token on a local anvil
+  chain, whose finality is emulated by mining 65 blocks. Sepolia's real finality (~13-19 min) has not been exercised in a drill.
 
 ## Team
 
@@ -180,10 +243,10 @@ exists yet because there are no contracts; there is no frontend to launch.
 - **Members & roles:** edycu, solo (design, architecture, role map and on-chain design decisions, review)
 - **Contact (hackathon only):** GitHub [@edycutjong](https://github.com/edycutjong)
 
-**AI assistance disclosure.** This project was built with Claude Code (Anthropic). Most of the code and the tests
-were drafted with AI assistance and reviewed by the author. The architecture, the role map and the on-chain design
-decisions are the author's. Libraries used: `substrate-interface` / `scalecodec`, `xxhash`, `pytest`;
-the stand-in node is the upstream `polkadot-sdk` `substrate-node` binary, unmodified.
+**AI assistance disclosure.** This project was built with Claude Code (Anthropic). Most of the code, the tests and the prose were drafted with
+AI assistance and reviewed by the author. The architecture, the role map and the on-chain design decisions are the author's. Libraries used:
+`substrate-interface` / `scalecodec`, `web3`, `xxhash`, `pytest`, Foundry and `forge-std`, Hardhat; the stand-in node is the upstream
+`polkadot-sdk` `substrate-node` binary, unmodified.
 
 ## License
 

@@ -1,0 +1,14 @@
+# P5 evidence refresh — 2026-10-14T15:11:00Z — HEAD b8b57d1 — standin-upstream (NOT V3), reserve local-anvil (NOT Sepolia)
+$ pytest -q
+224 passed in 3.46s
+$ forge test
+Suite result: ok. 20 passed; 0 failed; 0 skipped; finished in 20.97ms (47.36ms CPU time)
+Ran 1 test suite in 24.93ms (20.97ms CPU time): 20 tests passed, 0 failed, 0 skipped (20 total tests)
+$ npx hardhat test
+  15 passing (578ms)
+$ python scripts/check_receipts.py
+[standin-upstream | STAND-IN, NOT V3] genesis 0x0c4402ef… spec node/268 head #7071
+[standin-upstream] 486/486 receipts confirmed from 46 run(s)
+[reserve http://127.0.0.1:49545] 111/111 reserve-chain txs confirmed
+$ ballast verify (full range)
+PASS: 25/25 B attestations PASS · 6 REJECTED (not counted) · 0 FAIL/FLAGGED · {'team:OK': 5, 'owner:OK': 1, 'freeze:ACCEPTED': 5, 'thaw:OK': 5, 'attest:PASS': 19, 'freeze:IGNORED': 4, 'watchers:PASS': 6, 'evm-attester:PASS': 6, 'heartbeat:PASS': 6, 'attest:REJECTED': 6, 'oracle-post:OK': 25}

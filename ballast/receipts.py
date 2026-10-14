@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -180,11 +181,16 @@ def render_oracle_section(run: dict) -> list[str]:
 
 
 def v3_probe_line() -> list[str]:
-    probes = sorted(EVIDENCE.glob("v3-probe-*.txt"))
+    def stamp(path: Path) -> str:  # the probe's own UTC time from its first line, e.g. 2026-10-14T11:41:33Z
+        found = re.search(r"\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?Z", path.read_text().splitlines()[0])
+        return found.group(0) if found else ""
+
+    probes = sorted(EVIDENCE.glob("v3-probe-*.txt"), key=stamp)
     if not probes:
         return []
-    first = probes[-1].read_text().splitlines()[0].lstrip("# ").strip()
-    return [f"Latest V3 reachability probe: [`evidence/{probes[-1].name}`](../evidence/{probes[-1].name}) ({first}).", ""]
+    latest = probes[-1]
+    first = latest.read_text().splitlines()[0].lstrip("# ").strip()
+    return [f"Latest V3 reachability probe: [`evidence/{latest.name}`](../evidence/{latest.name}) ({first}).", ""]
 
 
 STANDIN_NOTE = [
@@ -201,8 +207,9 @@ def render_receipts_md() -> str:
     out = [
         "# Receipts",
         "",
-        "Every row below is a real extrinsic, identified by extrinsic id (`block-index`). Decoded events are",
-        "in the linked JSON; `python scripts/check_receipts.py` re-fetches every row from the chain it ran on.",
+        "Every extrinsic row below is a real extrinsic, identified by extrinsic id (`block-index`); decoded events are",
+        "in the linked JSON. `python scripts/check_receipts.py` re-fetches every extrinsic from the chain it ran on and",
+        "every drill reserve-chain tx from the local anvil. Read-only Sepolia reads are listed first.",
         "",
     ]
     if not runs:
@@ -257,7 +264,7 @@ def render_sepolia_reads() -> list[str]:
         out += [
             f"- [`evidence/{f.name}`](../evidence/{f.name}) — read at {cc.get('read_at')}: finalized block "
             f"#{cc.get('block_number')} via {len(cc.get('providers', {}))} providers — "
-            f"{'AGREE' if cc.get('agree') else 'DISAGREE'} ({rows}). Holder: {rep.get('note', rep.get('holder'))}",
+            f"{'AGREE' if cc.get('agree') else 'DISAGREE'} ({rows}). Note: {rep.get('note', 'holder ' + str(rep.get('holder')))}",
         ]
     return out + [""]
 

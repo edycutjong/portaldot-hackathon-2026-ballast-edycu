@@ -187,7 +187,7 @@ class ReserveBot:
                 "team_problems": problems}
 
     def finalized(self) -> Finalized:
-        fin = read_finalized(self.providers, self.dep.reserve["token"], self.dep.reserve["vault"])
+        fin = read_finalized(self.providers, self.dep.reserve["erc20"], self.dep.reserve["vault"])
         self.store.readings(fin.readings)
         return fin
 

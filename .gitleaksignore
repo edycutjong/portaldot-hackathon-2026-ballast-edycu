@@ -1,2 +1,5 @@
 # Public Substrate storage key twox128("Timestamp")++twox128("Now") — not a secret (now derived at import).
 7e75ebaed71ae5378249219d7f25e7155c76848c:ballast/chain_profile.py:generic-api-key:21
+# Public local-anvil MockUSDC contract address under a JSON key named "token" (not a secret); the key is "erc20" now.
+39890a1149ecac67cedeb61ae70c275b569bb5b8:deployments/standin-upstream.json:generic-api-key:65
+dc0338c421a325a631ac0cb36eb56fa5f6df8eca:evidence/roles-drill-standin-upstream-20261014T124759Z.json:generic-api-key:86

@@ -221,7 +221,7 @@ def main() -> int:
             profile=profile.name, genesis_hash=ident.facts.genesis_hash, breaker=BREAKER, control=CONTROL,
             decimals=DECIMALS, s2=S2, roles=rm.as_dict(),
             reserve={"label": run["reserve"]["label"], "evm_chain_id": evm_chain, "vault": vault_addr,
-                     "token": usdc_addr, "custodian": custodian, "providers": [f"anvil={args.evm_url}"]},
+                     "erc20": usdc_addr, "custodian": custodian, "providers": [f"anvil={args.evm_url}"]},
             oracle={"address": contract, "attester": attester, "chain": profile.label},
             created_at=now(), setup_evidence=f"roles-setup-{profile.name}.json")
     except Exception as exc:  # noqa: BLE001 — keep every receipt that landed

@@ -86,7 +86,7 @@ def main() -> int:
     role_of = {rm.a: "A (operator)", rm.a2: "A2 (cold key)", rm.b: "B (reserve bot)", rm.watchers[0]: "W1 (watcher)",
                rm.watchers[1]: "W2 (watcher)", judge: "Judge", peer: "Peer"}
     forge_build()
-    usdc = w3.eth.contract(address=dep.reserve["token"], abi=artifact("MockUSDC")[0])
+    usdc = w3.eth.contract(address=dep.reserve["erc20"], abi=artifact("MockUSDC")[0])
     vault = w3.eth.contract(address=dep.reserve["vault"], abi=artifact("ReserveVault")[0])
     custodian = dep.reserve["custodian"]
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
@@ -201,7 +201,7 @@ def main() -> int:
         for i, uri in ((1, "//BallastW1"), (2, "//BallastW2")):
             log = ROOT / "evidence" / f"{stem}.w{i}.jsonl"
             cmd = base + ["watch", "--breaker", str(dep.breaker), "--supply-assets", f"{dep.breaker},{dep.control}",
-                          "--holder", dep.reserve["vault"], "--token", dep.reserve["token"], "--watcher", uri,
+                          "--holder", dep.reserve["vault"], "--token", dep.reserve["erc20"], "--watcher", uri,
                           "--watchers", "//BallastW1,//BallastW2", "--provider", f"anvil={args.evm_url}",
                           "--until-frozen", "--max-seconds", str(args.timeout), "--timeout", "3",
                           "--max-block-age", "0", "--log", str(log.relative_to(ROOT))]

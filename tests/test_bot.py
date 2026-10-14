@@ -138,11 +138,17 @@ def test_freeze_anchor_trusts_only_a_watcher_remark_in_the_freezing_extrinsic(mo
     assert run(W, 2)["eb"] is None  # another extrinsic in the block
 
 
-def test_set_team_gate_only_with_issuer_and_freezer_unchanged():
-    cur = {"issuer": M_MINT, "freezer": W}
-    assert set_team_gate(cur, {"issuer": M_MINT, "freezer": W, "admin": A}, M_MINT).sign
-    assert not set_team_gate(cur, {"issuer": A, "freezer": W}, M_MINT).sign
-    assert not set_team_gate(cur, {"issuer": M_MINT, "freezer": A}, M_MINT).sign
+M_ADMIN = Keypair.create_from_uri("//m_admin").ss58_address
+
+
+def test_set_team_gate_only_for_the_role_map():
+    cur = {"issuer": M_MINT, "freezer": W, "admin": M_ADMIN}
+    assert set_team_gate(cur, {"issuer": M_MINT, "freezer": W, "admin": M_ADMIN}, M_MINT, M_ADMIN).sign
+    assert not set_team_gate(cur, {"issuer": A, "freezer": W, "admin": M_ADMIN}, M_MINT, M_ADMIN).sign
+    assert "freezer would change" in set_team_gate(cur, {"issuer": M_MINT, "freezer": A, "admin": M_ADMIN},
+                                                   M_MINT, M_ADMIN).reason
+    g = set_team_gate(cur, {"issuer": M_MINT, "freezer": W, "admin": A}, M_MINT, M_ADMIN)  # B1: admin swap
+    assert not g.sign and "admin must stay M_admin" in g.reason
 
 
 def test_parse_amount():
@@ -194,21 +200,22 @@ def fresh(name, finalized, latest, balances, down=False):
 
 def test_view_refuses_when_any_provider_is_down():
     a = fresh("drpc", (100, H1), (110, H2), {H1: 2 * S, H2: 2 * S})
-    v = read_view([a, FakeRpc("publicnode", {}, {}, down=True)], USDC_ADDR, VAULT, max_finalized_age_s=None)
+    v = read_view([a, FakeRpc("publicnode", {}, {}, down=True)], USDC_ADDR, VAULT, max_finalized_age_s=None,
+                  max_latest_age_s=None)
     assert not v.ok and "provider(s) without a valid" in v.reason
 
 
 def test_view_reads_finalized_and_latest_from_every_provider():
     a = fresh("drpc", (100, H1), (110, H2), {H1: 2 * S, H2: S})
     b = fresh("publicnode", (100, H1), (110, H2), {H1: 2 * S, H2: S})
-    v = read_view([a, b], USDC_ADDR, VAULT, max_finalized_age_s=None)
+    v = read_view([a, b], USDC_ADDR, VAULT, max_finalized_age_s=None, max_latest_age_s=None)
     assert v.ok and v.finalized.reserves == 2 * S and v.latest.reserves == S
     assert v.finalized.block_timestamp == 1_760_000_100
 
 
 def test_view_refuses_a_stale_finalized_block():
     a = fresh("drpc", (100, H1), (110, H2), {H1: 2 * S, H2: 2 * S})
-    v = read_view([a], USDC_ADDR, VAULT, max_finalized_age_s=3600)  # FakeRpc blocks are dated 2025
+    v = read_view([a], USDC_ADDR, VAULT, max_finalized_age_s=3600, max_latest_age_s=None)  # blocks dated 2025
     assert not v.ok and "stale" in v.finalized.readings[0]["error"] and v.latest.ok
 
 
@@ -220,3 +227,43 @@ def test_store_records_execution_outcome_and_oracle_mirror(tmp_path):
     st.attestation(kind="attest", remark="x", remark_tx="20-2")
     st.set_oracle_tx("20-2", "21-2")
     assert st.rows("attestation")[0]["oracle_tx"] == "21-2"
+
+
+def test_view_refuses_a_stale_latest_or_latest_below_finalized():
+    import time
+    now = int(time.time())
+
+    class Rpc(FakeRpc):
+        def __init__(self, name, blocks, balances, ages):
+            super().__init__(name, blocks, balances)
+            self.ages = ages
+
+        def call(self, method, params):
+            out = super().call(method, params)
+            if method == "eth_getBlockByNumber":
+                out["timestamp"] = hex(now - self.ages[params[0]])
+            return out
+
+    a = Rpc("drpc", {"finalized": (100, H1), "latest": (110, H2)}, {H1: 2 * S, H2: 2 * S},
+            {"finalized": 900, "latest": 600})
+    v = read_view([a], USDC_ADDR, VAULT)
+    assert v.finalized.ok and not v.latest.ok  # latest 10 min old > 120 s
+    b = Rpc("drpc", {"finalized": (100, H1), "latest": (90, H2)}, {H1: 2 * S, H2: 2 * S},
+            {"finalized": 900, "latest": 5})
+    v = read_view([b], USDC_ADDR, VAULT)
+    assert not v.ok and "below the finalized block" in v.latest.reason
+
+
+def test_lookback_is_w_in_measured_blocks():
+    from ballast.bot import lookback_blocks
+
+    class C:
+        def get_block_hash(self, n):
+            return n
+
+        def query(self, *a, block_hash=None, **k):
+            class V:
+                value = block_hash * 6000  # 6 s blocks
+            return V()
+
+    assert lookback_blocks(C(), 1000) == 14_400  # 24 h of 6 s blocks

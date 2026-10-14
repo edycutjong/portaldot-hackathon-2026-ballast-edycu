@@ -335,7 +335,7 @@ def render_receipts_md() -> str:
 
 
 INDEX_ROWS = (
-    ("roles-drill", None, "Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw)"),
+    ("roles-drill", None, "Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate)"),
     ("roles-attest", None, "Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED)"),
     ("roles-setup", None, "Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless"),
     ("drill", "drain", "Breaker drill, scratch asset: drain -> freeze"),

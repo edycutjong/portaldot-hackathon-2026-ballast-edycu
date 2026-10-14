@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""S0 spike: Assets role split + watcher-set freeze, end to end, on the configured chain profile.
+"""Assets spike: role split + watcher-set freeze, end to end, on the configured chain profile.
 
   python scripts/spike_assets.py [--profile standin-upstream] [--url ws://127.0.0.1:49944]
 
@@ -24,19 +24,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ballast.chain import Receipt, connect, dev_keypair, submit  # noqa: E402
-from ballast.chain_profile import SHAPE_WEIGHT_V2, identify, require_multisig_shape  # noqa: E402
+from ballast.chain_profile import SHAPE_WEIGHT_V2, ProfileError, identify, require_multisig_shape  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.multisig import multi_address, other_signatories, public_key  # noqa: E402
 from ballast.receipts import EVIDENCE, score, summarize, write_receipts_md  # noqa: E402
 from ballast.rpc import HttpRpc  # noqa: E402
 
-SPIKE_ASSET_FROM = 1001  # spike assets live at >= 1001; ids 1 and 2 stay free for the breaker + control assets
+SPIKE_ASSET_FROM = 1001  # spike assets use ids >= 1001 so the low ids stay free
 DECIMALS = 6
 MINT = 50_000_000  # 50.00 pUSDC-test
 MINT_WHILE_FROZEN = 10_000  # 0.01: does the pallet mint while the asset is frozen? (observation)
 TRANSFER = 1_000_000  # 1.00
-# Asset-frozen transfer errors seen across runtimes: AssetNotLive (polkadot-sdk), Frozen (spec 1002)
-FROZEN_TRANSFER_ERRORS = {"Err(Assets.AssetNotLive)", "Err(Assets.Frozen)"}
+# Error a transfer of a frozen asset must fail with, per profile. standin-upstream: measured (AssetNotLive).
+# standin-1002: taken from that runtime's Assets error list (it has Frozen, no AssetNotLive); not run on 1002 here.
+FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)", "standin-1002": "Err(Assets.Frozen)"}
 
 
 def now() -> str:
@@ -70,10 +71,15 @@ def main() -> int:
     ap.add_argument("--url")
     args = ap.parse_args()
 
-    cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-    ident = identify(HttpRpc(cfg.url), cfg.profile.name)
+    try:
+        cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+        ident = identify(HttpRpc(cfg.url), cfg.profile.name)
+        shape = require_multisig_shape(ident.profile)
+        frozen_error = FROZEN_TRANSFER_ERRORS[ident.profile.name]
+    except (ProfileError, OSError, KeyError) as exc:
+        print(f"spike_assets: {exc}", file=sys.stderr)
+        return 2
     profile = ident.profile
-    shape = require_multisig_shape(profile)
     print(ident.banner())
     print(f"label: {profile.label} · as_multi shape: {shape}")
 
@@ -237,8 +243,7 @@ def main() -> int:
         # 9. The holder's transfer fails while frozen; the error name comes from the chain's metadata.
         r = submit(substrate, profile, keys["Judge"], "Assets", "transfer",
                    {"id": asset_id, "target": addr["Peer"], "amount": TRANSFER}, step="transfer_frozen")
-        step("holder transfer 1.00 while frozen fails", " or ".join(sorted(FROZEN_TRANSFER_ERRORS)), r,
-             str(r.outcome) in FROZEN_TRANSFER_ERRORS)
+        step("holder transfer 1.00 while frozen fails", frozen_error, r, str(r.outcome) == frozen_error)
         run["frozen_transfer_error"] = str(r.outcome)
         check("peer balance after the frozen transfer", balance_of(substrate, asset_id, addr["Peer"], r.block_hash), 0, r.block_hash)
 

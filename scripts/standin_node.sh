@@ -3,13 +3,13 @@
 #   scripts/standin_node.sh start | stop | status
 # Binary: prebuilt polkadot-sdk substrate-node, release polkadot-stable2606-3, aarch64-apple-darwin, sha256-pinned:
 #   https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2606-3/substrate-node-aarch64-apple-darwin
-# Download it (chmod +x) and point BALLAST_NODE_BIN at it. Other platforms: build `substrate-node` from that tag and
+# Download it to the default path below (chmod +x) or point BALLAST_NODE_BIN at it. Other platforms: build `substrate-node` from that tag and
 # set BALLAST_NODE_SHA256 to its hash (the runtime :code hash is what scripts check, see ballast/chain_profile.py).
 # Ports: RPC (WS + HTTP on one port) 49944, p2p 30349 bound to 127.0.0.1, no peer discovery, no peers allowed:
 # every --dev chain shares a genesis, so a node that peered with another local dev node would share its chain.
 set -euo pipefail
 
-BIN="${BALLAST_NODE_BIN:-$HOME/.cache/airlock-interim/polkadot-stable2606-3/substrate-node-aarch64-apple-darwin}"
+BIN="${BALLAST_NODE_BIN:-$HOME/.cache/ballast-interim/bin/substrate-node-aarch64-apple-darwin}"
 SHA256="${BALLAST_NODE_SHA256:-e687db4993973bd83922cfa9f01e29bb549af16560511b1fd51ff883b996207f}"
 DATA="${BALLAST_NODE_DIR:-$HOME/.cache/ballast-interim}"
 PIDFILE="$DATA/node.pid"
@@ -46,6 +46,7 @@ case "${1:-status}" in
     if running; then
       pid="$(cat "$PIDFILE")"; kill "$pid"
       for _ in $(seq 1 30); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+      if kill -0 "$pid" 2>/dev/null; then echo "pid $pid still running after 30 s" >&2; exit 1; fi
       rm -f "$PIDFILE"; echo "stopped pid $pid"
     else
       echo "not running"

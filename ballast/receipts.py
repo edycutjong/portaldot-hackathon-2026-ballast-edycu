@@ -14,10 +14,9 @@ EVIDENCE = ROOT / "evidence"
 RECEIPTS_MD = ROOT / "docs" / "RECEIPTS.md"
 
 
-def load_runs(pattern: str = "spike-assets-*.json", *, archive: bool = False) -> list[dict]:
-    """Runs in evidence/ (newest first); `archive=True` adds evidence/archive/ (file paths relative to evidence/)."""
-    paths = sorted(EVIDENCE.glob(pattern)) + (sorted((EVIDENCE / "archive").glob(pattern)) if archive else [])
-    runs = [json.loads(p.read_text()) | {"_file": str(p.relative_to(EVIDENCE))} for p in paths]
+def load_runs(pattern: str = "spike-assets-*.json") -> list[dict]:
+    """Runs in evidence/, newest first."""
+    runs = [json.loads(p.read_text()) | {"_file": p.name} for p in sorted(EVIDENCE.glob(pattern))]
     return sorted(runs, key=lambda r: r["started_at"], reverse=True)
 
 
@@ -120,8 +119,14 @@ def render_receipts_md() -> str:
     for (is_standin, profile), group in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1])):
         if is_standin:
             out += [f"## Stand-in receipts — {profile} (not V3)", "", *STANDIN_NOTE]
+        elif not group[0]["chain"].get("genesis_pinned", False):
+            out += [f"## V3 receipts — {profile} (genesis not pinned: UNVERIFIED (V3 day-0))", "",
+                    f"Chain label: {group[0]['chain']['label']}", ""]
         else:
             out += [f"## V3 receipts — {profile}", "", f"Chain label: {group[0]['chain']['label']}", ""]
+        # the newest PASS run leads; every other run (any verdict) is listed below it
+        lead = next((r for r in group if r.get("verdict") == "PASS"), group[0])
+        group = [lead] + [r for r in group if r is not lead]
         for i, run in enumerate(group):
             if i == 0:
                 out += render_spike_section(run)

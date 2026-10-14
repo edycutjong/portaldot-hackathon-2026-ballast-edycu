@@ -476,11 +476,52 @@ def test_reserves_are_read_before_supply(monkeypatch):
     assert order == ["reserves", "supply"]
 
 
-def test_vanished_asset_is_a_check_error_not_level(monkeypatch):
+def test_vanished_breaker_is_a_check_error(monkeypatch):
     dog, substrate, submitted, _ = make_dog(monkeypatch, reserves=100)
-    del substrate.assets[2]
-    with pytest.raises(RuntimeError, match="no longer exist"):
+    del substrate.assets[1]
+    with pytest.raises(RuntimeError, match="breaker asset 1 no longer exists"):
         dog.check(10, H)
+
+
+def test_vanished_control_asset_counts_as_zero_and_the_breaker_stays_guarded(monkeypatch):
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=50)  # S1 = 60 alone is short
+    del substrate.assets[2]
+    record = dog.check(10, H)
+    assert record["decision"]["action"] == DEFICIT and record["decision"]["supply"] == "60" and len(submitted) == 1
+    assert any(e["event"] == "warning" and "counted as supply 0" in e["message"] for e in logs)
+
+
+def test_connection_is_rebuilt_after_repeated_failures(monkeypatch):
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=70, heads=tuple(range(10, 40)))
+    calls = {"assets": 0, "reconnects": 0}
+    real_assets = dog.assets
+
+    def broken_until_reconnect(h):
+        if calls["reconnects"] == 0:
+            raise BrokenPipeError(32, "Broken pipe")  # a reset socket: substrate-interface never reconnects itself
+        return real_assets(h)
+
+    def connect_websocket():
+        calls["reconnects"] += 1
+
+    dog.assets = broken_until_reconnect
+    substrate.connect_websocket = connect_websocket
+    assert dog.run(until_frozen=True, max_seconds=60) == 0
+    events = [e["event"] for e in logs]
+    assert events.count("check-error") == 2 and "reconnect" in events and "freeze" in events
+
+
+def test_error_messages_are_scrubbed_in_the_log(tmp_path):
+    import json as _json
+
+    from ballast.watchdog import JsonLog
+
+    path = tmp_path / "w.jsonl"
+    log = JsonLog(str(path), echo=False)
+    log("head-error", message="ConnectionError: HTTPSConnectionPool(host='rpc.example', port=443): Max retries "
+                              "exceeded with url: /v3/SECRETKEY?k=1 (Caused by SSLError)")
+    text = path.read_text()
+    assert "SECRETKEY" not in text and "rpc.example" not in text and _json.loads(text)["event"] == "head-error"
 
 
 def test_destroying_asset_is_not_freezable(monkeypatch):

@@ -43,6 +43,7 @@ from .sepolia import (
     compare,
     now_iso,
     read_all,
+    scrub,
     token_decimals,
 )
 
@@ -50,7 +51,8 @@ REMARK_PREFIX = "BALLAST/1"
 REMARK_MAX_BYTES = 320  # our own budget for any BALLAST/1 remark (architecture: attestation format)
 FAIL_CLOSED_AFTER_S = 300.0  # I6: both providers unreachable for > 5 minutes -> freeze
 MAX_BLOCK_AGE_S = 120.0  # a `latest` block older than this is a failed reading (stuck cache / lagging node; 10 Sepolia slots)
-FAST_RETRIES = 3  # consecutive failures retried on the very next poll; after that, every poll_blocks (never give up)
+FAST_RETRIES = 3  # consecutive failures retried at the next new head; after that, every poll_blocks (never give up)
+RECONNECT_AFTER = 2  # consecutive failures before the node connection is rebuilt (a reset socket never heals itself)
 FEE_HEADROOM = 10  # the watcher key must hold ED + 10 x the freeze extrinsic's fee
 
 LEVEL, DEFICIT, OUTAGE, FAIL_CLOSED, ALREADY_FROZEN = "level", "deficit", "outage", "fail-closed", "already-frozen"
@@ -196,6 +198,8 @@ class JsonLog:
         self.dropped = 0
 
     def __call__(self, event: str, **fields: Any) -> dict:
+        if isinstance(fields.get("message"), str):
+            fields["message"] = scrub(fields["message"])  # node / provider URLs may carry keys
         record = {"t": now_iso(), "event": event, **self.context, **fields}
         if self._fh:
             try:
@@ -351,9 +355,11 @@ class Watchdog:
                             self.cfg.read_deadline_s)
         state_head, state_hash = self.head()
         states = self.assets(state_hash)
-        missing = [i for i, st in states.items() if not st.exists]
-        if missing:
-            raise RuntimeError(f"asset(s) {missing} no longer exist at #{state_head}")
+        if not states[self.cfg.breaker_id].exists:
+            raise RuntimeError(f"breaker asset {self.cfg.breaker_id} no longer exists at #{state_head}")
+        gone = [i for i, st in states.items() if not st.exists]  # a destroyed backed asset has supply 0: keep guarding
+        if gone:
+            self.log("warning", head=number, message=f"backed asset(s) {gone} no longer exist: counted as supply 0")
         supply = sum(states[i].supply for i in self.cfg.supply_ids)
         frozen = states[self.cfg.breaker_id].frozen
         comparison = compare(readings)
@@ -455,6 +461,14 @@ class Watchdog:
             self.log("freeze-raced", level="info", head=number, message=f"asset already frozen at #{number} ({why})")
         return frozen
 
+    def reconnect(self) -> None:
+        """Rebuild the node websocket (substrate-interface only reconnects on a clean close, not on a reset)."""
+        try:
+            self.substrate.connect_websocket()
+            self.log("reconnect", message="node websocket rebuilt")
+        except Exception as exc:  # noqa: BLE001 — try again after the next failure
+            self.log("reconnect-error", level="critical", message=f"{type(exc).__name__}: {exc}")
+
     # --- loop --------------------------------------------------------------------------------------------
     def run(self, *, until_frozen: bool = False, max_seconds: float | None = None) -> int:
         """Poll the head; check every `poll_blocks` blocks. Returns 0 (stopped / frozen as asked) or 4 (timed out)."""
@@ -465,7 +479,7 @@ class Watchdog:
             except Exception as exc:  # noqa: BLE001 — the Portaldot node itself is down: log, keep polling
                 self.log("head-error", message=f"{type(exc).__name__}: {exc}")
                 number = None
-            due = self.last_checked is None or self.retry_now
+            due = self.last_checked is None or (self.retry_now and number is not None and number > self.last_checked)
             if number is not None and (due or number >= self.last_checked + self.cfg.poll_blocks):
                 self.last_checked, self.retry_now = number, False
                 try:
@@ -477,6 +491,8 @@ class Watchdog:
                 if record is None or self.freeze_failed:
                     self.failures += 1
                     self.retry_now = self.failures <= FAST_RETRIES  # then back to every poll_blocks, never abandoned
+                    if self.failures >= RECONNECT_AFTER:
+                        self.reconnect()
                 else:
                     self.failures = 0
                 if until_frozen and record is not None and (record["frozen"] or self.freezes):

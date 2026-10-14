@@ -395,10 +395,13 @@ def cmd_bot(args: argparse.Namespace) -> int:
         providers = _providers(args, dep, bot_order=True)
         store = Store(args.db)
         max_age = getattr(args, "max_finalized_age", None)
-        if max_age is not None and max_age < 0:
-            raise ValueError("--max-finalized-age must be >= 0 (0 = off)")
+        max_latest = getattr(args, "max_latest_age", None)
+        if (max_age is not None and max_age < 0) or (max_latest is not None and max_latest < 0):
+            raise ValueError("--max-finalized-age / --max-latest-age must be >= 0 (0 = off)")
         bot = ReserveBot(substrate=substrate, profile=profile, keypair=key, deployment=dep, providers=providers,
-                         store=store, max_finalized_age_s=None if max_age == 0 else max_age)
+                         store=store, max_finalized_age_s=None if max_age == 0 else max_age,
+                         max_latest_age_s=None if max_latest == 0 else max_latest,
+                         log=lambda m: print(f"[{profile.name}] {m}", file=sys.stderr))
         if args.bot_command == "cosign-mint":
             amount = parse_amount(args.amount, dep.decimals)
             beneficiary = _addresses(profile, [args.beneficiary])[0]
@@ -481,11 +484,19 @@ def cmd_verify(args: argparse.Namespace) -> int:
     try:
         profile, substrate, dep = _deployment_context(args)
         providers = _providers(args, dep, bot_order=True)
-        setup = json.loads((EVIDENCE / dep.setup_evidence).read_text())
-        setup_blocks = [st["receipt"]["block_number"] for st in setup["steps"] if st.get("receipt")]
+        setup_steps = []
+        if dep.setup_evidence and (EVIDENCE / dep.setup_evidence).exists():
+            setup_steps = [st for st in json.loads((EVIDENCE / dep.setup_evidence).read_text())["steps"]
+                           if st.get("receipt")]
         start = args.from_block
         if start is None:
-            start = min(setup_blocks)
+            if not setup_steps:
+                raise ValueError("no setup evidence for this deployment: pass --from")
+            start = min(st["receipt"]["block_number"] for st in setup_steps)
+        # control-asset events are expected only while the setup made asset 2 keyless
+        control_settled_at = max((st["receipt"]["block_number"] for st in setup_steps
+                                  if st["name"].startswith("asset 2") or "control asset 2" in st["name"]
+                                  or st["name"].startswith("A creates asset 2")), default=0)
         end = args.to_block or substrate.get_block_number(None)
         if start > end:
             raise ValueError(f"--from {start} > --to {end}")
@@ -494,7 +505,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 2
     quiet = args.json
     v = Verifier(substrate, Roles.from_deployment(dep), providers, dep.reserve["vault"], dep.reserve["erc20"],
-                 log=(lambda s: None) if quiet else print, control_settled_at=max(setup_blocks))
+                 log=(lambda s: None) if quiet else print, control_settled_at=control_settled_at)
     if not quiet:
         print(f"[{profile.name}] verify blocks #{start}..#{end} · asset {dep.breaker} · reserve {dep.reserve['label']}")
     findings = v.run(start, end)
@@ -633,6 +644,9 @@ def build_parser() -> argparse.ArgumentParser:
     for p in (bm, bsub.choices["cosign-thaw"], bt):
         p.add_argument("--max-finalized-age", type=float, default=3600.0,
                        help="refuse when the finalized reserve block is older than this (s; default 3600, 0 = off — "
+                       "only for a local reserve chain that mines on demand)")
+        p.add_argument("--max-latest-age", type=float, default=120.0,
+                       help="refuse when the latest reserve block is older than this (s; default 120, 0 = off — "
                        "only for a local reserve chain that mines on demand)")
     for p in (bm, bsub.choices["cosign-thaw"], bt, ba):
         deployment_args(p)

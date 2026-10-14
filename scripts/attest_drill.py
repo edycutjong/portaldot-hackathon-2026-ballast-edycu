@@ -89,7 +89,8 @@ def main() -> int:
         return p.returncode, json.loads(lines[-1])
 
     def posts() -> list[dict]:
-        return [r for r in read_log(log_path) if r["event"] in ("post", "post-failed", "announce")]
+        return [r for r in read_log(log_path) if r["event"] in ("post", "post-failed", "announce", "mirror",
+                                                                 "mirror-failed")]
 
     def wait_posts(n: int, why: str, timeout: float = 240) -> list[dict]:
         deadline = time.time() + timeout
@@ -160,6 +161,15 @@ def main() -> int:
 
     # The bot's own receipts (remarks + oracle posts) from its log.
     for rec in posts():
+        if rec["event"] in ("mirror", "mirror-failed"):
+            rx = rec.get("oracle_receipt") or {}
+            if "events" in rx:
+                run.step(f"bot mirrors {rec['remark_tx']} to ReserveOracle (after inclusion, I10)",
+                         "Ok + Revive.ContractEmitted(Posted)", rx, bool(rec.get("oracle_ok")),
+                         ("Revive.ContractEmitted",))
+            else:  # failed before submission: retried by the next round
+                run.note(f"oracle mirror of {rec['remark_tx']} failed before submission", rx.get("error", "?"))
+            continue
         if rec["event"] == "announce":
             kind = rec["remark"].split("|")[1]
             run.step(f"bot announces {kind} ({rec['remark'][:60]}…)", "Ok + System.Remarked", rec["receipt"], rec["ok"],
@@ -167,9 +177,6 @@ def main() -> int:
             continue
         run.step(f"bot posts {rec['kind']} (pb {rec['remark'].split('|pb=')[1].split('|')[0]})",
                  "Ok + System.Remarked", rec["receipt"], rec["event"] == "post", ("System.Remarked",))
-        if rec.get("oracle_receipt"):
-            run.step("bot mirrors it to ReserveOracle (after inclusion, I10)", "Ok + Revive.ContractEmitted(Posted)",
-                     rec["oracle_receipt"], bool(rec.get("oracle_ok")), ("Revive.ContractEmitted",))
     run["steps"].sort(key=lambda s: (s["receipt"]["block_number"], s["receipt"]["extrinsic_index"]))
 
     # 5. verify over the run, in a fresh process.

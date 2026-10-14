@@ -1,6 +1,6 @@
 # Ballast — Architecture
 
-> Generated from the code at commit `1f8e351` (2026-10-14). Only components that exist in this repository are drawn; what is not built is listed
+> Generated from the code on 2026-10-14 (`ballast/` unchanged since `a4bdcfa`). Only components that exist in this repository are drawn; what is not built is listed
 > at the end. **Everything measured so far ran on a labelled local stand-in chain (`standin-upstream`, NOT Portaldot V3) against a local
 > anvil reserve chain (NOT Sepolia).** Nothing here is a V3 or Sepolia-vault measurement.
 

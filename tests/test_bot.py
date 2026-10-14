@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from substrateinterface import Keypair
 
-from ballast.bot import mint_gate, parse_amount, read_finalized, set_team_gate, thaw_gate
+from ballast.bot import frozen_since, mint_gate, parse_amount, read_finalized, set_team_gate, thaw_gate
 from ballast.store import Store
 from test_sepolia import FakeRpc, USDC_ADDR, VAULT
 
@@ -37,10 +37,47 @@ def test_mint_refused_when_reserves_unknown_or_amount_not_positive():
 
 
 def test_thaw_gate():
-    assert not thaw_gate(False, 2 * S, S, S).sign  # nothing to thaw
-    assert not thaw_gate(True, 2 * S - 1, S, S).sign  # still short at finality
-    assert not thaw_gate(True, None, S, S).sign
-    assert thaw_gate(True, 2 * S, S, S).sign
+    assert not thaw_gate(False, 2 * S, S, S, 100, 90).sign  # nothing to thaw
+    assert not thaw_gate(True, 2 * S - 1, S, S, 100, 90).sign  # still short at finality
+    assert not thaw_gate(True, None, S, S, None, 90).sign
+    assert thaw_gate(True, 2 * S, S, S, 100, 90).sign
+    assert thaw_gate(True, 2 * S, S, S, 90, 90).sign
+
+
+def test_thaw_refused_on_a_finalized_reading_older_than_the_drain():
+    # finality lags: a finalized block before the drain still shows full reserves — never a reason to thaw
+    g = thaw_gate(True, 2 * S, S, S, finalized_block=80, deficit_block=90)
+    assert not g.sign and "older than the deficit block" in g.reason
+    assert not thaw_gate(True, 2 * S, S, S, 100, None).sign  # unknown anchor: fail closed
+
+
+class FakeChain:
+    """Asset frozen from block `since` on; archive reads by block hash."""
+
+    def __init__(self, since, head):
+        self.since, self.head, self.reads = since, head, 0
+
+    def get_block_hash(self, n):
+        return f"0x{n:064x}"
+
+    def query(self, pallet, item, params, block_hash=None):
+        self.reads += 1
+        n = int(block_hash, 16)
+
+        class V:
+            value = {"supply": 1, "status": "Frozen" if n >= self.since else "Live", "freezer": None}
+        return V()
+
+
+@pytest.mark.parametrize("since,head", [(1, 1), (500, 4000), (3999, 4000), (4000, 4000), (1, 4000)])
+def test_frozen_since_finds_the_transition(since, head):
+    chain = FakeChain(since, head)
+    assert frozen_since(chain, 1, head) == since
+    assert chain.reads <= 2 * 13 + 2  # galloping + binary search: logarithmic
+
+
+def test_frozen_since_none_when_live():
+    assert frozen_since(FakeChain(5000, 4000), 1, 4000) is None
 
 
 def test_set_team_gate_only_with_issuer_and_freezer_unchanged():

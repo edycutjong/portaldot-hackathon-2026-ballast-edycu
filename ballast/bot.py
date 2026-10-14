@@ -93,11 +93,19 @@ def mint_gate(reserves: int | None, s1: int, s2: int, amount: int, frozen: bool)
     return Gate(True, f"finalized reserves {reserves} >= S1 {s1} + S2 {s2} + amount {amount} = {need}")
 
 
-def thaw_gate(frozen: bool, reserves: int | None, s1: int, s2: int) -> Gate:
+def thaw_gate(frozen: bool, reserves: int | None, s1: int, s2: int, finalized_block: int | None = None,
+              deficit_block: int | None = None) -> Gate:
+    """`deficit_block` = the reserve-chain block at which the freezing watcher saw the deficit (`eb` of its freeze
+    remark). A finalized reading OLDER than that predates the drain and would show full reserves: refused."""
     if not frozen:
         return Gate(False, "the breaker asset is not frozen")
-    if reserves is None:
+    if reserves is None or finalized_block is None:
         return Gate(False, "finalized reserves unknown")
+    if deficit_block is None:
+        return Gate(False, "the freeze's deficit block is unknown: cannot tell whether finality has passed it")
+    if finalized_block < deficit_block:
+        return Gate(False, f"finalized block #{finalized_block} is older than the deficit block #{deficit_block}: "
+                           "finality has not reached the drain yet")
     if reserves < s1 + s2:
         return Gate(False, f"finalized reserves {reserves} < S1 {s1} + S2 {s2} = {s1 + s2}: still short at finality")
     return Gate(True, f"finalized reserves {reserves} >= S1 {s1} + S2 {s2} = {s1 + s2}")
@@ -109,6 +117,47 @@ def set_team_gate(current: dict, proposed: dict, m_mint: str) -> Gate:
     if not same(proposed.get("freezer"), current.get("freezer")):
         return Gate(False, "the freezer would change (a new watcher set needs a K-block announcement — not built)")
     return Gate(True, "issuer stays M_mint and the freezer is unchanged")
+
+
+def frozen_since(substrate: Any, asset_id: int, head: int) -> int | None:
+    """The block at which the asset last went from live to frozen (archive state: galloping + binary search over
+    `Assets.Asset(id)` at past blocks). None if it is not frozen at `head`."""
+    def frozen_at(n: int) -> bool:
+        h = substrate.get_block_hash(n)
+        return asset_state(asset_id, substrate.query("Assets", "Asset", [asset_id], block_hash=h).value).frozen
+
+    if not frozen_at(head):
+        return None
+    hi, step = head, 1
+    while True:
+        lo = max(hi - step, 0)
+        if not frozen_at(lo):
+            break
+        if lo == 0:
+            return 0
+        hi, step = lo, step * 2
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if frozen_at(mid):
+            hi = mid
+        else:
+            lo = mid
+    return hi
+
+
+def deficit_anchor(substrate: Any, asset_id: int, freeze_block: int) -> dict:
+    """The freeze remark in the freeze block: {"reason", "eb", "remark", "extrinsic_id"}; eb is None if the freeze
+    carried no deficit block (providers-down / heartbeat / a freeze without a Ballast remark)."""
+    from .remarks import block_remarks, parse
+
+    block_hash = substrate.get_block_hash(freeze_block)
+    for rem in block_remarks(substrate, block_hash, prefix="BALLAST/1|freeze|"):
+        fields = parse(rem["text"])
+        if fields.get("a") == str(asset_id):
+            eb = fields.get("eb")
+            return {"reason": fields.get("reason"), "eb": int(eb) if eb and eb.isdigit() else None,
+                    "remark": rem["text"], "extrinsic_id": rem["extrinsic_id"]}
+    return {"reason": None, "eb": None, "remark": None, "extrinsic_id": None}
 
 
 class ReserveBot:
@@ -198,14 +247,18 @@ class ReserveBot:
         op = self._pending(self.m_admin, call, [self.rm.a, self.rm.a2])
         if op is None:
             return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
-        st = self.supplies()
+        head = self.substrate.get_block_number(None)
+        st = self.supplies(self.substrate.get_block_hash(head))
+        since = frozen_since(self.substrate, self.dep.breaker, head) if st["frozen"] else None
+        anchor = deficit_anchor(self.substrate, self.dep.breaker, since) if since is not None else {}
         fin = self.finalized()
-        gate = thaw_gate(st["frozen"], fin.reserves if fin.ok else None, st["s1"], st["s2"])
+        gate = thaw_gate(st["frozen"], fin.reserves if fin.ok else None, st["s1"], st["s2"],
+                         fin.block_number if fin.ok else None, anchor.get("eb"))
         if not fin.ok and st["frozen"]:
             gate = Gate(False, f"finalized reserves unreadable: {fin.reason}")
         row = self._record("thaw", gate, fin, st, call_hash=op.call_hash)
         out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash, "timepoint": op.timepoint,
-               "state": st, "finalized": fin.as_dict(), "db_row": row}
+               "state": st, "frozen_since": since, "freeze": anchor, "finalized": fin.as_dict(), "db_row": row}
         if gate.sign:
             r = self.m_admin.execute(self.substrate, self.profile, self.keypair, call, op, step="bot_thaw",
                                      label="Assets.thaw_asset")

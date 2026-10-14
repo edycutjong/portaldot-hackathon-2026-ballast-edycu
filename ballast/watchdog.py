@@ -34,6 +34,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from .remarks import parse
 from .sepolia import (
     ANVIL_CHAIN_ID,
     SEPOLIA_CHAIN_ID,
@@ -47,8 +48,8 @@ from .sepolia import (
     token_decimals,
 )
 
-REMARK_PREFIX = "BALLAST/1"
-REMARK_MAX_BYTES = 320  # our own budget for any BALLAST/1 remark (architecture: attestation format)
+from .remarks import MAX_BYTES as REMARK_MAX_BYTES  # noqa: E402
+from .remarks import PREFIX as REMARK_PREFIX  # noqa: E402
 FAIL_CLOSED_AFTER_S = 300.0  # I6: both providers unreachable for > 5 minutes -> freeze
 MAX_BLOCK_AGE_S = 120.0  # a `latest` block older than this is a failed reading (stuck cache / lagging node; 10 Sepolia slots)
 FAST_RETRIES = 3  # consecutive failures retried at the next new head; after that, every poll_blocks (never give up)
@@ -174,18 +175,7 @@ def freeze_remark(asset_id: int, decision: Decision, providers: Sequence[str]) -
     return text
 
 
-def parse_remark(text: str) -> dict:
-    """`BALLAST/1|<type>|k=v|…` -> {"type": <type>, k: v, …}. Raises on anything else."""
-    parts = text.split("|")
-    if len(parts) < 2 or parts[0] != REMARK_PREFIX:
-        raise ValueError("not a BALLAST/1 remark")
-    out = {"type": parts[1]}
-    for part in parts[2:]:
-        key, sep, value = part.partition("=")
-        if not sep or not key:
-            raise ValueError(f"bad field {part!r}")
-        out[key] = value
-    return out
+parse_remark = parse  # one parser for every BALLAST/1 remark (ballast/remarks.py)
 
 
 class JsonLog:

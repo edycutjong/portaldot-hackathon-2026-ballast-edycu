@@ -27,6 +27,7 @@ from .remarks import encode
 from .watchdog import JsonLog, asset_state
 
 ATTEST_TYPES = ("attest", "heartbeat")
+MIRROR_TRIES = 5  # a mirror still failing after this many rounds is dropped (logged critical); the next remark re-arms
 FIELDS = ("a", "a2", "s", "s2", "f", "pb", "ph", "eb", "eh", "r")
 
 
@@ -80,6 +81,7 @@ class Attester:
         self.last_block: int | None = None
         self.posts = 0
         self.pending_mirror: tuple | None = None  # (kind, snapshot, remark extrinsic id) not yet on the oracle
+        self.mirror_tries = 0
 
     def snapshot(self, block_hash: str, number: int) -> Snapshot | None:
         q = lambda i: self.substrate.query("Assets", "Asset", [i], block_hash=block_hash).value  # noqa: E731
@@ -104,6 +106,7 @@ class Attester:
             self.last_key, self.last_block = snap.key(), r.block_number
             self.posts += 1
             self.pending_mirror = (kind, snap, r.extrinsic_id) if self.oracle else None
+            self.mirror_tries = 0
         row = self.store.attestation(kind=kind, pd_block=snap.pb, pd_hash=snap.ph, supply=str(snap.s),
                                      supply2=str(snap.s2), sep_block=snap.eb, sep_hash=snap.eh, reserves=str(snap.r),
                                      remark=text, remark_tx=r.extrinsic_id if ok else None, profile=self.profile.name)
@@ -119,6 +122,23 @@ class Attester:
         if not self.pending_mirror:
             return {}
         kind, snap, remark_tx = self.pending_mirror
+        if self.mirror_tries:  # a retry: did an earlier try land after all (e.g. submit raised after inclusion)?
+            try:
+                landed = oracle_mod.status(self.substrate, self.keypair.ss58_address, self.oracle)["pd_block"]
+            except Exception:  # noqa: BLE001 — unknown: just try again
+                landed = None
+            if landed is not None and landed >= snap.pb:
+                self.pending_mirror = None
+                self.log("mirror", head=snap.pb, remark_tx=remark_tx, oracle_ok=True,
+                         message=f"oracle already holds pdBlock {landed} >= {snap.pb}: mirror of {remark_tx} landed")
+                return {"oracle_ok": True}
+        if self.mirror_tries >= MIRROR_TRIES:
+            self.pending_mirror = None
+            self.log("mirror-dropped", level="critical", head=snap.pb, remark_tx=remark_tx,
+                     message=f"oracle mirror of {remark_tx} failed {MIRROR_TRIES} times: dropped (the next remark "
+                             "re-arms it; `verify` lists remarks without a mirror)")
+            return {"oracle_ok": False}
+        self.mirror_tries += 1
         try:
             o = oracle_mod.post(self.substrate, self.profile, self.keypair, self.oracle, snap.oracle_state(),
                                 step=f"oracle_post_{kind}")
@@ -183,6 +203,10 @@ def run_attester(args: Any, *, profile: Any, substrate: Any, dep: Any, keypair: 
             try:
                 block_hash = rpc.call("chain_getFinalizedHead", [])  # L2: attest finalized state only
                 number = int(rpc.call("chain_getHeader", [block_hash])["number"], 16)
+                best = int(rpc.call("chain_getHeader", [])["number"], 16)
+                if best - number > h:  # heartbeats ride on finality: a lag near K = 3H would trip I8
+                    log("finality-lag", level="warning", head=number,
+                        message=f"finalized head #{number} is {best - number} blocks behind best #{best} (> H={h})")
             except Exception as exc:  # noqa: BLE001 — node hiccup: keep polling
                 log("head-error", message=f"{type(exc).__name__}: {exc}")
                 number = None

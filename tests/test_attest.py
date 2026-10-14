@@ -101,3 +101,26 @@ def test_announce_failure_does_not_raise():
                           log=lambda ev, **k: logs.append(ev) or {"event": ev}, oracle=None)
     out = att.announce(["5" * 400], 1)  # one remark cannot hold this watcher set
     assert out and logs == ["announce-failed"]
+
+
+def test_mirror_already_landed_is_not_reposted_and_retries_are_capped(monkeypatch):
+    import ballast.attest as attest
+
+    posts = []
+    monkeypatch.setattr(attest.oracle_mod, "post", lambda *a, **k: posts.append(1) or (_ for _ in ()).throw(
+        RuntimeError("revert")))
+
+    class K:
+        ss58_address = "5x"
+
+    logs = []
+    att = attest.Attester(substrate=None, profile=None, keypair=K(), dep=None, providers=[], store=None,
+                          log=lambda ev, **k: logs.append(ev) or {}, oracle="0x" + "ee" * 20)
+    att.pending_mirror = ("attest", snap(pb=4300), "41-2")
+    monkeypatch.setattr(attest.oracle_mod, "status", lambda *a, **k: {"pd_block": 4000})
+    for _ in range(attest.MIRROR_TRIES + 1):
+        att.mirror()
+    assert len(posts) == attest.MIRROR_TRIES and att.pending_mirror is None and logs[-1] == "mirror-dropped"
+    att.pending_mirror, att.mirror_tries = ("attest", snap(pb=4300), "41-2"), 1
+    monkeypatch.setattr(attest.oracle_mod, "status", lambda *a, **k: {"pd_block": 4300})
+    assert att.mirror()["oracle_ok"] and att.pending_mirror is None and len(posts) == attest.MIRROR_TRIES

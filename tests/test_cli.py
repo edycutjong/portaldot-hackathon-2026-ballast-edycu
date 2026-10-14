@@ -64,15 +64,23 @@ def test_watch_bad_flags_exit_2_without_a_traceback(capsys):
                  "--holder", "0x" + "00" * 20, "--supply-assets", "1,abc"]) == 2
     assert "ValueError" in capsys.readouterr().err
     assert main(["--profile", "standin-upstream", "watch", "--breaker", "1", "--holder", "0x" + "00" * 20,
-                 "--max-block-age", "-1"]) == 2
+                 "--supply-assets", "1,2", "--max-block-age", "-1"]) == 2
+    assert main(["--profile", "standin-upstream", "watch", "--breaker", "1", "--holder", "0x" + "00" * 20,
+                 "--supply-assets", "1,2", "--poll-interval", "-1"]) == 2
+    # the breaker must be one of the backed assets, ids distinct, addresses well-formed
+    for extra in (["--supply-assets", "2,3"], ["--supply-assets", "1,1"], ["--supply-assets", "1", "--holder", "0x01"]):
+        args = ["--profile", "standin-upstream", "--url", "http://127.0.0.1:9", "watch", "--breaker", "1",
+                "--holder", "0x" + "00" * 20, "--poll-blocks", "2", *extra]
+        assert main(args) == 2, extra
 
 
 def test_watch_unreachable_node_exits_3(capsys):
     assert main(["--profile", "standin-upstream", "--url", "http://127.0.0.1:9", "watch", "--breaker", "1",
-                 "--holder", "0x" + "00" * 20, "--poll-blocks", "2"]) == 3
+                 "--supply-assets", "1,2", "--holder", "0x" + "00" * 20, "--poll-blocks", "2"]) == 3
 
 
 def test_watch_bad_provider_name_exits_2(capsys):
     assert main(["--profile", "standin-upstream", "--url", "http://127.0.0.1:9", "watch", "--breaker", "1",
-                 "--holder", "0x" + "00" * 20, "--poll-blocks", "2", "--provider", "a|b=http://x"]) == 2
+                 "--supply-assets", "1", "--holder", "0x" + "00" * 20, "--poll-blocks", "2",
+                 "--provider", "a|b=http://x"]) == 2
     assert "provider name" in capsys.readouterr().err

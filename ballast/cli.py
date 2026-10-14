@@ -157,11 +157,18 @@ def cmd_watch(args: argparse.Namespace) -> int:
     from .sepolia import SEPOLIA_PROVIDERS, providers_from
     from .watchdog import JsonLog, WatchConfig, Watchdog
 
-    if args.max_block_age < 0 or args.fail_closed_after < 0 or args.timeout <= 0:
-        print("ballast: --max-block-age / --fail-closed-after must be >= 0 and --timeout > 0", file=sys.stderr)
+    if args.max_block_age < 0 or args.fail_closed_after < 0 or args.poll_interval < 0 or args.timeout <= 0:
+        print("ballast: --max-block-age / --fail-closed-after / --poll-interval must be >= 0, --timeout > 0",
+              file=sys.stderr)
         return 2
     try:
-        supply_ids = [int(x) for x in args.supply_assets.split(",")] if args.supply_assets else [args.breaker]
+        from .sepolia import balance_of_data
+
+        supply_ids = [int(x) for x in args.supply_assets.split(",")]
+        if len(set(supply_ids)) != len(supply_ids) or args.breaker not in supply_ids:
+            raise ValueError("--supply-assets: distinct ids, and must include --breaker (S1 + S2 = every backed asset)")
+        balance_of_data(args.holder)  # holder and token must be EVM addresses before anything is armed
+        balance_of_data(args.token)
         providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
         ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=args.poll_blocks is None)
@@ -191,7 +198,11 @@ def cmd_watch(args: argparse.Namespace) -> int:
         max_block_age_s=args.max_block_age or None,
         read_deadline_s=2 * args.timeout,  # two requests per reading, each bounded by --timeout
     )
-    log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
+    try:
+        log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
+    except OSError as exc:
+        print(f"ballast: --log {args.log}: {exc}", file=sys.stderr)
+        return 2
     try:
         try:
             substrate = connect(ident.profile, cfg.url)
@@ -209,7 +220,9 @@ def cmd_watch(args: argparse.Namespace) -> int:
         log("start", **pre, poll_blocks=poll_blocks, fail_closed_after=args.fail_closed_after,
             max_block_age=args.max_block_age or "off",
             supply_ids=supply_ids, providers=[p.name for p in providers], erc20=args.token, holder=args.holder,
-            message=f"armed: M_watch {pre['m_watch']} · reserve {pre['reserve']} · every {poll_blocks} blocks")
+            message=f"armed: M_watch {pre['m_watch']} · reserve {pre['reserve']} · freeze if reserves < supply of "
+                    f"assets {supply_ids} (now {sum(int(v) for k, v in pre['supplies'].items() if int(k) in supply_ids)})"
+                    f" · every {poll_blocks} blocks")
         return dog.run(until_frozen=args.until_frozen, max_seconds=args.max_seconds)
     except KeyboardInterrupt:
         log("stop", message="interrupted")
@@ -257,8 +270,9 @@ def build_parser() -> argparse.ArgumentParser:
     w = sub.add_parser("watch", help="run an OPERATOR watcher: freeze on reserve deficit (either provider) or "
                        "total provider outage (I6); the community-watcher rule is not implemented")
     w.add_argument("--breaker", type=int, required=True, help="asset id to freeze (asset 1)")
-    w.add_argument("--supply-assets", help="comma-separated asset ids whose supplies the reserve backs "
-                   "(default: the breaker only; e.g. 1,2 = asset 1 + control asset 2)")
+    w.add_argument("--supply-assets", required=True,
+                   help="comma-separated ids of EVERY asset the reserve backs, incl. the breaker "
+                   "(e.g. 1,2 = asset 1 + control asset 2: freeze when reserves < S1 + S2)")
     w.add_argument("--holder", required=True, help="vault address (holder of the reserve token)")
     w.add_argument("--token", default=SEPOLIA_USDC, help="reserve token (default: Circle test USDC on Sepolia)")
     w.add_argument("--provider", action="append", metavar="NAME=URL",

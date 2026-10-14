@@ -81,6 +81,51 @@ def cmd_chain(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_reserves(args: argparse.Namespace) -> int:
+    """Reserve token balance of a holder (the vault) from every provider, latest + finalized, compared."""
+    from .sepolia import SEPOLIA_PROVIDERS, chain_id, compare, cross_check, providers_from, read_all
+
+    try:
+        providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
+    except ValueError as exc:
+        print(f"ballast: {exc}", file=sys.stderr)
+        return 2
+    report: dict = {"erc20": args.token, "holder": args.holder, "chain_ids": {}, "tags": {}}
+    for p in providers:
+        try:
+            report["chain_ids"][p.name] = chain_id(p)
+        except Exception as exc:  # noqa: BLE001 — reported, never fatal: the readings below show the outage
+            report["chain_ids"][p.name] = f"error: {exc}"
+    for tag in args.tag:
+        report["tags"][tag] = compare(read_all(providers, args.token, args.holder, tag)).as_dict()
+    if args.cross_check:
+        report["cross_check"] = cross_check(providers, args.token, args.holder, args.cross_check)
+    if args.out:
+        with open(args.out, "w") as fh:
+            json.dump(report, fh, indent=2)
+            fh.write("\n")
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print(f"token {args.token} · holder {args.holder} · chain ids {report['chain_ids']}")
+        for tag, comp in report["tags"].items():
+            for r in comp["readings"]:
+                where = f"#{r['block_number']} {r['block_hash']}" if r["block_hash"] else "-"
+                value = r["reserves"] if r["error"] is None else f"ERROR {r['error']}"
+                print(f"  {tag:<9} {r['provider']:<12} {where}  {value}")
+            for issue in comp["disagreements"]:
+                print(f"  {tag:<9} DISAGREE {issue}")
+        if args.cross_check:
+            cc = report["cross_check"]
+            print(f"  cross-check {cc['tag']} #{cc.get('block_number')} {cc.get('block_hash')}: "
+                  f"{'AGREE' if cc['agree'] else 'DISAGREE'} {json.dumps(cc['providers'])}")
+    down = all(r["error"] for comp in report["tags"].values() for r in comp["readings"])
+    disagree = any(comp["disagreements"] for comp in report["tags"].values())
+    if args.cross_check and not report["cross_check"]["agree"]:
+        disagree = True
+    return 3 if down else (1 if disagree else 0)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ballast", description="Reserve-gated circuit breaker on Portaldot.")
     parser.add_argument("--version", action="version", version=f"ballast {__version__}")
@@ -94,12 +139,29 @@ def build_parser() -> argparse.ArgumentParser:
     chain.add_argument("--pallets", metavar="FILE", help="also write every pallet + call name to FILE (JSON)")
     chain.add_argument("--blocks", type=int, default=MIN_SAMPLE_BLOCKS, help="blocks to sample (>= 20)")
     chain.set_defaults(func=cmd_chain)
+    from .sepolia import SEPOLIA_USDC
+
+    res = sub.add_parser("reserves", help="read the vault's reserve-token balance from every EVM provider")
+    res.add_argument("holder", help="address whose token balance is the reserve (the vault)")
+    res.add_argument("--token", default=SEPOLIA_USDC, help="reserve token (default: Circle test USDC on Sepolia)")
+    res.add_argument("--provider", action="append", metavar="NAME=URL",
+                     help="EVM JSON-RPC provider, repeatable (default: Sepolia publicnode + drpc)")
+    res.add_argument("--tag", action="append", choices=("latest", "safe", "finalized"),
+                     help="block tag(s) to read (default: latest and finalized)")
+    res.add_argument("--cross-check", nargs="?", const="finalized", choices=("latest", "safe", "finalized"),
+                     help="pin one block and compare its hash + balance across all providers")
+    res.add_argument("--timeout", type=float, default=10.0)
+    res.add_argument("--json", action="store_true")
+    res.add_argument("--out", metavar="FILE", help="also write the report as JSON")
+    res.set_defaults(func=cmd_reserves)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if getattr(args, "command", None) == "reserves" and not args.tag:
+        args.tag = ["latest", "finalized"]
     if not getattr(args, "func", None):
         parser.print_help()
         return 0

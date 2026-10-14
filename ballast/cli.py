@@ -157,7 +157,12 @@ def cmd_watch(args: argparse.Namespace) -> int:
     from .sepolia import SEPOLIA_PROVIDERS, providers_from
     from .watchdog import JsonLog, WatchConfig, Watchdog
 
+    if args.max_block_age < 0 or args.fail_closed_after < 0 or args.timeout <= 0:
+        print("ballast: --max-block-age / --fail-closed-after must be >= 0 and --timeout > 0", file=sys.stderr)
+        return 2
     try:
+        supply_ids = [int(x) for x in args.supply_assets.split(",")] if args.supply_assets else [args.breaker]
+        providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
         ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=args.poll_blocks is None)
         poll_blocks = args.poll_blocks
@@ -167,11 +172,12 @@ def cmd_watch(args: argparse.Namespace) -> int:
             poll_blocks = ident.counts.poll_n
         keypair = _watcher_key(ident.profile, args.watcher)
         watchers = _addresses(ident.profile, args.watchers.split(","))
-        providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
-    except (ProfileError, RpcError, ValueError, OSError) as exc:
-        print(f"ballast: {exc}", file=sys.stderr)
+    except OSError as exc:
+        print(f"ballast: node unreachable: {exc}", file=sys.stderr)
+        return 3
+    except Exception as exc:  # noqa: BLE001 — bad flags, profile, key URI: one line, exit 2, no traceback
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
-    supply_ids = [int(x) for x in args.supply_assets.split(",")] if args.supply_assets else [args.breaker]
     wcfg = WatchConfig(
         breaker_id=args.breaker,
         supply_ids=supply_ids,
@@ -183,10 +189,16 @@ def cmd_watch(args: argparse.Namespace) -> int:
         fail_closed_after=args.fail_closed_after,
         poll_interval_s=args.poll_interval,
         max_block_age_s=args.max_block_age or None,
+        read_deadline_s=2 * args.timeout,  # two requests per reading, each bounded by --timeout
     )
     log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
     try:
-        dog = Watchdog(substrate=connect(ident.profile, cfg.url), profile=ident.profile, head_rpc=HttpRpc(cfg.url),
+        try:
+            substrate = connect(ident.profile, cfg.url)
+        except Exception as exc:  # noqa: BLE001
+            log("not-armed", message=f"node unreachable at {cfg.url}: {type(exc).__name__}: {exc}")
+            return 3
+        dog = Watchdog(substrate=substrate, profile=ident.profile, head_rpc=HttpRpc(cfg.url),
                        keypair=keypair, providers=providers, cfg=wcfg, log=log)
         try:
             pre = dog.preflight()
@@ -261,7 +273,7 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--fail-closed-after", type=float, default=300.0,
                    help="seconds with every provider unreachable before freezing (I6; default 300)")
     w.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
-    w.add_argument("--max-block-age", type=float, default=300.0,
+    w.add_argument("--max-block-age", type=float, default=120.0,
                    help="a provider whose latest block is older than this (s) counts as down; 0 = off "
                    "(only for an instant-mining local anvil, whose blocks exist only when a tx lands)")
     w.add_argument("--until-frozen", action="store_true", help="exit 0 once the breaker asset is frozen")

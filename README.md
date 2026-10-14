@@ -193,6 +193,9 @@ python scripts/check_receipts.py            # re-fetch receipts by extrinsic id 
 scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 ```
 
+Tested on the author's one stand-in chain: the unit tests, forge and Hardhat suites also ran from a fresh clone, but `setup_roles.py` was run once and a second
+new chain has not been set up from scratch.
+
 The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
 non-stand-in profile. `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
 `SEPOLIA_*` variables from a file outside the tree (names in `.env.example`). The oracle's V3 deployment path (Hardhat against the V3 EVM RPC)

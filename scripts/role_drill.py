@@ -14,7 +14,8 @@ empty blocks (`anvil_mine`), the local stand-in for Sepolia's ~13–19 min final
   5. judge transfer refused · W1's thaw through M_watch refused (NoPermission) · mint while frozen refused (I7)
   6. custodian re-deposits -> A proposes thaw (M_admin) -> bot refuses: finality has not reached the drain block
   7. finality (anvil) -> bot co-signs -> AssetThawed -> judge transfer succeeds
-  8. A proposes set_team moving the freezer -> bot refuses -> A cancels; a set_team keeping the role map is co-signed
+  8. A proposes set_team moving the freezer, then one moving the admin -> bot refuses both -> A cancels; a set_team
+     keeping the role map is co-signed
 The operator, the bot and the watchers run as `ballast` CLI subprocesses with their own keys; their receipts and
 decisions are copied into evidence/roles-drill-<profile>-<stamp>.json.
 """
@@ -321,6 +322,16 @@ def main() -> int:
                   ok=rc == 1 and out["decision"] == "refused" and "freezer would change" in out["reason"])
         rc, out = cli("team", *swap, "--cancel")
         run.step("A cancels the refused team change", "Ok + Multisig.MultisigCancelled", out["receipt"], rc == 0,
+                 ("Multisig.MultisigCancelled",))
+        admin_swap = ["--issuer", rm.m_mint, "--admin", rm.a, "--freezer", rm.m_watch]
+        rc, out = cli("team", *admin_swap)
+        run.step("A proposes set_team making A the sole admin (could thaw without the bot)", "Ok + Multisig.NewMultisig",
+                 out["receipt"], rc == 0, ("Multisig.NewMultisig",))
+        rc, out = bot("cosign-team", *admin_swap)
+        run.check("bot refuses a set_team that moves the admin off M_admin", [rc, out["decision"]], [1, "refused"],
+                  "bot", ok=rc == 1 and out["decision"] == "refused" and "admin must stay M_admin" in out["reason"])
+        rc, out = cli("team", *admin_swap, "--cancel")
+        run.step("A cancels the refused admin swap", "Ok + Multisig.MultisigCancelled", out["receipt"], rc == 0,
                  ("Multisig.MultisigCancelled",))
         keep = ["--issuer", rm.m_mint, "--admin", rm.m_admin, "--freezer", rm.m_watch]
         rc, out = cli("team", *keep)

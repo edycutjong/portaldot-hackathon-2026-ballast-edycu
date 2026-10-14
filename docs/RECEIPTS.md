@@ -316,6 +316,77 @@ Other runs, newest first, any verdict (full tables in the JSON):
 - asset 2007 — 2026-10-14T11:31:50Z — PASS (13/13 steps as expected, 7/7 state checks) — source: not pinned (recorded before pinning existed) — [`evidence/drill-outage-standin-upstream-asset2007.json`](../evidence/drill-outage-standin-upstream-asset2007.json)
 - asset 2003 — 2026-10-14T11:21:35Z — PASS (13/13 steps as expected, 7/7 state checks) — source: not pinned (recorded before pinning existed) — [`evidence/drill-outage-standin-upstream-asset2003.json`](../evidence/drill-outage-standin-upstream-asset2003.json)
 
+### Breaker drill (heartbeat: no bot heartbeat for K blocks -> freeze (I8)) — asset 2037 — 2026-10-14T12:53:39Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/drill-heartbeat-standin-upstream-asset2037.json`](../evidence/drill-heartbeat-standin-upstream-asset2037.json) · watchdog log: [`evidence/drill-heartbeat-standin-upstream-asset2037.watchdog.jsonl`](../evidence/drill-heartbeat-standin-upstream-asset2037.watchdog.jsonl) · result: **PASS** (13/13 steps as expected, 9/9 state checks) · source: `fd9e593` (clean)
+
+Deployed initcode sha256: ReserveVault `2b03363cd765b37e0cf9a1a81ed60ec0a6ef8c4c91a0c03eadd56f8247a4c911`, MockUSDC `ca848fc1870c675c7a4fbd40a0a43439e013cb21268dc3b770d3b22745879753`.
+
+Watcher parameters: `--timeout 3`, `--fail-closed-after 300`, `--max-block-age 0 (stale-block check off: anvil mines only when a tx lands)`, `--heartbeat-k 10`.
+
+Reason remark (in the freeze extrinsic): `BALLAST/1|freeze|a=2037|reason=no-heartbeat|s=100000000|b=5CV5Em12kiJkzxePKai4aaNBkueyq2bL6j7QLM8mJ9Xw46x9|n=0|since=4331|k=10`
+
+Timing (wall-clock on one machine; stand-in chain + local anvil reserve (not V3, not Sepolia)):
+
+- `trigger_head`: 4341
+- `freeze_block`: 4342
+- `freeze_block_timestamp_ms`: 1791982479004
+- `submit_to_inclusion_s`: 2.66
+- `heartbeat_k (drill override; production K = 600 on this profile)`: 10
+- `nonce_first_seen_block`: 4331
+- `blocks_nonce_still_to_freeze_included`: 11
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x2E2Ed0Cfd3AD2f1d34481277b3204d807Ca2F8c2`, token `0x21dF544947ba3E8b3c32561399E88B52Dc8b2823`):
+
+| # | Step | Block | Tx hash | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 266 | `0x1b09b89d5f8a813ecfb1c6266891d39a9e995605e209f6cf6514a033ba0e37b9` | status 1 | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc) — owner = custodian | 267 | `0x84ad630d081fcff35629f6b1126fa02cffddaccdf772354383538044d8d8529e` | status 1 | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 into the vault | 268 | `0x168a377b497c789de83b4a43c0881568a31b640f607fee9eeb59f3dc8dc4b1f6` | status 1 | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund A, W1, W2, judge, peer, M_watch (>= ED) | `Utility.batch_all[6 x Balances.transfer_keep_alive]` (Alice, stand-in funder) | `4323-2` | Ok | ✅ Ok |
+| 2 | create asset 2037 | `Assets.create` (A) | `4324-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-test (6 decimals) | `Assets.set_metadata` (A) | `4325-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | create asset 2038 | `Assets.create` (A) | `4326-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 5 | set_metadata pUSDC-ctl (6 decimals) | `Assets.set_metadata` (A) | `4327-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 6 | set_team asset 2037: freezer = M_watch (1-of-2 watchers) | `Assets.set_team` (A) | `4328-2` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | mint S1 = 50.00 of asset 2037 to the judge | `Assets.mint` (A) | `4330-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 8 | mint S2 = 50.00 of control asset 2038 to the peer | `Assets.mint` (A) | `4331-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 9 | watchdog (W2) freezes asset 2037 via M_watch, reason on chain (reason=no-heartbeat) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2) | `4342-2` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 10 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `4343-2` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+
+Block and transaction hashes (full):
+
+```
+ 1    4323-2 block 0xd299e6b52ca0232e4ccb7328c957a8e60c17bfb030f66c1ebf0e29e38484ab80  tx 0xae597c53e791f9788aac421737ec49662f35673dbac0f42cd3fff30d6109b4a3
+ 2    4324-2 block 0xa4116b21250928fb2051f229465c8123d4d3b0c5c1fd30619476c69c439120ed  tx 0xf60a890d3f08fa3e4eabe8bc529a02076976f577245c567d2ee0796c642f7955
+ 3    4325-2 block 0x5d085469bc1b78cb5ce0734df89d714f16b21eff73b681e570aeb89bd812aed7  tx 0x58921c6eaea825cc2b725ab2ca10660d9af03c36866d261ae9f20b8b27dae5f8
+ 4    4326-2 block 0x2ecb43c2a33141fc556bf4795a25d612f44179f34496c898345bb1eb56b31708  tx 0xf0f673e0ea969c0b17797d23108e20aaad2725f23c4936d6ce834a1cd76fbde7
+ 5    4327-2 block 0x015b2cc3cc13bf6f84e32c3afb6420813597a8b03e9626b62531191089d951bd  tx 0x7a513b397579935a2847b2233f7359a20f6558bc41ac4d7526ba8fca95f95500
+ 6    4328-2 block 0x27d4dc3647b0202256f94f05d8aebdb6c1dcf70120676198442a2a451931e924  tx 0xddb8006c59904c8f8ebde329184d96c6c7b57a06cccd998635a4d442d6b6c4bd
+ 7    4330-2 block 0x2cf44f6509379d645e18dabd8b904412922dc0d14211fa58c3537859a78a11f1  tx 0xc3c05eb1ceb3b1d9950951a37c5d647509fe6001d4a7591cb2b5316d7ed6df40
+ 8    4331-2 block 0x50fde574e8726e3bdf6f659a2c3376d56b13acdd0e967b878cb6e85590ca145d  tx 0x5e494ea3be89d82689005580d891d57ae720e91e031f3b40623dc8bc5cea539f
+ 9    4342-2 block 0xb07b11ad7bb28b444f04691b02f6d3685db532b2b09f40f6920457b98f196013  tx 0xd5770aabce7b43adcd9868a21ade5952fa00aae5f2bc509198dbb1ce27387356
+10    4343-2 block 0x999f56d81cb67ab7dced9fbbf8b49e171d3ce932213dd73089979854da3172e6  tx 0xa3336f12a160a1f8b4c0bc39fb05669543c416d4d0ac5609e50bd3bf6fa0cf36
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ vault reserves() after deposit: expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ supply S1 + S2 == vault reserves (level): expected `100000000`, observed `100000000` at block `0x50fde574e8726e3bdf6f659a2c3376d56b13acdd0e967b878cb6e85590ca145d`
+- ✅ watchdog armed: its M_watch == the breaker's freezer: expected `True`, observed `True` at block `watchdog start record`
+- ✅ Asset(2037).status after the freeze: expected `Frozen`, observed `Frozen` at block `0xb07b11ad7bb28b444f04691b02f6d3685db532b2b09f40f6920457b98f196013`
+- ✅ System.Remarked hash == blake2_256(the reason remark): expected `0xfce102a7bd1b9623e075aabf273cffb71f1235d9dc36614c00700d2a66897900`, observed `0xfce102a7bd1b9623e075aabf273cffb71f1235d9dc36614c00700d2a66897900` at block `0xb07b11ad7bb28b444f04691b02f6d3685db532b2b09f40f6920457b98f196013`
+- ✅ control asset 2038 untouched (Live): expected `Live`, observed `Live` at block `0xb07b11ad7bb28b444f04691b02f6d3685db532b2b09f40f6920457b98f196013`
+- ✅ judge balance unchanged after the refused transfer: expected `50000000`, observed `50000000` at block `0x999f56d81cb67ab7dced9fbbf8b49e171d3ce932213dd73089979854da3172e6`
+- ✅ the triggering check saw the bot nonce unchanged for >= K blocks: expected `True`, observed `True` at block `watchdog log`
+- ✅ reserves were level at the trigger (the freeze is the heartbeat rule alone): expected `[]`, observed `[]` at block `watchdog log`
+
+
 ### ReserveOracle on Revive — 2026-10-14T12:33:08Z
 
 Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** (Revive accepts EVM bytecode on this stand-in; V3 deploy pending) · contract `0x51312c0ddcc67c279dc183a19d60e6d66a76b189` · attester `0x4dc969838572d068ead3ab831399049dd2269b13` · raw JSON: [`evidence/oracle-revive-standin-upstream-20261014T123308Z.json`](../evidence/oracle-revive-standin-upstream-20261014T123308Z.json) · result: **PASS** (5/5 steps as expected, 6/6 state checks) · source: `dcf5f79` (clean) · initcode sha256 `1ed85b9a1cd1dc07ec2759e5031088f40c89fd4c75f37ff4e27fec54a2b62cc9`

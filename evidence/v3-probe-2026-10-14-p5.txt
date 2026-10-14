@@ -1,0 +1,5 @@
+# V3 reachability probe — 2026-10-14T14:59:52Z (P5)
+$ dig +short testnetv3-node.feso-apps.xyz @1.1.1.1
+(empty output = no DNS record)
+$ dig +short testnetv3-eth-rpc.feso-apps.xyz @1.1.1.1
+(empty output = no DNS record)

@@ -1,0 +1,85 @@
+{
+  "erc20": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  "holder": "0xDEf7Cd11f524C2246571654110b43476C2BD9300",
+  "chain_ids": {
+    "publicnode": 11155111,
+    "drpc": 11155111
+  },
+  "tags": {
+    "latest": {
+      "readings": [
+        {
+          "provider": "publicnode",
+          "tag": "latest",
+          "block_number": 11914008,
+          "block_hash": "0xeaddcadc867db95e231fd3b0631db5e856b8cb520931532fb8b7856c479a8b0f",
+          "block_timestamp": 1791989976,
+          "reserves": "20000000",
+          "error": null,
+          "read_at": "2026-10-14T14:59:45.126Z",
+          "seconds": 0.493
+        },
+        {
+          "provider": "drpc",
+          "tag": "latest",
+          "block_number": 11914008,
+          "block_hash": "0xeaddcadc867db95e231fd3b0631db5e856b8cb520931532fb8b7856c479a8b0f",
+          "block_timestamp": 1791989976,
+          "reserves": "20000000",
+          "error": null,
+          "read_at": "2026-10-14T14:59:45.126Z",
+          "seconds": 0.502
+        }
+      ],
+      "disagreements": []
+    },
+    "finalized": {
+      "readings": [
+        {
+          "provider": "publicnode",
+          "tag": "finalized",
+          "block_number": 11913933,
+          "block_hash": "0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda",
+          "block_timestamp": 1791989076,
+          "reserves": "20000000",
+          "error": null,
+          "read_at": "2026-10-14T14:59:45.629Z",
+          "seconds": 0.463
+        },
+        {
+          "provider": "drpc",
+          "tag": "finalized",
+          "block_number": 11913933,
+          "block_hash": "0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda",
+          "block_timestamp": 1791989076,
+          "reserves": "20000000",
+          "error": null,
+          "read_at": "2026-10-14T14:59:45.634Z",
+          "seconds": 0.54
+        }
+      ],
+      "disagreements": []
+    }
+  },
+  "note": "holder = Ballast's Sepolia testnet deployer wallet, NOT a vault: no ReserveVault is deployed on Sepolia (wallet below 100.00 USDC). P5 evidence refresh.",
+  "cross_check": {
+    "tag": "finalized",
+    "anchor_provider": "publicnode",
+    "block_number": 11913933,
+    "block_hash": "0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda",
+    "erc20": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    "holder": "0xDEf7Cd11f524C2246571654110b43476C2BD9300",
+    "providers": {
+      "publicnode": {
+        "block_hash": "0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda",
+        "reserves": "20000000"
+      },
+      "drpc": {
+        "block_hash": "0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda",
+        "reserves": "20000000"
+      }
+    },
+    "agree": true,
+    "read_at": "2026-10-14T14:59:47.420Z"
+  }
+}

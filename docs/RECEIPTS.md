@@ -144,6 +144,44 @@ State checks (storage/events read at the step's block):
 - ✅ judge balance unchanged after the refused transfer: expected `50000000`, observed `50000000` at block `0x3e95ad7fc43888095fc1971fe80f475cbaad61e2a41b13544a817c15d86727df`
 
 
+### ReserveOracle on Revive — 2026-10-14T11:29:35Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** (Revive accepts EVM bytecode on this stand-in; V3 deploy pending) · contract `0x97f0eea7d362977202c05f85cd9b8307623981ae` · attester `0x4dc969838572d068ead3ab831399049dd2269b13` · raw JSON: [`evidence/oracle-revive-standin-upstream-20261014T112935Z.json`](../evidence/oracle-revive-standin-upstream-20261014T112935Z.json) · result: **PASS** (7/7 steps as expected, 6/6 state checks)
+
+Posted values mirror drill `drill-drain-standin-upstream-asset2001.json` (reserve: local-anvil (not Sepolia)); posted values copied from that drill's evidence; posted by this script, not by a bot.
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund B and the stranger (deposits + fees) | `Utility.batch_all[2 x Balances.transfer_keep_alive]` (Alice, stand-in funder) | `2641-2` | Ok | ✅ Ok |
+| 2 | Revive.map_account (B (reserve bot, attester)) | `Revive.map_account` (B (reserve bot, attester)) | `2642-2` | Ok | ✅ Ok |
+| 3 | Revive.map_account (Judge (stranger)) | `Revive.map_account` (Judge (stranger)) | `2643-2` | Ok | ✅ Ok |
+| 4 | B deploys ReserveOracle(attester = 0x4dc969838572d068ead3ab831399049dd2269b13) | `Revive.instantiate_with_code` (B (reserve bot, attester)) | `2644-2` | Ok + Revive.Instantiated | ✅ Ok · Revive.Instantiated |
+| 5 | B (reserve bot, attester) posts level state (pdBlock 2473) | `Revive.call` (B (reserve bot, attester)) | `2645-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 6 | stranger's post is refused (onlyAttester) | `Revive.call` (Judge (stranger)) | `2646-2` | Err(Revive.ContractReverted) | ✅ Err(Revive.ContractReverted) |
+| 7 | B (reserve bot, attester) posts FROZEN/drained state (pdBlock 2476) | `Revive.call` (B (reserve bot, attester)) | `2647-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+
+Block and transaction hashes (full):
+
+```
+ 1    2641-2 block 0x57b92359e9627c21a691aee5632ba28024eca94e4b2766019a37daaabc488cd3  tx 0x553051f5be01c14b304ac0089d24bce4cf7145d522f962ea592995fef9eaf9bd
+ 2    2642-2 block 0xc488be7852c98c4f5639cf4bec7b92b3f21415f50b47c582f9ab9e714d307e3d  tx 0xb883a834127910a8249211232f4caecc2d567c245ff5016ea7f3678bda1cf27d
+ 3    2643-2 block 0x935ef32f27681406e9f285f70335762f3da57ed68d2666dcd96bde0778fc3c98  tx 0xd743c16627a6490b5d67212c8fe039196a49f6c5b0bd2748b0c151dd75758192
+ 4    2644-2 block 0x5a30ab4bec21d657ac00e8b17342b8cb8d71b435ee5566f07fbd4c9804b4fc33  tx 0x1279344b10e5a1ac721183aa5d8eb0ee9eea05c91f2e0b4b1f5aaba0b7338d25
+ 5    2645-2 block 0x972c2060c1efecb687b7d79088a090c2a202090353ae6145c9ad050495217e74  tx 0x6fbc669805cd1267803b79235be2ead3a17fc047936f8b7e2d51fc8e2af67c5f
+ 6    2646-2 block 0xaadec935cca8c2bd5ea02a01a09b0f2f0495509ed5d8f59b054fd9f5adf8957f  tx 0xbe0167df629ede7e4c5d555bab0e9c85817783209798512bba0552be9aa8b8c3
+ 7    2647-2 block 0xb6b070787fd5510aa020c8a50f39c106d35649aea466625e9d96041f6f30b2fa  tx 0xf49edc6d94e3bbd2990131b16aa2983184a1c51ad06874c7554b7c1a25b898c2
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ attester() == B's H160: expected `0x4dc969838572d068ead3ab831399049dd2269b13`, observed `0x4dc969838572d068ead3ab831399049dd2269b13` at block `0x5a30ab4bec21d657ac00e8b17342b8cb8d71b435ee5566f07fbd4c9804b4fc33`
+- ✅ isBacked(3600) before any post: expected `False`, observed `False` at block `0x5a30ab4bec21d657ac00e8b17342b8cb8d71b435ee5566f07fbd4c9804b4fc33`
+- ✅ isBacked(3600) after the level post: expected `True`, observed `True` at block `0x972c2060c1efecb687b7d79088a090c2a202090353ae6145c9ad050495217e74`
+- ✅ isBacked(3600) unchanged by the refused post: expected `True`, observed `True` at block `0xaadec935cca8c2bd5ea02a01a09b0f2f0495509ed5d8f59b054fd9f5adf8957f`
+- ✅ isBacked(3600) after the frozen/drained post: expected `False`, observed `False` at block `0xb6b070787fd5510aa020c8a50f39c106d35649aea466625e9d96041f6f30b2fa`
+- ✅ status() = (S1, S2, reserves, sepBlock, sepHash, pdBlock, frozen) of the drained drill state: expected `[50000000, 50000000, 70000000, 4, '0x56c447a205b3bce3ffeee23c57f8e221c56d4df5386c1218abd018cd0484c6dc', 2476, True]`, observed `[50000000, 50000000, 70000000, 4, '0x56c447a205b3bce3ffeee23c57f8e221c56d4df5386c1218abd018cd0484c6dc', 2476, True]` at block `0xb6b070787fd5510aa020c8a50f39c106d35649aea466625e9d96041f6f30b2fa`
+
+
 ### Spike run — asset 1008 — 2026-10-14T10:01:43Z
 
 Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · genesis `0x0c4402ef4ccc34d28b16523e1cf26831716527c61a65d8e0840ab26e1636c8a2` · spec `node/268` · raw JSON: [`evidence/spike-assets-standin-upstream-asset1008.json`](../evidence/spike-assets-standin-upstream-asset1008.json) · result: **PASS** (11/11 steps as expected + 1 observation, 10/10 state checks)

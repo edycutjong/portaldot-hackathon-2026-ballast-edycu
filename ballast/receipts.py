@@ -14,7 +14,7 @@ EVIDENCE = ROOT / "evidence"
 RECEIPTS_MD = ROOT / "docs" / "RECEIPTS.md"
 
 
-RUN_PATTERNS = ("spike-assets-*.json", "drill-*.json")
+RUN_PATTERNS = ("spike-assets-*.json", "drill-*.json", "oracle-*.json")
 
 
 def load_runs(patterns: tuple[str, ...] = RUN_PATTERNS) -> list[dict]:
@@ -138,6 +138,22 @@ def render_drill_section(run: dict) -> list[str]:
     return lines + _steps_body(run)
 
 
+def render_oracle_section(run: dict) -> list[str]:
+    ident, oracle = run["chain"], run.get("oracle", {})
+    lines = [
+        f"### ReserveOracle on Revive — {run['started_at']}",
+        "",
+        f"Chain: **{ident['label']}** (Revive accepts EVM bytecode on this stand-in; V3 deploy pending) · contract "
+        f"`{oracle.get('address')}` · attester `{oracle.get('attester')}` · raw JSON: "
+        f"[`evidence/{run['_file']}`](../evidence/{run['_file']}) · result: **{run['verdict']}** ({score(run)})",
+        "",
+        f"Posted values mirror drill `{run['mirrors']['drill']}` (reserve: {run['mirrors']['reserve']}); "
+        f"{run['mirrors']['note']}.",
+        "",
+    ]
+    return lines + _steps_body(run)
+
+
 STANDIN_NOTE = [
     "Measured on a **local** stand-in chain while the Portaldot V3 testnet is unreachable. Nothing in this",
     "section is a V3 measurement. The chain is a local `--dev` node: `scripts/check_receipts.py` re-fetches",
@@ -170,7 +186,7 @@ def render_receipts_md() -> str:
                     f"Chain label: {group[0]['chain']['label']}", ""]
         else:
             out += [f"## V3 receipts — {profile}", "", f"Chain label: {group[0]['chain']['label']}", ""]
-        kinds = (("drill", "drain"), ("drill", "outage"), ("spike-assets", None))
+        kinds = (("drill", "drain"), ("drill", "outage"), ("oracle-deploy", None), ("spike-assets", None))
         for kind, scenario in kinds:
             runs_k = [r for r in group if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
             if not runs_k:
@@ -180,7 +196,8 @@ def render_receipts_md() -> str:
             runs_k = [lead] + [r for r in runs_k if r is not lead]
             for i, run in enumerate(runs_k):
                 if i == 0:
-                    out += render_drill_section(run) if kind == "drill" else render_spike_section(run)
+                    render = {"drill": render_drill_section, "oracle-deploy": render_oracle_section}
+                    out += render.get(kind, render_spike_section)(run)
                 else:
                     if i == 1:
                         out += ["Earlier runs (full tables in the JSON):", ""]

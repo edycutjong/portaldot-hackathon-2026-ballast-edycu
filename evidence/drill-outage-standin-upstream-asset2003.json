@@ -1091,7 +1091,7 @@
       "block_hash": "0x3e95ad7fc43888095fc1971fe80f475cbaad61e2a41b13544a817c15d86727df"
     }
   ],
-  "watchdog_cmd": "python -m ballast.cli --profile standin-upstream --url ws://127.0.0.1:49944 watch --breaker 2003 --supply-assets 2003,2004 --holder 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707 --token 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 --watcher //BallastW2 --watchers //BallastW1,//BallastW2 --until-frozen --max-seconds 180.0 --log /Users/edycu/Hackathon/dorahacks/dorahacks-portaldot-hacker-house-2026/ballast/build/evidence/drill-outage-standin-upstream-asset2003.watchdog.jsonl --timeout 3 --fail-closed-after 15.0 --provider down-1=http://127.0.0.1:9 --provider down-2=http://127.0.0.1:10",
+  "watchdog_cmd": "python -m ballast.cli --profile standin-upstream --url ws://127.0.0.1:49944 watch --breaker 2003 --supply-assets 2003,2004 --holder 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707 --token 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 --watcher //BallastW2 --watchers //BallastW1,//BallastW2 --until-frozen --max-seconds 180.0 --log <build>/evidence/drill-outage-standin-upstream-asset2003.watchdog.jsonl --timeout 3 --fail-closed-after 15.0 --provider down-1=http://127.0.0.1:9 --provider down-2=http://127.0.0.1:10",
   "watchdog": {
     "watcher": "5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP",
     "m_watch": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D",

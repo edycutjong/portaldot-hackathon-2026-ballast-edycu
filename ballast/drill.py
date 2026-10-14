@@ -248,7 +248,7 @@ def run_drill(args: argparse.Namespace) -> int:
         cmd = [sys.executable, "-m", "ballast.cli", "--profile", profile.name, "--url", cfg.url, "watch",
                "--breaker", str(breaker), "--supply-assets", f"{breaker},{control}", "--holder", vault_addr,
                "--token", usdc_addr, "--watcher", "//BallastW2", "--watchers", "//BallastW1,//BallastW2",
-               "--until-frozen", "--max-seconds", str(args.timeout), "--log", str(log_path), "--timeout", "3",
+               "--until-frozen", "--max-seconds", str(args.timeout), "--log", str(log_path.relative_to(ROOT)), "--timeout", "3",
                "--fail-closed-after", str(args.fail_closed_after if args.scenario == "outage" else 300)]
         for p in providers:
             cmd += ["--provider", p]

@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 import time
 from collections.abc import Iterable, Sequence
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -48,7 +48,9 @@ class Web3Provider:
 
         self.name = name
         self.url = url
-        self._provider = HTTPProvider(url, request_kwargs={"timeout": timeout})
+        # No library retries: one request = at most `timeout` seconds. The watchdog polls again anyway, and a silent
+        # 5x retry would turn a black-holed provider into a ~1 minute stall of every check.
+        self._provider = HTTPProvider(url, request_kwargs={"timeout": timeout}, exception_retry_configuration=None)
 
     def call(self, method: str, params: list[Any]) -> Any:
         try:
@@ -75,8 +77,12 @@ def _short(exc: Exception) -> str:
     return f"{type(exc).__name__}: {text[:160]}"
 
 
+PROVIDER_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,31}")  # names go into on-chain remarks: no `|`, `=`, `,`
+
+
 def providers_from(specs: Iterable[str | tuple[str, str]], timeout: float = 10.0) -> list[Web3Provider]:
-    """`name=url` strings (or (name, url) pairs) -> providers. A bare URL is named by its position."""
+    """`name=url` strings (or (name, url) pairs) -> providers. A bare URL is named by its position.
+    Names are lowercase `[a-z0-9-]`, at most 32 chars (they appear in BALLAST/1 remarks)."""
     out = []
     for i, spec in enumerate(specs, 1):
         if isinstance(spec, tuple):
@@ -85,6 +91,8 @@ def providers_from(specs: Iterable[str | tuple[str, str]], timeout: float = 10.0
             name, url = spec.split("=", 1)
         else:
             name, url = f"provider{i}", spec
+        if not PROVIDER_NAME.fullmatch(name):
+            raise ValueError(f"provider name {name!r}: use lowercase letters, digits and '-' (max 32)")
         out.append(Web3Provider(name, url, timeout=timeout))
     if len({p.name for p in out}) != len(out):
         raise ValueError("provider names must be unique")
@@ -203,13 +211,29 @@ def read_reserves(
 
 
 def read_all(
-    providers: Sequence[EvmRpc], token: str, holder: str, tag: str = "latest", max_block_age_s: float | None = None
+    providers: Sequence[EvmRpc],
+    token: str,
+    holder: str,
+    tag: str = "latest",
+    max_block_age_s: float | None = None,
+    deadline_s: float | None = None,
 ) -> list[ReserveReading]:
-    """Every provider in parallel (a hung provider must not delay a healthy one), results in provider order."""
-    if len(providers) <= 1:
-        return [read_reserves(p, token, holder, tag, max_block_age_s) for p in providers]
-    with ThreadPoolExecutor(max_workers=len(providers)) as pool:
-        return list(pool.map(lambda p: read_reserves(p, token, holder, tag, max_block_age_s), providers))
+    """Every provider in parallel, results in provider order. With `deadline_s`, a provider still busy at the
+    deadline is a failed reading ("no answer within …") — a hung provider can delay a check by at most the deadline."""
+    if not providers:
+        return []
+    pool = ThreadPoolExecutor(max_workers=len(providers))
+    futures = [pool.submit(read_reserves, p, token, holder, tag, max_block_age_s) for p in providers]
+    wait(futures, timeout=deadline_s)
+    pool.shutdown(wait=False, cancel_futures=True)  # never block on a hung provider's thread
+    out = []
+    for p, f in zip(providers, futures):
+        if f.done():
+            out.append(f.result())
+        else:
+            out.append(ReserveReading(provider=p.name, tag=tag, error=f"{p.name}: no answer within {deadline_s}s",
+                                      seconds=deadline_s))
+    return out
 
 
 @dataclass

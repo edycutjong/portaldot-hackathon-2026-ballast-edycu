@@ -390,6 +390,48 @@ def cmd_bot(args: argparse.Namespace) -> int:
     return 0 if out.get("executed_ok") else 3
 
 
+def cmd_verify(args: argparse.Namespace) -> int:
+    """Re-check every BALLAST/1 remark and asset-1 event of the deployment, on both chains."""
+    from datetime import datetime, timezone
+
+    from .receipts import EVIDENCE
+    from .verify import Roles, Verifier, summary
+
+    try:
+        profile, substrate, dep = _deployment_context(args)
+        providers = _providers(args, dep, bot_order=True)
+        start = args.from_block
+        if start is None:
+            setup = json.loads((EVIDENCE / dep.setup_evidence).read_text())
+            start = min(st["receipt"]["block_number"] for st in setup["steps"])
+        end = args.to_block or substrate.get_block_number(None)
+        if start > end:
+            raise ValueError(f"--from {start} > --to {end}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    quiet = args.json
+    v = Verifier(substrate, Roles.from_deployment(dep), providers, dep.reserve["vault"], dep.reserve["erc20"],
+                 log=(lambda s: None) if quiet else print)
+    if not quiet:
+        print(f"[{profile.name}] verify blocks #{start}..#{end} · asset {dep.breaker} · reserve {dep.reserve['label']}")
+    findings = v.run(start, end)
+    report = {"profile": profile.name, "chain": profile.label, "reserve": dep.reserve["label"], "from": start,
+              "to": end, "checked_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "summary": summary(findings), "findings": [f.as_dict() for f in findings]}
+    if args.out:
+        with open(args.out, "w") as fh:
+            json.dump(report, fh, indent=2, default=str)
+            fh.write("\n")
+    if quiet:
+        print(json.dumps(report, default=str))
+    else:
+        sm = report["summary"]
+        print(f"{sm['verdict']}: {sm['attestations_pass']}/{sm['attestations_counted']} B attestations PASS · "
+              f"{sm['rejected']} REJECTED (not counted) · {sm['failures_or_flags']} FAIL/FLAGGED · {sm['counts']}")
+    return 0 if report["summary"]["verdict"] == "PASS" else 1
+
+
 def cmd_drill(args: argparse.Namespace) -> int:
     from .drill import run_drill
 
@@ -498,6 +540,18 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
         p.add_argument("--db", default="ballast.db", help="SQLite decision log (default ballast.db)")
     b.set_defaults(func=cmd_bot)
+
+    v = sub.add_parser("verify", help="re-check every BALLAST/1 remark (per-type signers) and asset-1 event on both "
+                       "chains; flags thaws without the bot, DISARMED teams, oracle posts without a remark")
+    v.add_argument("--from", dest="from_block", type=int, help="first block (default: the role-split setup)")
+    v.add_argument("--to", dest="to_block", type=int, help="last block (default: head)")
+    v.add_argument("--provider", action="append", metavar="NAME=URL",
+                   help="reserve-chain provider, repeatable (default: the manifest's, else Sepolia drpc + publicnode)")
+    v.add_argument("--timeout", type=float, default=10.0)
+    v.add_argument("--json", action="store_true")
+    v.add_argument("--out", metavar="FILE", help="also write the report as JSON")
+    deployment_args(v)
+    v.set_defaults(func=cmd_verify)
 
     d = sub.add_parser("drill", help="breaker drill on a stand-in against a local anvil reserve")
     d.add_argument("--scenario", choices=("drain", "outage", "heartbeat"), default="drain",

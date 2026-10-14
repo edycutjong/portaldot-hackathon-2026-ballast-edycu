@@ -13,6 +13,9 @@ from .dispatch import Outcome, extrinsic_outcome, multisig_inner_results
 from .types_1002 import patch_assets_balance_u64
 
 
+WS_TIMEOUT_S = 60
+
+
 class _Substrate1002(SubstrateInterface):
     """Re-applies the spec-1002 Assets u64 patch whenever the SDK (re)loads runtime metadata."""
 
@@ -25,7 +28,8 @@ class _Substrate1002(SubstrateInterface):
 
 def connect(profile: Profile, url: str) -> SubstrateInterface:
     cls = _Substrate1002 if profile.patch_assets_u64 else SubstrateInterface
-    kwargs: dict[str, Any] = {"url": url}
+    # A socket timeout: a node that stops answering raises instead of hanging a watcher forever.
+    kwargs: dict[str, Any] = {"url": url, "ws_options": {"timeout": WS_TIMEOUT_S}}
     if profile.type_registry_preset:
         kwargs["type_registry_preset"] = profile.type_registry_preset
     substrate = cls(**kwargs)

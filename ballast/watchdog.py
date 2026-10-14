@@ -2,16 +2,17 @@
 
 Loop (one watcher key, freeze-only):
   1. poll the Portaldot head over HTTP (no subscription) and act every N blocks;
-  2. read the supply S of every backed asset (asset 1 + the control asset) and the breaker asset's status at
-     that head's hash;
-  3. read `balanceOf(vault)` on the reserve token from every EVM provider, each at its own `latest` block hash;
+  2. read `balanceOf(vault)` on the reserve token from every EVM provider (in parallel, bounded by a deadline),
+     each at its own `latest` block hash;
+  3. THEN read the supply S of every backed asset (asset 1 + the control asset) and the breaker's status at a
+     fresh head — reserves first, so a redemption (burn, then release) can never look like a deficit;
   4. decide (`decide`, pure):
        - already frozen                         -> nothing to do (idempotent, no transaction);
-       - any provider reads reserves < S        -> freeze, why=deficit;
-       - every provider unreachable > timeout   -> freeze, why=providers-down (fail-closed, invariant I6);
+       - any provider reads reserves < S        -> freeze, reason=deficit;
+       - every provider unreachable > timeout   -> freeze, reason=providers-down (fail-closed, invariant I6);
        - otherwise                              -> level (provider disagreements are logged, never ignored);
   5. freeze = ONE atomic `Utility.batch_all` signed by the watcher:
-       [System.remark_with_event("BALLAST/1|freeze|…reason…"),
+       [System.remark_with_event("BALLAST/1|freeze|a=…|reason=deficit|providers-down|…"),
         Multisig.as_multi_threshold_1(other watchers, Assets.freeze_asset(breaker))]
      so the reason is on chain in the same extrinsic as the freeze, and the freezer role is the 1-of-N watcher
      multisig, never a single key. `as_multi_threshold_1` returns the wrapped call's error as its own (measured on
@@ -53,6 +54,7 @@ FAST_RETRIES = 3  # consecutive failures retried on the very next poll; after th
 FEE_HEADROOM = 10  # the watcher key must hold ED + 10 x the freeze extrinsic's fee
 
 LEVEL, DEFICIT, OUTAGE, FAIL_CLOSED, ALREADY_FROZEN = "level", "deficit", "outage", "fail-closed", "already-frozen"
+REMARK_REASON = {DEFICIT: "deficit", FAIL_CLOSED: "providers-down"}  # spec: BALLAST/1|freeze|reason=providers-down
 
 
 def reserve_label(evm_chain_id: int | None) -> str:
@@ -68,20 +70,21 @@ class AssetState:
     asset_id: int
     exists: bool
     supply: int = 0
-    frozen: bool = False
+    frozen: bool = False  # transfers blocked: Frozen, or Destroying (cannot be frozen any more either)
     freezer: str | None = None
+    status: str = "Live"
 
 
 def asset_state(asset_id: int, details: dict | None) -> AssetState:
     """`Assets.Asset(id)` -> state. Modern runtimes carry `status: Live|Frozen|Destroying`; spec 1002 `is_frozen`."""
     if not details:
-        return AssetState(asset_id=asset_id, exists=False)
+        return AssetState(asset_id=asset_id, exists=False, status="missing")
     if "status" in details:
-        frozen = details["status"] == "Frozen"
+        status = str(details["status"])
     else:
-        frozen = bool(details.get("is_frozen", False))
-    return AssetState(asset_id=asset_id, exists=True, supply=int(details["supply"]), frozen=frozen,
-                      freezer=details.get("freezer"))
+        status = "Frozen" if details.get("is_frozen", False) else "Live"
+    return AssetState(asset_id=asset_id, exists=True, supply=int(details["supply"]), frozen=status != "Live",
+                      freezer=details.get("freezer"), status=status)
 
 
 @dataclass
@@ -122,7 +125,7 @@ def decide(
     outage_since = None if ok else (outage_since if outage_since is not None else now)
     reserves_min = comparison.min_reserves
     if frozen:
-        return Decision(ALREADY_FROZEN, supply, reserves_min, detail="asset already frozen; no transaction"), outage_since
+        return Decision(ALREADY_FROZEN, supply, reserves_min, detail="asset not live (frozen); no transaction"), outage_since
     short = comparison.short(supply)
     if short:
         worst = min(short, key=lambda r: r.reserves)
@@ -149,7 +152,9 @@ def decide(
 
 def freeze_remark(asset_id: int, decision: Decision, providers: Sequence[str]) -> str:
     """`BALLAST/1|freeze|…` — why the watcher froze, in the same extrinsic as the freeze."""
-    parts = [REMARK_PREFIX, "freeze", f"a={asset_id}", f"why={decision.action}", f"s={decision.supply}"]
+    if decision.action not in REMARK_REASON:
+        raise ValueError(f"no freeze for action {decision.action!r}")
+    parts = [REMARK_PREFIX, "freeze", f"a={asset_id}", f"reason={REMARK_REASON[decision.action]}", f"s={decision.supply}"]
     if decision.action == DEFICIT:
         worst = min(decision.short, key=lambda r: int(r["reserves"]))
         parts += [f"r={worst['reserves']}", f"p={worst['provider']}", f"eb={worst['block_number']}",
@@ -192,16 +197,21 @@ class JsonLog:
 
     def __call__(self, event: str, **fields: Any) -> dict:
         record = {"t": now_iso(), "event": event, **self.context, **fields}
-        try:
-            if self._fh:
+        if self._fh:
+            try:
                 self._fh.write(json.dumps(record, default=str) + "\n")
-            if self.echo:
+            except Exception:  # noqa: BLE001 — one sink failing must not silence the other
+                self.dropped += 1
+        if self.echo:
+            try:
                 summary = fields.get("decision", {}).get("detail") if isinstance(fields.get("decision"), dict) else None
                 msg = fields.get("message") or summary or ""
                 head = f" #{fields['head']}" if "head" in fields else ""
-                print(f"[watchdog {self.context.get('profile', '?')}] {event}{head} {msg}".rstrip(), file=sys.stderr)
-        except Exception:  # noqa: BLE001
-            self.dropped += 1
+                lost = f" [log file: {self.dropped} record(s) dropped]" if self.dropped else ""
+                print(f"[watchdog {self.context.get('profile', '?')}] {event}{head} {msg}{lost}".rstrip(),
+                      file=sys.stderr)
+            except Exception:  # noqa: BLE001
+                self.dropped += 1
         return record
 
     def close(self) -> None:
@@ -334,12 +344,18 @@ class Watchdog:
 
     # --- one check ---------------------------------------------------------------------------------------
     def check(self, number: int, block_hash: str) -> dict:
+        """One evaluation. `number`/`block_hash` = the polled head that made it due; supply is read at a fresh
+        head AFTER the reserves (a redemption burns first, then releases: this order never sees a false deficit)."""
         self.freeze_failed = False
-        states = self.assets(block_hash)
-        supply = sum(states[i].supply for i in self.cfg.supply_ids)
-        frozen = states[self.cfg.breaker_id].frozen
         readings = read_all(self.providers, self.cfg.token, self.cfg.holder, "latest", self.cfg.max_block_age_s,
                             self.cfg.read_deadline_s)
+        state_head, state_hash = self.head()
+        states = self.assets(state_hash)
+        missing = [i for i, st in states.items() if not st.exists]
+        if missing:
+            raise RuntimeError(f"asset(s) {missing} no longer exist at #{state_head}")
+        supply = sum(states[i].supply for i in self.cfg.supply_ids)
+        frozen = states[self.cfg.breaker_id].frozen
         comparison = compare(readings)
         decision, self.outage_since = decide(
             supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after
@@ -348,6 +364,8 @@ class Watchdog:
             "check",
             head=number,
             head_hash=block_hash,
+            state_head=state_head,
+            status=states[self.cfg.breaker_id].status,
             supplies={str(i): str(s.supply) for i, s in states.items()},
             frozen=frozen,
             reserves=comparison.as_dict(),
@@ -391,7 +409,7 @@ class Watchdog:
         try:
             remark = freeze_remark(self.cfg.breaker_id, decision, [p.name for p in self.providers])
         except ValueError:  # never let the reason text block the freeze
-            remark = f"{REMARK_PREFIX}|freeze|a={self.cfg.breaker_id}|why={decision.action}"
+            remark = f"{REMARK_PREFIX}|freeze|a={self.cfg.breaker_id}|reason={REMARK_REASON.get(decision.action, 'unknown')}"
         submitted_at = self.clock()
         self.log("freeze-submit", head=seen_at_head, remark=remark, message=remark)
         try:

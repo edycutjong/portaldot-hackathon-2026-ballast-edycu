@@ -8,6 +8,7 @@ import pytest
 from substrateinterface import Keypair
 
 import ballast.chain
+import ballast.watchdog
 from ballast.dispatch import OK
 from ballast.multisig import multi_address
 from ballast.sepolia import ReserveReading, compare
@@ -96,15 +97,15 @@ def test_exactly_backed_is_level():
 def test_deficit_remark_names_the_short_reading():
     d, _ = decide(100_000_000, False, compare([ok("anvil", 70_000_000, 5, H)]), None, 0.0)
     text = freeze_remark(2001, d, ["anvil"])
-    assert text == f"BALLAST/1|freeze|a=2001|why=deficit|s=100000000|r=70000000|p=anvil|eb=5|eh={H}"
-    assert parse_remark(text) == {"type": "freeze", "a": "2001", "why": "deficit", "s": "100000000",
+    assert text == f"BALLAST/1|freeze|a=2001|reason=deficit|s=100000000|r=70000000|p=anvil|eb=5|eh={H}"
+    assert parse_remark(text) == {"type": "freeze", "a": "2001", "reason": "deficit", "s": "100000000",
                                   "r": "70000000", "p": "anvil", "eb": "5", "eh": H}
 
 
 def test_fail_closed_remark():
     d = Decision(FAIL_CLOSED, 100, down_for_s=301.7)
     assert freeze_remark(1, d, ["publicnode", "drpc"]) == \
-        "BALLAST/1|freeze|a=1|why=fail-closed|s=100|down=301s|p=publicnode,drpc"
+        "BALLAST/1|freeze|a=1|reason=providers-down|s=100|down=301s|p=publicnode,drpc"  # spec: reason=providers-down
 
 
 def test_remark_worst_case_fits_the_budget():
@@ -249,7 +250,7 @@ def test_check_freezes_through_the_watcher_multisig_with_a_reason(monkeypatch):
     assert (module, function) == ("Utility", "batch_all")
     remark, multisig = params["calls"]
     assert remark["call"] == "System.remark_with_event"
-    assert remark["params"]["remark"].startswith("BALLAST/1|freeze|a=1|why=deficit|s=100|r=70|p=a|")
+    assert remark["params"]["remark"].startswith("BALLAST/1|freeze|a=1|reason=deficit|s=100|r=70|p=a|")
     assert multisig["call"] == "Multisig.as_multi_threshold_1"
     assert multisig["params"]["other_signatories"] == [W1]  # the other member only, never the caller
     assert multisig["params"]["call"] == {"call": "Assets.freeze_asset", "params": {"id": 1}}
@@ -307,8 +308,9 @@ def test_submit_error_is_critical_and_retried_on_the_next_poll(monkeypatch):
     events = [e["event"] for e in logs]
     assert events.count("freeze-error") == 1 and events.count("freeze") == 1
     assert next(e for e in logs if e["event"] == "freeze-error")["level"] == "critical"
-    # retried on the next poll (head 12; head 11 was the race probe), not poll_blocks (10) later
-    assert [e["head"] for e in logs if e["event"] == "check"] == [10, 12] and len(submitted) == 2
+    # retried on the next poll (the fake head also advances for the state read and the race probe), not 10 blocks later
+    checks = [e["head"] for e in logs if e["event"] == "check"]
+    assert len(checks) == 2 and checks[1] - checks[0] < dog.cfg.poll_blocks and len(submitted) == 2
 
 
 def test_inner_error_is_a_failed_freeze_and_retried(monkeypatch):
@@ -326,7 +328,7 @@ def test_fail_closed_through_check_submits_the_reason(monkeypatch):
     actions = [e["decision"]["action"] for e in logs if e["event"] == "check"]
     assert actions[:3] == [OUTAGE, OUTAGE, OUTAGE] and FAIL_CLOSED in actions
     remark = submitted[0][2]["calls"][0]["params"]["remark"]
-    assert remark.startswith("BALLAST/1|freeze|a=1|why=fail-closed|s=100|down=") and remark.endswith("|p=a")
+    assert remark.startswith("BALLAST/1|freeze|a=1|reason=providers-down|s=100|down=") and remark.endswith("|p=a")
 
 
 def test_check_and_head_errors_do_not_kill_the_loop(monkeypatch):
@@ -413,7 +415,7 @@ def test_retries_are_fast_then_every_n_blocks_and_never_stop(monkeypatch):
     assert dog.run(until_frozen=True, max_seconds=60) == 4
     heads = [e["head"] for e in logs if e["event"] == "check"]
     gaps = [b - a for a, b in zip(heads, heads[1:])]
-    assert gaps[:3] == [1, 1, 1] and set(gaps[3:]) == {10} and len(heads) >= 6
+    assert all(g < 10 for g in gaps[:3]) and all(g >= 10 for g in gaps[3:]) and len(heads) >= 6
     assert all(e["level"] == "critical" for e in logs if e["event"] == "freeze-error")
     assert dog.failures == len(heads)
 
@@ -452,3 +454,61 @@ def test_preflight_arms_when_every_provider_is_down(monkeypatch):
     # nothing to read at start is an outage, not a misconfiguration: arm, and let I6 decide
     dog, *_ = make_dog(monkeypatch, reserves=None)
     assert dog.preflight()["reserve"].startswith("unknown")
+
+
+def test_reserves_are_read_before_supply(monkeypatch):
+    """A redemption burns (supply down) then releases (reserves down): reading reserves first never sees a gap."""
+    order = []
+    dog, _, submitted, _ = make_dog(monkeypatch, reserves=100)
+    real_assets, real_read = dog.assets, ballast.watchdog.read_all
+
+    def spy_assets(h):
+        order.append("supply")
+        return real_assets(h)
+
+    def spy_read(*a, **k):
+        order.append("reserves")
+        return real_read(*a, **k)
+
+    monkeypatch.setattr(ballast.watchdog, "read_all", spy_read)
+    dog.assets = spy_assets
+    dog.check(10, H)
+    assert order == ["reserves", "supply"]
+
+
+def test_vanished_asset_is_a_check_error_not_level(monkeypatch):
+    dog, substrate, submitted, _ = make_dog(monkeypatch, reserves=100)
+    del substrate.assets[2]
+    with pytest.raises(RuntimeError, match="no longer exist"):
+        dog.check(10, H)
+
+
+def test_destroying_asset_is_not_freezable(monkeypatch):
+    dog, substrate, submitted, _ = make_dog(monkeypatch, reserves=1)
+    substrate.assets[1]["status"] = "Destroying"
+    record = dog.check(10, H)
+    assert record["decision"]["action"] == ALREADY_FROZEN and record["status"] == "Destroying" and submitted == []
+
+
+def test_inner_error_while_someone_else_froze_it_is_a_race(monkeypatch):
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=70, outcomes=["inner-err"])
+    real = ballast.chain.submit
+
+    def submit_then_other_watcher_freezes(*a, **k):
+        r = real(*a, **k)
+        substrate.assets[1]["status"] = "Frozen"
+        return r
+
+    monkeypatch.setattr(ballast.chain, "submit", submit_then_other_watcher_freezes)
+    dog.check(10, H)
+    assert logs[-1]["event"] == "freeze-raced" and not dog.freeze_failed
+
+
+def test_log_file_failure_still_echoes(monkeypatch, tmp_path, capsys):
+    from ballast.watchdog import JsonLog
+
+    log = JsonLog(str(tmp_path / "w.jsonl"), echo=True, profile="p")
+    log._fh.close()
+    log("freeze-error", level="critical", message="pool full")
+    err = capsys.readouterr().err
+    assert "freeze-error" in err and "pool full" in err and "1 record(s) dropped" in err

@@ -67,11 +67,14 @@ class Web3Provider:
 
 
 URL = re.compile(r"(?:https?|wss?)://\S+")
+URL_PATH = re.compile(r"(url: )\S+")  # urllib3: "Max retries exceeded with url: /v3/<key>?…"
+HOST = re.compile(r"host='[^']*'")
 
 
 def scrub(text: str) -> str:
-    """Error text without URLs: a provider URL may carry an API key, and errors land in logs and evidence."""
-    return URL.sub("<url>", text)
+    """Error text without URLs, paths or hosts: a provider URL may carry an API key, and errors land in logs and
+    evidence."""
+    return HOST.sub("host=<host>", URL_PATH.sub(r"\1<url>", URL.sub("<url>", text)))
 
 
 def _short(exc: Exception) -> str:
@@ -82,6 +85,8 @@ def _short(exc: Exception) -> str:
         return f"{type(exc).__name__}: {errno.group(0).strip()}"
     if "timed out" in text.lower():
         return f"{type(exc).__name__}: timed out"
+    if "ssl" in text.lower() or "certificate" in text.lower():
+        return f"{type(exc).__name__}: TLS error"
     return f"{type(exc).__name__}: {text[:160]}"
 
 

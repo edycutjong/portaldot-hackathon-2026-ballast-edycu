@@ -221,6 +221,9 @@ def test_errors_never_carry_the_provider_url():
 
     assert scrub("429 Client Error for url: https://x.example/v3/SECRETKEY?token=abc") == \
         "429 Client Error for url: <url>"
+    ssl = ("HTTPSConnectionPool(host='127.0.0.1', port=49545): Max retries exceeded with url: /v3/SECRETKEY123?dkey=AB "
+           "(Caused by SSLError(...))")
+    assert "SECRETKEY123" not in scrub(ssl) and "127.0.0.1" not in scrub(ssl)
 
     class Leaky(FakeRpc):
         def call(self, method, params):

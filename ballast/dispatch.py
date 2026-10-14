@@ -1,7 +1,7 @@
 """Decode dispatch results into `Pallet.Error` names read from the chain's own metadata.
 
 A multisig extrinsic can succeed while the call inside it fails: `Multisig.MultisigExecuted` carries the inner
-`DispatchResult` as its last attribute. Every multisig step checks it (invariant I9).
+`DispatchResult` as its last attribute, so every multisig step must check it, not just the outer result.
 """
 
 from __future__ import annotations
@@ -101,7 +101,7 @@ def extrinsic_outcome(events: list[dict], metadata: Any) -> Outcome:
 
 
 def multisig_inner_results(events: list[dict], metadata: Any) -> list[Outcome]:
-    """The inner DispatchResult of every Multisig.MultisigExecuted in the events (I9)."""
+    """The inner DispatchResult of every Multisig.MultisigExecuted in the events."""
     return [
         decode_dispatch_result(attribute(ev, "result", 4), metadata)
         for ev in events

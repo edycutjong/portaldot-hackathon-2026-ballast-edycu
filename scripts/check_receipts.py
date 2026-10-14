@@ -5,7 +5,7 @@
 
 For each row: block hash at that height, blake2-256 of the extrinsic at that index == the recorded tx hash,
 the decoded outcome (Ok / Err(Pallet.Error)), inner multisig results and the event list. Only runs recorded
-on the connected chain's profile are checked. `--regen` rewrites docs/RECEIPTS.md from evidence/.
+on the connected chain are checked. `--archive` adds evidence/archive/; `--regen` rewrites docs/RECEIPTS.md.
 """
 
 from __future__ import annotations
@@ -29,13 +29,14 @@ def main() -> int:
     ap.add_argument("--profile")
     ap.add_argument("--url")
     ap.add_argument("--regen", action="store_true")
+    ap.add_argument("--archive", action="store_true", help="also re-fetch runs in evidence/archive/")
     args = ap.parse_args()
 
     cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
     ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
     print(ident.banner())
     substrate = connect(ident.profile, cfg.url)
-    runs = [r for r in load_runs() if r["chain"]["genesis_hash"] == ident.facts.genesis_hash]
+    runs = [r for r in load_runs(archive=args.archive) if r["chain"]["genesis_hash"] == ident.facts.genesis_hash]
     checked = failed = 0
     for run in runs:
         for step in run["steps"]:

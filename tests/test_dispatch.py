@@ -37,7 +37,7 @@ def test_error_names_round_trip_through_the_assets_pallet(upstream_md):
 
 def test_legacy_1002_module_error(md_1002):
     _, md = md_1002
-    # spec 1002: Assets is pallet 26 and errors are plain u8 (FINDINGS: 26/2 = NoPermission)
+    # spec 1002: Assets is pallet 26 and module errors are a plain u8 index
     assert str(decode_dispatch_error({"Module": {"index": 26, "error": 2}}, md)) == "Err(Assets.NoPermission)"
     assert str(decode_dispatch_error({"Module": (26, 2)}, md)) == "Err(Assets.NoPermission)"
 
@@ -88,7 +88,8 @@ def test_extrinsic_outcome_needs_a_system_event(upstream_md):
 def test_recorded_spike_receipts_decode_identically_offline(upstream_md):
     """Every committed standin-upstream receipt re-decodes to its recorded outcome from the metadata fixture."""
     _, md = upstream_md
-    runs = [json.loads(p.read_text()) for p in sorted(EVIDENCE.glob("spike-assets-standin-upstream-*.json"))]
+    paths = sorted(EVIDENCE.glob("**/spike-assets-standin-upstream-*.json"))
+    runs = [json.loads(p.read_text()) for p in paths]
     assert runs, "no committed standin-upstream spike evidence"
     seen = set()
     for run in runs:

@@ -38,7 +38,14 @@ def write_pallets(cfg, ident, path: str) -> None:
 
 def cmd_chain(args: argparse.Namespace) -> int:
     """Identify the chain behind the configured profile; print its label, decimals and block counts."""
-    cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+    if args.blocks < MIN_SAMPLE_BLOCKS:
+        print(f"ballast: --blocks must be >= {MIN_SAMPLE_BLOCKS}", file=sys.stderr)
+        return 2
+    try:
+        cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+    except ProfileError as exc:
+        print(f"ballast: {exc}", file=sys.stderr)
+        return 2
     try:
         ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=not args.no_measure, sample_blocks=args.blocks)
     except (ProfileError, RpcError, ValueError) as exc:

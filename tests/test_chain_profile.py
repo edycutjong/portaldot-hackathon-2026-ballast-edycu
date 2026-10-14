@@ -97,6 +97,11 @@ def test_classify_profile_mismatch_fails_loudly():
         classify(facts(P1002, token_decimals=None), "standin-upstream")
 
 
+def test_v3_profile_pointed_at_a_standin_is_refused():
+    with pytest.raises(ProfileMismatch, match="'v3', the node is 'standin-upstream'"):
+        classify(facts(), "v3")
+
+
 def test_classify_unknown_chain():
     with pytest.raises(UnknownChain):
         classify(facts(genesis_hash="0x" + "11" * 32, spec_name="something"), "standin-upstream")
@@ -117,7 +122,7 @@ def test_classify_standin_decimals_and_spec_version_are_checked():
 def test_v3_profile_is_a_stub_with_unverified_values():
     v3 = get_profile("v3")
     # a node that reports spec portaldotV3/3000 and no decimals, genesis unknown to Ballast
-    ident = classify(facts(v3, spec_version=3000, token_decimals=None, block_time_ms=None, mean_block_time_ms=None), "v3")
+    ident = classify(facts(v3, spec_version=1, token_decimals=None, block_time_ms=None, mean_block_time_ms=None), "v3")
     data = ident.as_dict()
     assert not ident.profile.is_standin
     assert data["multisig_shape"] == UNVERIFIED and data["block_counts"] == UNVERIFIED

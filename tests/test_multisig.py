@@ -6,6 +6,7 @@ from substrateinterface import Keypair
 from ballast.chain_profile import SHAPE_LEGACY_1002, SHAPE_WEIGHT_V2, ProfileUnverified
 from ballast.multisig import (
     as_multi_params,
+    compact_len,
     multi_account_id,
     multi_address,
     other_signatories,
@@ -96,6 +97,8 @@ def test_weight_v2_params_encode_against_the_standin_upstream_metadata(upstream_
     inner = {"call_module": "Assets", "call_function": "freeze_asset", "call_args": {"id": 1}}
     encoded = _encode_as_multi(upstream_md, SHAPE_WEIGHT_V2, inner)
     assert encoded[:1] == bytes([36])  # Multisig pallet index on standin-upstream
+    # max_weight = Weight { ref_time: Compact<u64>, proof_size: Compact<u64> } closes the call
+    assert encoded.endswith(compact_len(1_000_000_000) + compact_len(65_536))
 
 
 def test_legacy_params_encode_against_the_1002_metadata(md_1002):

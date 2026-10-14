@@ -100,8 +100,10 @@ PROFILES: dict[str, Profile] = {
         multisig_shape=None,
         notes=(
             f"genesis hash, :code hash, decimals, block time and as_multi shape: {UNVERIFIED}",
-            "expected from public sources, not yet verified by Ballast: 14 decimals (official V3 guide), "
-            f"spec portaldotV3/3000 (third-party measurement) — {UNVERIFIED}",
+            "URL and 14 decimals as published in the V3 testnet guide (github.com/ItsCogumellum/"
+            f"portaldot-v3-testnet-guide@d671a32 §1.1, §3.1), not yet checked by Ballast: {UNVERIFIED}",
+            "spec name portaldotV3 as reported by a third party (github.com/finfreedom/portaldot-ink-toolchain "
+            f"README, 2026-10-12), not yet checked by Ballast: {UNVERIFIED}",
         ),
     ),
     "standin-upstream": Profile(
@@ -224,6 +226,7 @@ class ChainIdentity:
             "profile": self.profile.name,
             "label": self.profile.label,
             "is_standin": self.profile.is_standin,
+            "genesis_pinned": self.profile.genesis_hash is not None,
             "genesis_hash": self.facts.genesis_hash,
             "code_hash": self.facts.code_hash,
             "spec_name": self.facts.spec_name,

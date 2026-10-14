@@ -140,8 +140,8 @@ Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are 
 | [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) only. **Not on Sepolia** |
 | [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | the stand-in's Revive pallet only. **Not on V3** |
 
-A multisig can report `MultisigExecuted` while the call inside it failed, so every multisig receipt records the *inner* result (a failed
-`as_multi` mint cancelled by the operator, for instance, never shows `Issued`). The freezer's thaw through `as_multi_threshold_1` fails the whole
+A multisig can report `MultisigExecuted` while the call inside it failed, so every multisig receipt records the *inner* result (the
+executed rows in `docs/RECEIPTS.md` read `inner Ok`). The freezer's thaw through `as_multi_threshold_1` fails the whole
 extrinsic with `Assets.NoPermission` (`6904-2` in the newest role-split drill).
 
 **Receipts.** Every step is a real extrinsic or a real anvil transaction, the newest run of each kind is tabulated with extrinsic id, block hash and tx hash in

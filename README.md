@@ -10,7 +10,7 @@
 ![Chain: stand-in, not V3](https://img.shields.io/badge/chain-stand--in%2C%20not%20V3-orange)
 ![Reserve: local anvil, not Sepolia](https://img.shields.io/badge/reserve-local%20anvil%2C%20not%20Sepolia-orange)
 
-*Portaldot Hacker House 2026 · check-in build. The Portaldot V3 testnet was unreachable when probed on 2026-10-14
+*Portaldot Hacker House 2026 · check-in build. The Portaldot V3 testnet's DNS names did not resolve when probed on 2026-10-14
 ([`evidence/v3-probe-2026-10-14-p5.txt`](evidence/v3-probe-2026-10-14-p5.txt)), so the breaker is demonstrated on a labelled
 local stand-in chain against a local anvil reserve chain. No Sepolia vault is deployed yet. Every receipt says which chain it came from.*
 
@@ -39,7 +39,8 @@ enforces, not from promises:
 1. **Breaker.** The Assets *freezer* is a 1-of-N watcher multisig (`M_watch`, `Multisig.as_multi_threshold_1`). A watcher that sees the
    reserve fall below supply freezes the asset; every transfer is then refused (`Assets.AssetNotLive` on the stand-in). The freezing
    extrinsic carries the reason as a `BALLAST/1|freeze` remark.
-2. **Inert freezer.** A watcher cannot thaw, mint, transfer or re-team: its thaw attempts fail with `Assets.NoPermission`.
+2. **Inert freezer.** A watcher's thaw attempts (`thaw_asset` and `thaw` of one account) fail with `Assets.NoPermission` (measured). The freezer slot carries the freeze
+   calls only; mint and re-team stay with `M_mint`, and no drill has yet tried a watcher mint or `set_team`.
 3. **Reserve-gated mint.** The issuer is a 2-of-2 multisig (`M_mint`, {operator A, reserve bot B}). The bot co-signs a mint only if
    *finalized* reserves cover supply plus the amount, and never while the asset is frozen.
 4. **Gated thaw.** The asset admin is a 2-of-3 multisig (`M_admin`). The bot co-signs a thaw only after finality has passed the drain block
@@ -105,7 +106,7 @@ flowchart LR
 
 | Layer | Choice | State |
 |---|---|---|
-| Blockchain platform | **Portaldot V3 testnet** (target) | unreachable on 2026-10-14; nothing measured on it |
+| Blockchain platform | **Portaldot V3 testnet** (target) | DNS did not resolve on 2026-10-14; nothing measured on it |
 | Chain used | `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** | running locally |
 | Runtime modules | Assets, Multisig, Utility, System, Revive (pallet-native) | used by the code and the drills |
 | Client | Python 3.11+, `substrate-interface` 1.8.1, `scalecodec` 1.2.12, `web3` 7 | built |
@@ -139,11 +140,12 @@ Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are 
 | [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) only. **Not on Sepolia** |
 | [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | the stand-in's Revive pallet only. **Not on V3** |
 
-A multisig can report `MultisigExecuted` while the call inside it failed, so every receipt records the *inner* result; for example the freezer's
-thaw shows `Err(Assets.NoPermission)` inside an outer `Ok`.
+A multisig can report `MultisigExecuted` while the call inside it failed, so every multisig receipt records the *inner* result (a failed
+`as_multi` mint cancelled by the operator, for instance, never shows `Issued`). The freezer's thaw through `as_multi_threshold_1` fails the whole
+extrinsic with `Assets.NoPermission` (`6904-2` in the newest role-split drill).
 
-**Receipts.** Every step is a real extrinsic or a real anvil transaction, tabulated with extrinsic id, block hash and tx hash in
-[`docs/RECEIPTS.md`](docs/RECEIPTS.md), with raw JSON in [`evidence/`](evidence/). `python scripts/check_receipts.py` re-fetches them from the
+**Receipts.** Every step is a real extrinsic or a real anvil transaction, the newest run of each kind is tabulated with extrinsic id, block hash and tx hash in
+[`docs/RECEIPTS.md`](docs/RECEIPTS.md) (older runs are linked), and every run is in raw JSON in [`evidence/`](evidence/). `python scripts/check_receipts.py` re-fetches them from the
 chains that recorded them: **486/486 stand-in extrinsics and 111/111 anvil transactions** at the last run
 ([`evidence/test-run-2026-10-14-p5.txt`](evidence/test-run-2026-10-14-p5.txt)). These are **stand-in receipts, not V3**: the stand-in is a local
 `--dev` node with no public explorer, and a fresh node run produces new hashes. V3 asset, account and contract IDs: none.
@@ -192,17 +194,17 @@ scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
 non-stand-in profile. `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
 `SEPOLIA_*` variables from a file outside the tree (names in `.env.example`). The oracle's V3 deployment path (Hardhat against the V3 EVM RPC)
-is not written because V3 was unreachable. There is no frontend to launch.
+is not written because V3 did not resolve. There is no frontend to launch.
 
 ## Demo
 
 - **Video:** coming at check-in (≤ 3 min, stand-in labelled on screen).
-- **Live demo:** none. The stand-in chain is local and the V3 testnet is unreachable.
+- **Live demo:** none. The stand-in chain is local and the V3 testnet did not resolve.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
   and the commands above on a fresh node.
 - **The drill in numbers** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
-  drain to freeze included took 5.48 s in the latest role-split drill and 6.33 s in the latest scratch-asset drill (3 Portaldot blocks between
-  the head before the drain and the freeze). `ballast verify` over the whole stand-in history: 25/25 bot attestations pass on both chains, 6 forged
+  drain to freeze included took 5.48 s in the latest role-split drill and 6.33 s in the latest scratch-asset drill (that one: 3 Portaldot blocks from
+  the head before the drain to the freeze). `ballast verify` over the whole stand-in history: 25/25 bot attestations pass on both chains, 6 forged
   remarks REJECTED, 0 FAIL or FLAGGED ([`evidence/verify-standin-upstream-p5-fullrange.json`](evidence/verify-standin-upstream-p5-fullrange.json)).
 - **Test accounts / data:** deterministic dev keys on the stand-in only. Public role addresses are in
   [`deployments/standin-upstream.json`](deployments/standin-upstream.json).
@@ -230,7 +232,8 @@ is not written because V3 was unreachable. There is no frontend to launch.
 - Freezing reads **latest** reserve state and can false-trip on a reorg; recovery is a thaw by `M_admin` once finalized reserves cover supply
   (a multisig round-trip). Mints and thaws use **finalized** state.
 - The admin multisig is 2-of-3 {A, A2, B}: A and A2 can thaw without the bot. `ballast verify` flags such a thaw unless an `override` remark
-  precedes it, but nothing on chain requires the remark. Losing B ends minting and re-teaming (owner and issuer are `M_mint`).
+  precedes it, but nothing on chain requires the remark. Losing B ends minting and re-teaming (owner and issuer are `M_mint`); recovery would be a
+  new asset plus a migration, which is not built.
 - Root can override every role. The off-chain pieces (watchdog, bot, attester) enforce nothing while stopped; the heartbeat rule makes a silent
   bot visible by freezing, but only if a watcher is running.
 - `ReserveOracle` is as fresh as the bot's last post; `isBacked(maxAge)` reads `false` when stale, never "backed" by default.

@@ -9,8 +9,8 @@
 Ballast protects a custodial test dollar, `pUSDC-test` (Assets pallet, asset 1), that is meant to be backed 1:1 by test USDC held in an
 EVM vault. The protection is assembled from runtime modules, not from contract code:
 
-- the **issuer** of the asset is a 2-of-2 multisig in which a reserve bot is a mandatory co-signer, so nothing is minted past proven reserves;
-- the **freezer** is a 1-of-N watcher multisig that can freeze and nothing else, so a reserve shortfall stops transfers within a block or two;
+- the **issuer** of the asset is a 2-of-2 multisig in which a reserve bot is a mandatory co-signer, so a mint needs the bot's signature, and the bot signs only when reserves cover it (the gate is bot code; see the trust caveat below);
+- the **freezer** is a 1-of-N watcher multisig that can freeze and nothing else, so a reserve shortfall stops transfers a few blocks later (3 blocks, 5.48 s to 6.33 s wall clock in the stand-in drills);
 - the **admin** is a 2-of-3 multisig whose thaw the bot only co-signs once *finalized* reserves cover supply again.
 
 Ballast is **not a trustless bridge**: the vault owner can still move the reserves. Ballast makes that visible and stops the shortfall from spreading.
@@ -97,7 +97,7 @@ flowchart LR
 |---|---|---|---|
 | owner, issuer | `M_mint`: 2-of-2 {A operator, B reserve bot} | `mint`, `set_team` | act without B's co-signature |
 | admin | `M_admin`: 2-of-3 {A, A2 cold key, B} | `thaw_asset`, `burn`, `force_transfer` | thaw with fewer than two signatures |
-| freezer | `M_watch`: 1-of-2 {W1, W2} via `as_multi_threshold_1` | `freeze_asset`, `freeze(who)` | thaw, mint, transfer, change the team |
+| freezer | `M_watch`: 1-of-2 {W1, W2} via `as_multi_threshold_1` | `freeze_asset`, `freeze(who)` | thaw (measured: `NoPermission`); mint and re-team belong to `M_mint` (not drilled with a watcher key) |
 | (Root) | whoever holds Root on the chain in use (stand-in: the `--dev` sudo key) | `force_asset_status` overrides everything | n/a: stated in the README trust model |
 
 Asset 2 (`pUSDC-ctl`, control supply S2 = 50.00) is minted once; owner, issuer, admin and freezer then move to keyless accounts
@@ -109,7 +109,7 @@ Asset 2 (`pUSDC-ctl`, control supply S2 = 50.00) is minted once; owner, issuer, 
 |---|---|---|---|
 | I1 | no over-mint: a mint executes only if `finalized` and `latest` reserves `>= S1 + S2 + amount` | `bot.py:145` `mint_gate`; the 2-of-2 `M_mint` makes B's signature mandatory | `tests/test_bot.py`; role drill step 3 (0.01 over-mint refused, no `MultisigExecuted`) |
 | I2 | the freezer is inert | the Assets pallet itself (`NoPermission`) | role drill step 7 (W1 `thaw_asset` via `M_watch` refused) |
-| I3 | breaker: reserves short on either provider freezes the asset | `watchdog.py:123` `decide` (deficit branch) | `tests/test_watchdog.py`; drain drills |
+| I3 | breaker: reserves short on either provider freezes the asset | `watchdog.py:123` `decide` (deficit branch at `:140`) | `tests/test_watchdog.py`; drain drills |
 | I4 | thaw is gated on finalized reserves past the drain | `bot.py:160` `thaw_gate`; `verify.py` flags a thaw without the bot or an override remark | role drill steps 10-11 (refused until anvil finality passed the drain block, then co-signed) |
 | I5 | remark signers fixed per type; others REJECTED, never counted | `verify.py:78` `signer_verdict` | `tests/test_verify.py`; attest drill step 12 (forged remark REJECTED) |
 | I6 | all providers unreachable for > 300 s freezes (operator watcher) | `watchdog.py:55,160` | outage drill (15 s drill override, labelled) |
@@ -118,7 +118,7 @@ Asset 2 (`pUSDC-ctl`, control supply S2 = 50.00) is minted once; owner, issuer, 
 | I9 | outer `Ok` is not inner `Ok` | `dispatch.py`, `multisig_ops.py:77`, `verify.py` | every multisig receipt in `docs/RECEIPTS.md` carries the inner result |
 | I10 | the oracle mirror never leads the remark | `attest.py:120`; `verify.py` flags a `Posted` with no matching remark | attest drill (4 mirrors, all matched) |
 
-I1, I3, I6 and I8 are checks inside our own off-chain processes; I2 and the multisig thresholds are enforced by the runtime. A stopped process
+I1, I3, I6 and I8 are checks inside our own off-chain processes; I2 and the multisig thresholds are enforced by the runtime. Trust caveat: in this build one person holds A, A2, B and both watchers, and A + A2 can thaw without B, so the separation is real in the runtime but not yet between independent humans. A stopped process
 enforces nothing, which is exactly what I8 and the heartbeat exist to make visible.
 
 ## Attestation format (on-chain, `System.remark_with_event`)
@@ -142,7 +142,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 | Profile | State |
 |---|---|
-| `v3` | stub. Portaldot V3 testnet unreachable on 2026-10-14 (DNS empty, `evidence/v3-probe-2026-10-14-p5.txt`); every V3 value reads `UNVERIFIED (V3 day-0)` |
+| `v3` | stub. Portaldot V3 testnet DNS did not resolve on 2026-10-14 (empty answer, `evidence/v3-probe-2026-10-14-p5.txt`); every V3 value reads `UNVERIFIED (V3 day-0)` |
 | `standin-upstream` | the profile everything was measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 3000 ms blocks, 12 decimals → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 

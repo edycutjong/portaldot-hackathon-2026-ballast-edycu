@@ -50,6 +50,11 @@ contract ReserveVaultTest is Test {
         new ReserveVault(IERC20(address(0)));
     }
 
+    function test_constructorRejectsCodelessToken() public {
+        vm.expectRevert(abi.encodeWithSelector(ReserveVault.NotAContract.selector, stranger));
+        new ReserveVault(IERC20(stranger));
+    }
+
     function test_constructorEmitsOwnership() public {
         vm.expectEmit(true, true, false, false);
         emit OwnershipTransferred(address(0), address(this));

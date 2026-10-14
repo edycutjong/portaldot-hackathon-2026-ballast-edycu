@@ -37,6 +37,8 @@ contract ReserveOracle {
     }
 
     /// @notice Mirror one attestation. Portaldot blocks only move forward: an older or repeated pdBlock reverts.
+    /// Accepted trade-off: there is no reset, so a post with a wrong (too high) pdBlock blocks later posts; the mirror
+    /// then goes stale and `isBacked` fails closed. Recovery = deploy a new oracle (the address is announced by remark).
     function post(uint128 s1, uint128 s2, uint256 reserves, uint64 sepBlock, bytes32 sepHash, uint64 pdBlock, bool frozen)
         external
     {

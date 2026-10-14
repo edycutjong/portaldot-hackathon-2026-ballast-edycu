@@ -21,6 +21,7 @@ contract ReserveVault {
 
     error NotOwner(address caller);
     error ZeroAddress();
+    error NotAContract(address token);
     error ZeroAmount();
     error InsufficientReserves(uint256 available, uint256 requested);
     error TransferFailed();
@@ -32,6 +33,7 @@ contract ReserveVault {
 
     constructor(IERC20 usdc_) {
         if (address(usdc_) == address(0)) revert ZeroAddress();
+        if (address(usdc_).code.length == 0) revert NotAContract(address(usdc_));
         usdc = usdc_;
         owner = msg.sender;
         emit OwnershipTransferred(address(0), msg.sender);

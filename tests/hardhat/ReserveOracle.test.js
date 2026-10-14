@@ -96,6 +96,20 @@ describe("ReserveOracle", function () {
     expect((await oracle.status()).pdBlock).to.equal(11n);
   });
 
+  it("accepts pdBlock 0 as the first post, then only higher blocks", async function () {
+    await post(attester, { pdBlock: 0n });
+    expect((await oracle.status()).pdBlock).to.equal(0n);
+    await expect(post(attester, { pdBlock: 0n })).to.be.revertedWithCustomError(oracle, "StalePost");
+    await post(attester, { pdBlock: 1n });
+  });
+
+  it("a too-high pdBlock blocks later posts; the mirror then fails closed by age", async function () {
+    await post(attester, { pdBlock: 2n ** 64n - 1n });
+    await expect(post(attester, { pdBlock: 12n })).to.be.revertedWithCustomError(oracle, "StalePost");
+    await time.increase(Number(MAX_AGE) + 1);
+    expect(await oracle.isBacked(MAX_AGE)).to.equal(false);
+  });
+
   it("S1 + S2 cannot overflow the comparison", async function () {
     const max = 2n ** 128n - 1n;
     await post(attester, { s1: max, s2: max, reserves: 2n ** 256n - 1n });

@@ -11,6 +11,7 @@ license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "substrate-interface==1.8.1",
+    "xxhash>=3",
 ]
 
 [project.optional-dependencies]

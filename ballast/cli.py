@@ -62,7 +62,8 @@ def cmd_chain(args: argparse.Namespace) -> int:
     counts = data["block_counts"]
     if isinstance(counts, dict):
         print(
-            f"  blocks    {counts['block_time_ms']:.0f} ms mean over {counts['measured_over_blocks']} blocks "
+            f"  blocks    {counts['block_time_ms']:.0f} ms median ({counts['mean_block_time_ms']:.0f} ms mean) "
+            f"over {counts['measured_over_blocks']} blocks "
             f"-> H={counts['H']} K={counts['K']} W={counts['W']} N={counts['N']}"
         )
     else:

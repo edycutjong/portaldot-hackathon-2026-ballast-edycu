@@ -11,14 +11,28 @@ H (heartbeat) ~ 10 min, K = 3 x H (heartbeat freeze), W ~ 24 h (wind-down trigge
 from __future__ import annotations
 
 import hashlib
+import statistics
 from dataclasses import dataclass, field
+
+import xxhash
 
 from .rpc import Rpc
 
 UNVERIFIED = "UNVERIFIED (V3 day-0)"
 
-# twox128("Timestamp") ++ twox128("Now")
-TIMESTAMP_NOW_KEY = "0xf0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb"
+
+
+def twox128(data: bytes) -> bytes:
+    return xxhash.xxh64(data, seed=0).intdigest().to_bytes(8, "little") + xxhash.xxh64(
+        data, seed=1
+    ).intdigest().to_bytes(8, "little")
+
+
+def storage_key(pallet: str, item: str) -> str:
+    return "0x" + (twox128(pallet.encode()) + twox128(item.encode())).hex()
+
+
+TIMESTAMP_NOW = storage_key("Timestamp", "Now")
 CODE_KEY = "0x" + b":code".hex()
 
 HEARTBEAT_MS = 10 * 60 * 1000
@@ -168,7 +182,8 @@ class ChainFacts:
     spec_version: int
     token_decimals: int | None
     head: int
-    block_time_ms: float | None = None
+    block_time_ms: float | None = None  # median of per-block deltas
+    mean_block_time_ms: float | None = None
     sample_blocks: int = 0
 
 
@@ -204,7 +219,12 @@ class ChainIdentity:
             "head": self.facts.head,
             "multisig_shape": self.profile.multisig_shape or UNVERIFIED,
             "block_counts": (
-                {**self.counts.as_dict(), "measured_over_blocks": self.facts.sample_blocks}
+                {
+                    **self.counts.as_dict(),
+                    "block_time_basis": "median of per-block timestamp deltas",
+                    "mean_block_time_ms": self.facts.mean_block_time_ms,
+                    "measured_over_blocks": self.facts.sample_blocks,
+                }
                 if self.counts
                 else UNVERIFIED
             ),
@@ -221,22 +241,27 @@ def _hex_to_bytes(value: str) -> bytes:
 
 
 def read_timestamp_ms(rpc: Rpc, block_hash: str) -> int:
-    raw = rpc.call("state_getStorage", [TIMESTAMP_NOW_KEY, block_hash])
+    raw = rpc.call("state_getStorage", [TIMESTAMP_NOW, block_hash])
     if raw is None:
         raise ProfileError(f"no Timestamp.Now at {block_hash}")
     return int.from_bytes(_hex_to_bytes(raw), "little")
 
 
-def measure_block_time(rpc: Rpc, head: int, sample_blocks: int = MIN_SAMPLE_BLOCKS) -> tuple[float, int]:
-    """Mean ms per block over the last `sample_blocks` blocks (needs an archive or recent state)."""
+def measure_block_time(rpc: Rpc, head: int, sample_blocks: int = MIN_SAMPLE_BLOCKS) -> tuple[float, float, int]:
+    """(mean ms, median ms, blocks sampled) over the last `sample_blocks` blocks.
+
+    Block counts are derived from the median: a stand-in that was stopped and restarted leaves one long gap
+    that inflates the mean, while the median stays the chain's production cadence. Both are reported.
+    """
     if sample_blocks < MIN_SAMPLE_BLOCKS:
         raise ValueError(f"sample at least {MIN_SAMPLE_BLOCKS} blocks")
     if head < sample_blocks + 1:
         raise ProfileError(f"head #{head} too low to sample {sample_blocks} blocks (block #1 has the genesis slot)")
-    start = head - sample_blocks
-    t0 = read_timestamp_ms(rpc, rpc.call("chain_getBlockHash", [start]))
-    t1 = read_timestamp_ms(rpc, rpc.call("chain_getBlockHash", [head]))
-    return (t1 - t0) / sample_blocks, sample_blocks
+    stamps = [
+        read_timestamp_ms(rpc, rpc.call("chain_getBlockHash", [n])) for n in range(head - sample_blocks, head + 1)
+    ]
+    deltas = [b - a for a, b in zip(stamps, stamps[1:])]
+    return (stamps[-1] - stamps[0]) / sample_blocks, float(statistics.median(deltas)), sample_blocks
 
 
 def observe(rpc: Rpc, *, measure: bool = True, sample_blocks: int = MIN_SAMPLE_BLOCKS) -> ChainFacts:
@@ -250,9 +275,9 @@ def observe(rpc: Rpc, *, measure: bool = True, sample_blocks: int = MIN_SAMPLE_B
     decimals = props.get("tokenDecimals")
     if isinstance(decimals, list):
         decimals = decimals[0] if decimals else None
-    block_time, sampled = (None, 0)
+    mean, median, sampled = (None, None, 0)
     if measure:
-        block_time, sampled = measure_block_time(rpc, head, sample_blocks)
+        mean, median, sampled = measure_block_time(rpc, head, sample_blocks)
     return ChainFacts(
         genesis_hash=genesis,
         code_hash=blake2_256(_hex_to_bytes(code)),
@@ -260,7 +285,8 @@ def observe(rpc: Rpc, *, measure: bool = True, sample_blocks: int = MIN_SAMPLE_B
         spec_version=int(version["specVersion"]),
         token_decimals=decimals,
         head=head,
-        block_time_ms=block_time,
+        block_time_ms=median,
+        mean_block_time_ms=mean,
         sample_blocks=sampled,
     )
 

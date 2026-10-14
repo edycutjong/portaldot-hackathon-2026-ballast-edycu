@@ -7,14 +7,21 @@ per type (I5); any other signer/type pair is REJECTED and never counted:
   attest / heartbeat: S1, S2 and the frozen flag re-read at the remark's Portaldot block hash `ph` (and `pb` must be
     that block's number); reserves re-read with `eth_call` at the reserve-chain block hash `eh` (EIP-1898) and `eb`
     must be its number. PASS iff every value matches; UNVERIFIABLE if no provider can serve that block (pruned).
+    Every provider that serves `eh` must report the same number and balance (else FAIL).
+  A malformed BALLAST/1 remark sent by B is a FAIL (the bot published something unparseable); from anyone else it is
+    REJECTED (noise, never counted).
   watchers: the members + threshold must recompute to asset 1's freezer at that block.
   evm-attester: the oracle's `attester()` must equal the announced H160.
 Events on asset 1 — flagged on WHAT changed, not who signed (I4):
   AssetThawed      ok only via M_admin with B as the executing (last) approval; via A + A2 only after an `override`
-                   remark; anything else FLAGGED.
-  TeamChanged      issuer != M_mint or freezer != M_watch -> DISARMED.   OwnerChanged to anyone but M_mint -> FLAGGED.
+                   remark — each override justifies ONE later thaw; anything else FLAGGED.
+  TeamChanged      issuer != M_mint, admin != M_admin or freezer != M_watch -> DISARMED.
+  OwnerChanged     to anyone but M_mint -> FLAGGED.
   AssetStatusChanged (Root force) -> FLAGGED.
   MultisigExecuted on M_mint / M_admin with an inner Err -> listed with the decoded error (I9).
+Events on the control asset (asset 2, S2 fixed, keyless roles): any Issued / Burned / TeamChanged / OwnerChanged /
+  AssetThawed / AssetStatusChanged -> FLAGGED (S2 must never move).
+Verdict: FAIL on any FAIL/FLAGGED; EMPTY (exit 1) when no B attestation was counted — nothing was proven; else PASS.
 ReserveOracle `Posted` events (I10): each must match a PASSing attestation with the same pb and values, included in
 the same or an earlier block — else FLAGGED (a mirror that leads or invents).
 """
@@ -35,6 +42,8 @@ from .sepolia import EvmRpc, ProviderError, balance_at
 from .watchdog import asset_state
 
 B_TYPES = ("attest", "heartbeat", "watchers", "evm-attester", "final")
+CONTROL_FLAGGED = ("Issued", "Burned", "TeamChanged", "OwnerChanged", "AssetThawed", "AssetStatusChanged",
+                   "AssetFrozen", "Destroyed", "DestructionStarted")
 
 
 @dataclass
@@ -96,30 +105,37 @@ class Finding:
 
 class Verifier:
     def __init__(self, substrate: Any, roles: Roles, providers: Sequence[EvmRpc], vault: str, erc20: str,
-                 log: Callable[[str], None] = lambda s: None):
+                 log: Callable[[str], None] = lambda s: None, control_settled_at: int = 0):
         self.substrate, self.roles, self.providers = substrate, roles, providers
         self.vault, self.erc20, self.log = vault, erc20, log
+        self.control_settled_at = control_settled_at  # last block of the setup that made asset 2 keyless
         self.findings: list[Finding] = []
         self.attested: dict[int, dict] = {}  # pb -> {fields, block, verdict}
-        self.overrides: list[int] = []  # blocks with an accepted override remark
+        self.overrides: list[int] = []  # blocks of accepted override remarks not yet used by a thaw
 
     # --- reads -------------------------------------------------------------------------------------------
     def asset(self, asset_id: int, block_hash: str):
         return asset_state(asset_id, self.substrate.query("Assets", "Asset", [asset_id], block_hash=block_hash).value)
 
     def reserve_at(self, eh: str) -> tuple[int | None, int | None, str]:
-        """(block number, balance, provider) at the reserve-chain block hash; (None, None, why) if nobody serves it."""
-        errors = []
+        """(block number, balance, providers) at the reserve-chain block hash, asked of EVERY provider; providers that
+        serve it must agree on both, else (None, None, "disagree: …") with a `disagree` marker. (None, None, why) if
+        nobody serves it."""
+        errors, answers = [], []
         for p in self.providers:
             try:
                 block = p.call("eth_getBlockByHash", [eh, False])
                 if not block:
                     errors.append(f"{p.name}: no block {eh[:12]}…")
                     continue
-                return int(block["number"], 16), balance_at(p, self.erc20, self.vault, eh), p.name
+                answers.append((int(block["number"], 16), balance_at(p, self.erc20, self.vault, eh), p.name))
             except (ProviderError, ValueError, KeyError, TypeError) as exc:
                 errors.append(str(exc)[:120])
-        return None, None, "; ".join(errors) or "no provider"
+        if not answers:
+            return None, None, "; ".join(errors) or "no provider"
+        if len({(n, b) for n, b, _ in answers}) > 1:
+            return None, None, "DISAGREE: " + ", ".join(f"{name}=#{n}/{b}" for n, b, name in answers)
+        return answers[0][0], answers[0][1], "+".join(name for _, _, name in answers)
 
     # --- remarks -----------------------------------------------------------------------------------------
     def check_remark(self, rem: dict) -> Finding:
@@ -128,6 +144,8 @@ class Verifier:
         try:
             fields = parse(rem["text"])
         except ValueError as exc:
+            if self.roles.is_(rem["sender"], self.roles.b):
+                return Finding(kind="?", verdict="FAIL", detail=f"malformed remark from B: {exc}", **base)
             return Finding(kind="?", verdict="REJECTED", detail=f"malformed: {exc}", **base)
         kind = fields["type"]
         if kind in ("attest", "heartbeat", "freeze") and fields.get("a") != str(self.roles.breaker):
@@ -195,7 +213,7 @@ class Verifier:
                     problems.append(f"{k} {checks[k][0]} != chain {checks[k][1]} at ph")
         eb, r, provider = self.reserve_at(snap.eh)
         if eb is None:
-            verdict = "FAIL" if problems else "UNVERIFIABLE"
+            verdict = "FAIL" if problems or provider.startswith("DISAGREE") else "UNVERIFIABLE"
             return Finding(kind=kind, verdict=verdict, detail="; ".join(problems + [f"reserve block unavailable: {provider}"]),
                            checks=checks, **base)
         checks |= {"eb": [snap.eb, eb], "r": [snap.r, r], "provider": provider}
@@ -223,6 +241,11 @@ class Verifier:
                 mod, name, attrs = e["module_id"], e["event_id"], e["attributes"]
                 if mod == "Assets" and isinstance(attrs, dict) and attrs.get("asset_id") == self.roles.breaker:
                     self._asset_event(xid, number, name, attrs, execs)
+                elif mod == "Assets" and isinstance(attrs, dict) and attrs.get("asset_id") == self.roles.control \
+                        and name in CONTROL_FLAGGED and number > self.control_settled_at:
+                    self.findings.append(Finding(xid, number, "control", "FLAGGED",
+                                                 f"Assets.{name} on the control asset {self.roles.control} "
+                                                 "(S2 and its keyless roles must never change)"))
                 elif (mod, name) == ("Revive", "ContractEmitted") and self.roles.oracle and \
                         str(attrs.get("contract", "")).lower() == self.roles.oracle:
                     p = decode_posted(attrs)
@@ -243,16 +266,20 @@ class Verifier:
             if admin and r.is_(admin[-1]["approving"], r.b):
                 self.findings.append(Finding(xid, number, "thaw", "OK", "M_admin thaw, executed by the bot's co-signature"))
             elif admin and any(o <= number for o in self.overrides):
+                used = min(o for o in self.overrides if o <= number)
+                self.overrides.remove(used)  # one override justifies one thaw
                 self.findings.append(Finding(xid, number, "thaw", "OK",
-                                             "M_admin thaw without the bot, after an override remark (emergency path)"))
+                                             f"M_admin thaw without the bot, after the override remark in #{used} "
+                                             "(emergency path; that override is now used)"))
             else:
                 self.findings.append(Finding(xid, number, "thaw", "FLAGGED",
                                              "thaw without the bot's co-signature or an override remark (I4)"))
         elif name == "TeamChanged":
-            bad = [k for k, want in (("issuer", r.m_mint), ("freezer", r.m_watch)) if not r.is_(attrs.get(k), want)]
+            bad = [k for k, want in (("issuer", r.m_mint), ("admin", r.m_admin), ("freezer", r.m_watch))
+                   if not r.is_(attrs.get(k), want)]
             self.findings.append(Finding(xid, number, "team", "FLAGGED" if bad else "OK",
                                          f"DISARMED: {', '.join(bad)} changed" if bad else
-                                         "issuer M_mint, freezer M_watch, admin " + r.role_name(attrs.get("admin"))))
+                                         "issuer M_mint, admin M_admin, freezer M_watch"))
         elif name == "OwnerChanged":
             ok = r.is_(attrs.get("owner"), r.m_mint)
             self.findings.append(Finding(xid, number, "owner", "OK" if ok else "FLAGGED",
@@ -309,4 +336,5 @@ def summary(findings: list[Finding]) -> dict:
     return {"counts": counts, "attestations_counted": len(counted),
             "attestations_pass": sum(f.verdict == "PASS" for f in counted),
             "rejected": sum(f.verdict == "REJECTED" for f in findings), "failures_or_flags": len(bad),
-            "verdict": "PASS" if not bad and all(f.verdict == "PASS" for f in counted) else "FAIL"}
+            "verdict": "FAIL" if bad or not all(f.verdict == "PASS" for f in counted)
+            else "EMPTY" if not counted else "PASS"}

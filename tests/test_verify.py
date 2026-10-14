@@ -44,7 +44,8 @@ def test_forged_attestation_is_rejected_not_counted():
     f = v.check_remark(rem)
     assert f.verdict == "REJECTED" and "I5" in f.detail
     s = summary([f])
-    assert s["rejected"] == 1 and s["attestations_counted"] == 0 and s["verdict"] == "PASS"
+    # nothing counted -> EMPTY, never a PASS (M5)
+    assert s["rejected"] == 1 and s["attestations_counted"] == 0 and s["verdict"] == "EMPTY"
 
 
 def test_other_assets_are_ignored():
@@ -59,6 +60,66 @@ def thaw(approving, overrides=()):
     execs = [{"multisig": ROLES.m_admin, "approving": approving, "result": {"Ok": []}}]
     v._asset_event("20-2", 20, "AssetThawed", {"asset_id": 1}, execs)
     return v.findings[-1]
+
+
+def test_malformed_remark_from_b_fails_from_others_is_rejected():
+    rem = {"extrinsic_id": "11-1", "block_number": 11, "block_hash": H, "sender": K["B"], "text": "BALLAST/1|attest|s"}
+    assert verifier().check_remark(rem).verdict == "FAIL"
+    assert verifier().check_remark(rem | {"sender": K["Judge"]}).verdict == "REJECTED"
+
+
+def test_summary_verdicts():
+    from ballast.verify import Finding
+
+    ok = Finding("12-1", 12, "attest", "PASS", "")
+    assert summary([ok])["verdict"] == "PASS"
+    assert summary([ok, Finding("13-1", 13, "thaw", "FLAGGED", "")])["verdict"] == "FAIL"
+    assert summary([Finding("13-1", 13, "team", "OK", "")])["verdict"] == "EMPTY"
+
+
+def test_each_override_justifies_one_thaw():
+    v = verifier()
+    v.overrides = [15]
+    execs = [{"multisig": ROLES.m_admin, "approving": K["A2"], "result": {"Ok": []}}]
+    v._asset_event("20-2", 20, "AssetThawed", {"asset_id": 1}, execs)
+    v._asset_event("30-2", 30, "AssetThawed", {"asset_id": 1}, execs)
+    assert [f.verdict for f in v.findings] == ["OK", "FLAGGED"] and v.overrides == []
+
+
+def test_admin_change_is_disarmed():
+    v = verifier()
+    v._asset_event("5-2", 5, "TeamChanged", {"asset_id": 1, "issuer": ROLES.m_mint, "admin": K["A"],
+                                              "freezer": ROLES.m_watch}, [])
+    assert v.findings[-1].verdict == "FLAGGED" and "admin" in v.findings[-1].detail
+
+
+def test_control_asset_changes_flagged_only_after_setup():
+    v = Verifier(substrate=None, roles=ROLES, providers=[], vault="0x" + "11" * 20, erc20="0x" + "22" * 20,
+                 control_settled_at=100)
+    ev = [{"module_id": "Assets", "event_id": "Issued", "attributes": {"asset_id": 2}, "extrinsic_idx": 1}]
+    v.check_events(90, H, ev, [])
+    assert v.findings == []  # the setup's own S2 mint
+    v.check_events(150, H, ev, [])
+    assert v.findings[-1].verdict == "FLAGGED" and v.findings[-1].kind == "control"
+
+
+class Rpc:
+    def __init__(self, name, number, balance):
+        self.name, self.number, self.balance = name, number, balance
+
+    def call(self, method, params):
+        if method == "eth_getBlockByHash":
+            return {"number": hex(self.number)}
+        return f"0x{self.balance:064x}"
+
+
+def test_reserve_at_asks_every_provider():
+    v = Verifier(substrate=None, roles=ROLES, providers=[Rpc("a", 3, 10), Rpc("b", 3, 10)], vault="0x" + "11" * 20,
+                 erc20="0x" + "22" * 20)
+    assert v.reserve_at(H) == (3, 10, "a+b")
+    v.providers = [Rpc("a", 3, 10), Rpc("b", 3, 11)]
+    n, b, why = v.reserve_at(H)
+    assert n is None and why.startswith("DISAGREE")
 
 
 def test_thaw_ok_only_with_the_bot_or_an_override():

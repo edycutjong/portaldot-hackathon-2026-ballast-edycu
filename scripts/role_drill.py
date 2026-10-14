@@ -14,6 +14,7 @@ empty blocks (`anvil_mine`), the local stand-in for Sepolia's ~13–19 min final
   5. judge transfer refused · W1's thaw through M_watch refused (NoPermission) · mint while frozen refused (I7)
   6. custodian re-deposits -> A proposes thaw (M_admin) -> bot refuses: finality has not reached the drain block
   7. finality (anvil) -> bot co-signs -> AssetThawed -> judge transfer succeeds
+  8. A proposes set_team moving the freezer -> bot refuses -> A cancels; a set_team keeping the role map is co-signed
 The operator, the bot and the watchers run as `ballast` CLI subprocesses with their own keys; their receipts and
 decisions are copied into evidence/roles-drill-<profile>-<stamp>.json.
 """
@@ -245,10 +246,17 @@ def main() -> int:
                  fr["outcome"]["ok"] and all(o["ok"] for o in fr["inner"]) and remark.get("reason") == "deficit"
                  and int(remark.get("eb", -1)) == row["block_number"],
                  ("Assets.AssetFrozen", "System.Remarked", "Multisig.MultisigExecuted"))
-        others = [r["event"] for i, rs in enumerate(recs, 1) if i != who for r in rs
+        others = [r for i, rs in enumerate(recs, 1) if i != who for r in rs
                   if r["event"] in ("freeze", "freeze-raced", "freeze-failed")
                   or (r["event"] == "check" and r["decision"]["action"] == "already-frozen")]
-        run.note("other watcher", f"W{3 - who}: {others[-1] if others else 'no record after the drain'}")
+        if others:
+            last = others[-1]
+            what = (f"saw asset {dep.breaker} already frozen at #{last.get('head')} and stood down"
+                    if last["event"] == "check" else
+                    f"{last['event']} at #{last.get('head')}: {last.get('message', '')}".strip())
+        else:
+            what = "no freeze-related record after the drain"
+        run.note("other watcher", f"W{3 - who} {what}")
         run.note("drain -> freeze included (wall clock, one machine; local anvil + stand-in)",
                  f"{freeze['included_at'] - drained_at:.2f} s")
         run.check("freeze remark eb == the drain's reserve-chain block", remark.get("eb"), str(row["block_number"]),
@@ -288,8 +296,8 @@ def main() -> int:
         run.check("bot refuses the thaw: finality has not reached the drain block yet",
                   [out["decision"], out.get("freeze", {}).get("eb")], ["refused", row["block_number"]], "bot",
                   ok=rc == 1 and "finality has not reached" in out["reason"])
-        run.check("bot located the freeze block by archive search == the freeze receipt's block",
-                  out.get("frozen_since"), fr["block_number"], fr["block_hash"])
+        run.check("bot located the freeze (latest AssetFrozen, backward event scan) == the freeze receipt",
+                  (out.get("freeze") or {}).get("extrinsic_id"), fr["extrinsic_id"], fr["block_hash"])
 
         # 7. Finality reached -> co-signed thaw -> transfers work again.
         finalize("past the drain and the re-deposit")
@@ -302,6 +310,28 @@ def main() -> int:
         run.check("asset 1 status after the thaw", state(r["block_hash"])["status"], "Live", r["block_hash"])
         transfer("judge transfer 1.00 after the thaw", "Ok", "judge_transfer_live")
         run.check("asset 1 team unchanged (ARMED)", state()["team"], [], "head")
+
+        # 8. Team changes go through M_mint (owner) and the bot: a freezer swap is refused, a safe re-team co-signed.
+        swap = ["--issuer", rm.m_mint, "--admin", rm.m_admin, "--freezer", rm.a]
+        rc, out = cli("team", *swap)
+        run.step("A proposes set_team with the freezer moved to A (through M_mint)", "Ok + Multisig.NewMultisig",
+                 out["receipt"], rc == 0, ("Multisig.NewMultisig",))
+        rc, out = bot("cosign-team", *swap)
+        run.check("bot refuses a set_team that changes the freezer", [rc, out["decision"]], [1, "refused"], "bot",
+                  ok=rc == 1 and out["decision"] == "refused" and "freezer would change" in out["reason"])
+        rc, out = cli("team", *swap, "--cancel")
+        run.step("A cancels the refused team change", "Ok + Multisig.MultisigCancelled", out["receipt"], rc == 0,
+                 ("Multisig.MultisigCancelled",))
+        keep = ["--issuer", rm.m_mint, "--admin", rm.m_admin, "--freezer", rm.m_watch]
+        rc, out = cli("team", *keep)
+        run.step("A proposes set_team keeping issuer M_mint, admin M_admin, freezer M_watch", "Ok + Multisig.NewMultisig",
+                 out["receipt"], rc == 0, ("Multisig.NewMultisig",))
+        rc, out = bot("cosign-team", *keep)
+        if "receipt" not in out:
+            raise RuntimeError(f"bot did not co-sign the safe team change: {out['reason']}")
+        run.step("bot co-signs the safe team change", "Ok + inner Ok + Assets.TeamChanged", out["receipt"], rc == 0,
+                 ("Multisig.MultisigExecuted", "Assets.TeamChanged"))
+        run.check("asset 1 team after the co-signed set_team (ARMED)", state()["team"], [], "head")
     except Exception as exc:  # noqa: BLE001 — keep every receipt that landed
         run["error"] = f"{type(exc).__name__}: {exc}"
         traceback.print_exc()

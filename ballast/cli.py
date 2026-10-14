@@ -237,6 +237,150 @@ def cmd_watch(args: argparse.Namespace) -> int:
         log.close()
 
 
+def _key(profile, uri: str | None, env: str, default: str):
+    """Stand-in: a //Dev URI (default `default`). Anything else: the secret URI in $<env> (never logged)."""
+    import os
+
+    from substrateinterface import Keypair
+
+    from .chain import dev_keypair
+
+    if profile.is_standin:
+        return dev_keypair(profile, uri or default)
+    if uri:
+        raise ProfileError(f"profile {profile.name}: dev URIs are stand-in only; set {env}")
+    suri = os.environ.get(env)
+    if not suri:
+        raise ProfileError(f"profile {profile.name}: set {env}")
+    return Keypair.create_from_uri(suri)
+
+
+def _deployment_context(args: argparse.Namespace):
+    """(profile, substrate, deployment) for the role-split commands; the node must be the manifest's chain."""
+    from .chain import connect
+    from .roles import Deployment
+
+    cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+    ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+    dep = Deployment.load(ident.profile.name, args.deployment)
+    if dep.genesis_hash != ident.facts.genesis_hash:
+        raise ProfileError(f"deployment is for genesis {dep.genesis_hash}, the node is {ident.facts.genesis_hash}")
+    return ident.profile, connect(ident.profile, cfg.url), dep
+
+
+def _providers(args: argparse.Namespace, dep, bot_order: bool = False):
+    from .sepolia import SEPOLIA_PROVIDERS, providers_from
+
+    specs = args.provider or dep.reserve.get("providers")
+    if not specs:  # Sepolia; the bot reads drpc first (archive depth for finalized / old block hashes)
+        specs = list(reversed(SEPOLIA_PROVIDERS)) if bot_order else list(SEPOLIA_PROVIDERS)
+    return providers_from(specs, timeout=args.timeout)
+
+
+def _print_json(obj: dict) -> None:
+    print(json.dumps(obj, default=str))
+
+
+def cmd_mint(args: argparse.Namespace) -> int:
+    """Operator (key A): propose a mint through M_mint — it executes only if the reserve bot co-signs."""
+    from .bot import operator_accounts, parse_amount
+    from .multisig_ops import call_hash, pending
+
+    try:
+        profile, substrate, dep = _deployment_context(args)
+        amount = parse_amount(args.amount, dep.decimals)
+        key = _key(profile, args.key, "BALLAST_OPERATOR_SURI", "//BallastA")
+        beneficiary = _addresses(profile, [args.beneficiary])[0]
+    except Exception as exc:  # noqa: BLE001
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    m_mint, _ = operator_accounts(dep, substrate.ss58_format or 42)
+    call = substrate.compose_call(call_module="Assets", call_function="mint",
+                                  call_params={"id": dep.breaker, "beneficiary": beneficiary, "amount": amount})
+    op = pending(substrate, m_mint.address, call_hash(call))
+    if args.cancel:
+        if op is None:
+            _print_json({"action": "cancel", "result": "nothing pending", "call_hash": call_hash(call)})
+            return 1
+        r = m_mint.cancel(substrate, profile, key, op, step="operator_cancel_mint", label="Assets.mint")
+        _print_json({"action": "cancel", "call_hash": op.call_hash, "receipt": r.as_dict()})
+        return 0 if r.outcome.ok and "Multisig.MultisigCancelled" in r.event_names() else 1
+    if op is not None:
+        _print_json({"action": "propose", "result": "already pending", "call_hash": op.call_hash, "timepoint": op.timepoint})
+        return 1
+    r = m_mint.propose(substrate, profile, key, call, step="operator_propose_mint", label="Assets.mint")
+    _print_json({"action": "propose", "call_hash": call_hash(call), "amount": str(amount), "beneficiary": beneficiary,
+                 "receipt": r.as_dict()})
+    return 0 if r.outcome.ok and "Multisig.NewMultisig" in r.event_names() else 1
+
+
+def cmd_thaw(args: argparse.Namespace) -> int:
+    """Operator (A or A2): propose thaw_asset through M_admin — it executes only with a second signature."""
+    from .bot import operator_accounts
+    from .multisig_ops import call_hash, pending
+
+    try:
+        profile, substrate, dep = _deployment_context(args)
+        key = _key(profile, args.key, "BALLAST_OPERATOR_SURI", "//BallastA")
+    except Exception as exc:  # noqa: BLE001
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    _, m_admin = operator_accounts(dep, substrate.ss58_format or 42)
+    call = substrate.compose_call(call_module="Assets", call_function="thaw_asset", call_params={"id": dep.breaker})
+    op = pending(substrate, m_admin.address, call_hash(call))
+    if args.cancel:
+        if op is None:
+            _print_json({"action": "cancel", "result": "nothing pending"})
+            return 1
+        r = m_admin.cancel(substrate, profile, key, op, step="operator_cancel_thaw", label="Assets.thaw_asset")
+        _print_json({"action": "cancel", "call_hash": op.call_hash, "receipt": r.as_dict()})
+        return 0 if r.outcome.ok else 1
+    if op is not None:
+        _print_json({"action": "propose", "result": "already pending", "call_hash": op.call_hash, "timepoint": op.timepoint})
+        return 1
+    r = m_admin.propose(substrate, profile, key, call, step="operator_propose_thaw", label="Assets.thaw_asset")
+    _print_json({"action": "propose", "call_hash": call_hash(call), "receipt": r.as_dict()})
+    return 0 if r.outcome.ok and "Multisig.NewMultisig" in r.event_names() else 1
+
+
+def cmd_bot(args: argparse.Namespace) -> int:
+    """Reserve bot (key B): co-sign the operator's pending mint / thaw only if the finalized reserve covers it."""
+    from .bot import ReserveBot, parse_amount
+    from .store import Store
+
+    try:
+        profile, substrate, dep = _deployment_context(args)
+        key = _key(profile, args.key, "BALLAST_BOT_SURI", "//BallastB")
+        providers = _providers(args, dep, bot_order=True)
+        store = Store(args.db)
+        bot = ReserveBot(substrate=substrate, profile=profile, keypair=key, deployment=dep, providers=providers,
+                         store=store)
+        if args.bot_command == "cosign-mint":
+            amount = parse_amount(args.amount, dep.decimals)
+            beneficiary = _addresses(profile, [args.beneficiary])[0]
+    except Exception as exc:  # noqa: BLE001
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    try:
+        if args.bot_command == "cosign-mint":
+            out = bot.cosign_mint(amount, beneficiary)
+        elif args.bot_command == "cosign-thaw":
+            out = bot.cosign_thaw()
+        else:
+            from .attest import run_attester
+
+            return run_attester(args, profile=profile, substrate=substrate, dep=dep, keypair=key,
+                                providers=providers, store=store)
+    finally:
+        if args.bot_command != "attest":
+            store.close()
+    out["profile"] = profile.name
+    _print_json(out)
+    if out["decision"] != "signed":
+        return 1
+    return 0 if out.get("executed_ok") else 3
+
+
 def cmd_drill(args: argparse.Namespace) -> int:
     from .drill import run_drill
 
@@ -300,6 +444,46 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--max-seconds", type=float, help="stop after this many seconds (exit 4 if --until-frozen)")
     w.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")
     w.set_defaults(func=cmd_watch)
+
+    def deployment_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--deployment", metavar="FILE", help="role-split manifest (default deployments/<profile>.json)")
+        p.add_argument("--key", help="signer: //Dev URI on a stand-in; elsewhere the $BALLAST_*_SURI variable")
+
+    m = sub.add_parser("mint", help="operator: propose a mint of asset 1 through M_mint (executes only if the "
+                       "reserve bot co-signs)")
+    m.add_argument("amount", help="decimal amount, e.g. 50.00")
+    m.add_argument("beneficiary", help="SS58 address (or //Dev URI on a stand-in)")
+    m.add_argument("--cancel", action="store_true", help="cancel the pending proposal (returns the deposit)")
+    deployment_args(m)
+    m.set_defaults(func=cmd_mint)
+
+    t = sub.add_parser("thaw", help="operator: propose thaw_asset through M_admin (2-of-3)")
+    t.add_argument("--cancel", action="store_true")
+    deployment_args(t)
+    t.set_defaults(func=cmd_thaw)
+
+    b = sub.add_parser("bot", help="reserve bot (key B): co-sign gated mints / thaws, post attestations")
+    bsub = b.add_subparsers(dest="bot_command", required=True)
+    bm = bsub.add_parser("cosign-mint", help="co-sign the pending mint iff finalized reserves >= S1 + S2 + amount "
+                         "and asset 1 is not frozen (I7)")
+    bm.add_argument("amount")
+    bm.add_argument("beneficiary")
+    bsub.add_parser("cosign-thaw", help="co-sign the pending thaw iff finalized reserves >= S1 + S2")
+    ba = bsub.add_parser("attest", help="post BALLAST/1 attestations on change + a heartbeat every H blocks, "
+                         "mirrored to ReserveOracle after each included remark")
+    ba.add_argument("--heartbeat-blocks", type=int, help="H (default: the profile's measured H)")
+    ba.add_argument("--poll-blocks", type=int, help="check every N blocks (default: the profile's N)")
+    ba.add_argument("--no-oracle", action="store_true", help="do not mirror to ReserveOracle")
+    ba.add_argument("--max-seconds", type=float, help="stop after this many seconds")
+    ba.add_argument("--max-posts", type=int, help="stop after this many remarks")
+    ba.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")
+    for p in (bm, bsub.choices["cosign-thaw"], ba):
+        deployment_args(p)
+        p.add_argument("--provider", action="append", metavar="NAME=URL",
+                       help="EVM provider, repeatable (default: the manifest's, else Sepolia drpc + publicnode)")
+        p.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
+        p.add_argument("--db", default="ballast.db", help="SQLite decision log (default ballast.db)")
+    b.set_defaults(func=cmd_bot)
 
     d = sub.add_parser("drill", help="breaker drill on a stand-in against a local anvil reserve")
     d.add_argument("--scenario", choices=("drain", "outage"), default="drain",

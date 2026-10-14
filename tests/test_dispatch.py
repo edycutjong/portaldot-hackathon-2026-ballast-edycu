@@ -114,8 +114,15 @@ def test_committed_spike_evidence_proves_the_role_split():
 
     runs = [json.loads(p.read_text()) for p in sorted(EVIDENCE.glob("spike-assets-standin-upstream-*.json"))]
     assert runs
+    # asset 1009 is kept as history: the old shared holder hit the runtime's consumer-reference cap (Token.CannotCreate)
+    # — a recorded FAIL, fixed by a fresh holder per run. Every OTHER committed run must prove the role split.
+    failed = [r for r in runs if r["verdict"] != "PASS"]
+    assert [r["asset_id"] for r in failed] in ([], [1009])
+    assert runs[-1]["verdict"] == "PASS"
     for run in runs:
-        assert summarize(copy.deepcopy(run))["verdict"] == run["verdict"] == "PASS"
+        assert summarize(copy.deepcopy(run))["verdict"] == run["verdict"]
+        if run["verdict"] != "PASS":
+            continue
         steps = {s["receipt"]["step"]: s for s in run["steps"]}
         assert [s["receipt"]["step"] for s in run["steps"]] == SPIKE_ORDER
         outcome = {k: s["receipt"]["outcome"]["text"] for k, s in steps.items()}

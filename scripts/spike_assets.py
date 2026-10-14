@@ -89,7 +89,7 @@ def main() -> int:
 
     substrate = connect(profile, cfg.url)
     alice = dev_keypair(profile, "//Alice")
-    keys = {role: dev_keypair(profile, f"//Ballast{role}") for role in ("A", "W1", "W2", "Judge", "Peer")}
+    keys = {role: dev_keypair(profile, f"//Ballast{role}") for role in ("A", "W1", "W2")}
     addr = {role: kp.ss58_address for role, kp in keys.items()}
     watchers = [addr["W1"], addr["W2"]]
     m_watch = multi_address(watchers, 1, ss58_format=substrate.ss58_format or 42)
@@ -109,6 +109,10 @@ def main() -> int:
     ed = deposits["Balances.ExistentialDeposit"]
     asset_id = free_asset_id(substrate, SPIKE_ASSET_FROM)
     print(f"free asset id: {asset_id} · ED {ed} · asset deposit {deposits['Assets.AssetDeposit']} (planck)")
+    # Holders are fresh per run (//BallastJudge//<asset>): every non-sufficient asset an account holds costs it a
+    # consumer reference, and a shared holder hits the runtime's cap after ~15 runs (Token.CannotCreate).
+    keys |= {role: dev_keypair(profile, f"//Ballast{role}//{asset_id}") for role in ("Judge", "Peer")}
+    addr = {role: kp.ss58_address for role, kp in keys.items()}
 
     run = {
         "kind": "spike-assets",

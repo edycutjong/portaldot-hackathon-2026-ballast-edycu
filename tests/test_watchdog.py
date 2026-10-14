@@ -11,7 +11,7 @@ import ballast.chain
 from ballast.dispatch import OK
 from ballast.multisig import multi_address
 from ballast.sepolia import ReserveReading, compare
-from ballast.watchdog import (
+from ballast.watchdog import (  # noqa: I001
     ALREADY_FROZEN,
     DEFICIT,
     FAIL_CLOSED,
@@ -145,14 +145,22 @@ def test_reserve_labels():
 class FakeSubstrate:
     ss58_format = 42
 
-    def __init__(self, assets, metadata=None):
-        self.assets, self.metadata_ = assets, metadata or {}
+    def __init__(self, assets, metadata=None, free=10**18):
+        self.assets, self.metadata_, self.free = assets, metadata or {}, free
         self.composed = []
 
     def query(self, module, item, params, block_hash=None):
         if item == "Asset":
             return SimpleNamespace(value=self.assets.get(params[0]))
+        if item == "Account":
+            return SimpleNamespace(value={"data": {"free": self.free}})
         return SimpleNamespace(value=self.metadata_.get(params[0]))
+
+    def get_constant(self, module, name):
+        return SimpleNamespace(value=10**14)
+
+    def get_payment_info(self, call, keypair):
+        return {"partialFee": 10**12}
 
     def compose_call(self, call_module, call_function, call_params):
         c = {"call": f"{call_module}.{call_function}", "params": call_params}
@@ -173,10 +181,12 @@ class FakeHead:
 
 
 class FakeEvm:
-    def __init__(self, name, reserves=None):
-        self.name, self.reserves = name, reserves
+    def __init__(self, name, reserves=None, decimals=6):
+        self.name, self.reserves, self.decimals = name, reserves, decimals
 
     def call(self, method, params):
+        import time as _time
+
         from ballast.sepolia import ProviderError
 
         if self.reserves is None:
@@ -184,20 +194,33 @@ class FakeEvm:
         if method == "eth_chainId":
             return hex(31337)
         if method == "eth_getBlockByNumber":
-            return {"number": "0x10", "hash": H, "timestamp": "0x1"}
-        return hex(self.reserves)
+            return {"number": "0x10", "hash": H, "timestamp": hex(int(_time.time()))}
+        if params[1] == "latest":  # decimals()
+            return f"0x{self.decimals:064x}"
+        return f"0x{self.reserves:064x}"
 
 
-def make_dog(monkeypatch, *, reserves, frozen=False, freezer=M_WATCH, signer=W2, heads=(10, 11, 12, 13)):
+def make_dog(monkeypatch, *, reserves, frozen=False, freezer=M_WATCH, signer=W2, heads=(10, 11, 12, 13),
+             outcomes=None, threshold=1, free=10**18, decimals=6, providers=None):
+    """`outcomes`: per-submit behaviour, in order — "ok", "raise", "inner-err" (default: always "ok")."""
     status = "Frozen" if frozen else "Live"
     substrate = FakeSubstrate(
         {1: {"supply": 60, "status": status, "freezer": freezer}, 2: {"supply": 40, "status": "Live"}},
-        {1: {"decimals": 6}},
+        {1: {"decimals": 6}, 2: {"decimals": 6}},
+        free=free,
     )
     submitted = []
+    plan = list(outcomes or [])
 
     def fake_submit(sub, profile, keypair, module, function, params, **kw):
         submitted.append((module, function, params))
+        kind = plan.pop(0) if plan else "ok"
+        if kind == "raise":
+            raise ConnectionError("pool full")
+        if kind == "inner-err":
+            err = SimpleNamespace(ok=False, __str__=lambda self=None: "Err(Assets.NoPermission)")
+            return SimpleNamespace(outcome=OK, inner=[err], extrinsic_id="12-2", event_names=lambda: [],
+                                   as_dict=lambda: {"extrinsic_id": "12-2"})
         substrate.assets[1]["status"] = "Frozen"
         return SimpleNamespace(
             outcome=OK, inner=[OK], extrinsic_id="12-2", event_names=lambda: ["Assets.AssetFrozen"],
@@ -206,11 +229,13 @@ def make_dog(monkeypatch, *, reserves, frozen=False, freezer=M_WATCH, signer=W2,
 
     monkeypatch.setattr(ballast.chain, "submit", fake_submit)
     logs = []
-    cfg = WatchConfig(breaker_id=1, supply_ids=[1, 2], watchers=[W1, W2], threshold=1, token="0x" + "00" * 20,
-                      holder="0x" + "11" * 20, poll_blocks=2, fail_closed_after=300, poll_interval_s=0)
+    cfg = WatchConfig(breaker_id=1, supply_ids=[1, 2], watchers=[W1, W2], threshold=threshold,
+                      token="0x" + "00" * 20, holder="0x" + "11" * 20, poll_blocks=2, fail_closed_after=300,
+                      poll_interval_s=0)
     clock = iter(range(0, 10_000, 1))
     dog = Watchdog(substrate=substrate, profile=SimpleNamespace(name="standin-upstream"), head_rpc=FakeHead(heads),
-                   keypair=SimpleNamespace(ss58_address=signer), providers=[FakeEvm("a", reserves)], cfg=cfg,
+                   keypair=SimpleNamespace(ss58_address=signer),
+                   providers=providers or [FakeEvm("a", reserves, decimals)], cfg=cfg,
                    log=lambda event, **f: logs.append({"event": event, **f}) or {"event": event, **f},
                    clock=lambda: float(next(clock)), sleep=lambda s: None)
     return dog, substrate, submitted, logs
@@ -271,3 +296,95 @@ def test_preflight_reports_the_reserve_label(monkeypatch):
     dog, *_ = make_dog(monkeypatch, reserves=100)
     pre = dog.preflight()
     assert pre["reserve"] == "local-anvil (not Sepolia)" and pre["m_watch"] == M_WATCH and pre["asset_decimals"] == 6
+
+
+# --- failure paths --------------------------------------------------------------------------------------------
+def test_submit_error_is_critical_and_retried_on_the_next_poll(monkeypatch):
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=70, heads=(10, 11, 12), outcomes=["raise", "ok"])
+    assert dog.run(until_frozen=True, max_seconds=50) == 0
+    events = [e["event"] for e in logs]
+    assert events.count("freeze-error") == 1 and events.count("freeze") == 1
+    assert next(e for e in logs if e["event"] == "freeze-error")["level"] == "critical"
+    # retried at head 11 — the very next poll, not poll_blocks (2) later
+    assert [e["head"] for e in logs if e["event"] == "check"] == [10, 11] and len(submitted) == 2
+
+
+def test_inner_error_is_a_failed_freeze_and_retried(monkeypatch):
+    dog, _, submitted, logs = make_dog(monkeypatch, reserves=70, heads=(10, 11, 12), outcomes=["inner-err", "ok"])
+    assert dog.run(until_frozen=True, max_seconds=50) == 0
+    failed = next(e for e in logs if e["event"] == "freeze-failed")
+    assert failed["level"] == "critical" and len(submitted) == 2
+
+
+def test_fail_closed_through_check_submits_the_reason(monkeypatch):
+    dog, _, submitted, logs = make_dog(monkeypatch, reserves=None)  # every provider down
+    dog.cfg.fail_closed_after = 2
+    for head in (10, 12, 14, 16):
+        dog.check(head, H)
+    actions = [e["decision"]["action"] for e in logs if e["event"] == "check"]
+    assert actions[:3] == [OUTAGE, OUTAGE, OUTAGE] and FAIL_CLOSED in actions
+    remark = submitted[0][2]["calls"][0]["params"]["remark"]
+    assert remark.startswith("BALLAST/1|freeze|a=1|why=fail-closed|s=100|down=") and remark.endswith("|p=a")
+
+
+def test_check_and_head_errors_do_not_kill_the_loop(monkeypatch):
+    dog, _, submitted, logs = make_dog(monkeypatch, reserves=70, heads=(10, 11, 12))
+    calls = {"n": 0}
+    real_head = dog.head
+
+    def flaky_head():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise OSError("node restarting")
+        return real_head()
+
+    real_assets = dog.assets
+    state = {"n": 0}
+
+    def flaky_assets(block_hash):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise RuntimeError("decode hiccup")
+        return real_assets(block_hash)
+
+    dog.head, dog.assets = flaky_head, flaky_assets
+    assert dog.run(until_frozen=True, max_seconds=50) == 0
+    events = [e["event"] for e in logs]
+    assert "head-error" in events and "check-error" in events and "freeze" in events
+
+
+def test_malformed_provider_cannot_veto_a_deficit(monkeypatch):
+    class Garbage(FakeEvm):
+        def call(self, method, params):
+            return "<html>rate limited</html>" if method == "eth_getBlockByNumber" else super().call(method, params)
+
+    dog, _, submitted, logs = make_dog(monkeypatch, reserves=70,
+                                       providers=[FakeEvm("a", 70), Garbage("b", 100)])
+    record = dog.check(10, H)
+    assert record["decision"]["action"] == DEFICIT and len(submitted) == 1
+
+
+def test_preflight_rejects_threshold_above_one(monkeypatch):
+    dog, *_ = make_dog(monkeypatch, reserves=100, threshold=2)
+    dog.cfg.watchers = [W1, W2]
+    dog.substrate.assets[1]["freezer"] = multi_address([W1, W2], 2)
+    with pytest.raises(RuntimeError, match="1-of-N"):
+        dog.preflight()
+
+
+def test_preflight_rejects_a_decimals_mismatch(monkeypatch):
+    dog, *_ = make_dog(monkeypatch, reserves=100, decimals=18)
+    with pytest.raises(RuntimeError, match="decimals mismatch"):
+        dog.preflight()
+
+
+def test_preflight_rejects_an_unfunded_watcher(monkeypatch):
+    dog, *_ = make_dog(monkeypatch, reserves=100, free=10**14)  # exactly ED: cannot pay any fee
+    with pytest.raises(RuntimeError, match="needs >= ED"):
+        dog.preflight()
+
+
+def test_long_provider_names_never_block_the_fail_closed_remark():
+    d = Decision(FAIL_CLOSED, 100, down_for_s=301)
+    text = freeze_remark(1, d, ["p" * 200, "q" * 200])
+    assert text.endswith("|p=2-providers") and len(text.encode()) <= REMARK_MAX_BYTES

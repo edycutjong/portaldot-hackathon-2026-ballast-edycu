@@ -14,7 +14,13 @@ Loop (one watcher key, freeze-only):
        [System.remark_with_event("BALLAST/1|freeze|…reason…"),
         Multisig.as_multi_threshold_1(other watchers, Assets.freeze_asset(breaker))]
      so the reason is on chain in the same extrinsic as the freeze, and the freezer role is the 1-of-N watcher
-     multisig, never a single key.
+     multisig, never a single key. `as_multi_threshold_1` returns the wrapped call's error as its own (measured on
+     standin-upstream: a watcher thaw through it fails as Err(Assets.NoPermission) — docs/RECEIPTS.md, spike step 7),
+     so `batch_all` reverts the remark with a failed freeze; the receipt is still checked for Assets.AssetFrozen and
+     every inner multisig result (I9). A failed freeze is logged `critical` and retried on the next poll, not N
+     blocks later.
+Scope: an OPERATOR watcher (freeze on either provider short; fail-closed I6). The community-watcher rule (both
+providers short at the same block, no I6) is not implemented here.
 Every record is one JSON line (`log`) with the chain profile and the reserve label on it.
 """
 
@@ -27,11 +33,23 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from .sepolia import ANVIL_CHAIN_ID, SEPOLIA_CHAIN_ID, Comparison, EvmRpc, chain_id, compare, now_iso, read_all
+from .sepolia import (
+    ANVIL_CHAIN_ID,
+    SEPOLIA_CHAIN_ID,
+    Comparison,
+    EvmRpc,
+    chain_id,
+    compare,
+    now_iso,
+    read_all,
+    token_decimals,
+)
 
 REMARK_PREFIX = "BALLAST/1"
 REMARK_MAX_BYTES = 320  # our own budget for any BALLAST/1 remark (architecture: attestation format)
 FAIL_CLOSED_AFTER_S = 300.0  # I6: both providers unreachable for > 5 minutes -> freeze
+MAX_BLOCK_AGE_S = 300.0  # a `latest` block older than this is a failed reading (stuck cache / lagging node)
+FEE_HEADROOM = 10  # the watcher key must hold ED + 10 x the freeze extrinsic's fee
 
 LEVEL, DEFICIT, OUTAGE, FAIL_CLOSED, ALREADY_FROZEN = "level", "deficit", "outage", "fail-closed", "already-frozen"
 
@@ -136,7 +154,10 @@ def freeze_remark(asset_id: int, decision: Decision, providers: Sequence[str]) -
         parts += [f"r={worst['reserves']}", f"p={worst['provider']}", f"eb={worst['block_number']}",
                   f"eh={worst['block_hash']}"]
     elif decision.action == FAIL_CLOSED:
-        parts += [f"down={int(decision.down_for_s or 0)}s", f"p={','.join(providers)}"]
+        names = ",".join(providers)
+        if len(names) > 120:  # user-supplied names: keep the remark within budget, never block the freeze
+            names = f"{len(providers)}-providers"
+        parts += [f"down={int(decision.down_for_s or 0)}s", f"p={names}"]
     else:
         raise ValueError(f"no freeze for action {decision.action!r}")
     text = "|".join(parts)
@@ -193,6 +214,7 @@ class WatchConfig:
     poll_blocks: int
     fail_closed_after: float = FAIL_CLOSED_AFTER_S
     poll_interval_s: float = 1.0
+    max_block_age_s: float | None = MAX_BLOCK_AGE_S  # None/0 = off (e.g. an instant-mining local anvil)
 
 
 class Watchdog:
@@ -216,6 +238,7 @@ class Watchdog:
         self.outage_since: float | None = None
         self.last_checked: int | None = None
         self.freezes: list[dict] = []
+        self.retry_now = False  # set by a failed freeze: check again on the next poll
 
     # --- reads -------------------------------------------------------------------------------------------
     def head(self) -> tuple[int, str]:
@@ -246,6 +269,9 @@ class Watchdog:
             raise RuntimeError(f"asset {self.cfg.breaker_id} freezer is {freezer}, not the watcher set {m_watch}")
         if public_key(self.keypair.ss58_address) not in {public_key(w) for w in self.cfg.watchers}:
             raise RuntimeError("this watcher key is not in the watcher set")
+        if self.cfg.threshold != 1:
+            raise RuntimeError(f"threshold {self.cfg.threshold}: a watcher freezes alone (as_multi_threshold_1), "
+                               "so the watcher set must be 1-of-N")
         evm_ids = {}
         for p in self.providers:
             try:
@@ -255,7 +281,26 @@ class Watchdog:
         known = {v for v in evm_ids.values() if isinstance(v, int)}
         if len(known) > 1:
             raise RuntimeError(f"providers serve different EVM chains: {evm_ids}")
-        meta = self.substrate.query("Assets", "Metadata", [self.cfg.breaker_id], block_hash=block_hash).value or {}
+        # Supply and reserves are compared raw: every backed asset must use the reserve token's decimals.
+        decimals = {i: (self.substrate.query("Assets", "Metadata", [i], block_hash=block_hash).value or {}).get("decimals")
+                    for i in states}
+        token_dec = None
+        for p in self.providers:
+            try:
+                token_dec = token_decimals(p, self.cfg.token)
+                break
+            except Exception:  # noqa: BLE001 — try the next provider
+                continue
+        if token_dec is not None and any(d != token_dec for d in decimals.values()):
+            raise RuntimeError(f"decimals mismatch: assets {decimals} vs reserve token {token_dec}")
+        # The watcher key must be able to pay for the freeze when it matters.
+        fee = self.freeze_fee()
+        ed = self.substrate.get_constant("Balances", "ExistentialDeposit").value
+        free = self.substrate.query("System", "Account", [self.keypair.ss58_address]).value["data"]["free"]
+        if free < ed + FEE_HEADROOM * fee:
+            raise RuntimeError(f"watcher {self.keypair.ss58_address} holds {free}, needs >= ED {ed} + "
+                               f"{FEE_HEADROOM} x freeze fee {fee}")
+        meta = {"decimals": decimals.get(self.cfg.breaker_id)}
         return {
             "head": number,
             "m_watch": m_watch,
@@ -263,6 +308,9 @@ class Watchdog:
             "evm_chain_ids": evm_ids,
             "reserve": reserve_label(next(iter(known)) if known else None),
             "asset_decimals": meta.get("decimals"),
+            "token_decimals": token_dec if token_dec is not None else "unread (no provider answered)",
+            "watcher_free": str(free),
+            "freeze_fee_estimate": str(fee),
             "supplies": {str(i): str(s.supply) for i, s in states.items()},
             "frozen": states[self.cfg.breaker_id].frozen,
         }
@@ -272,7 +320,7 @@ class Watchdog:
         states = self.assets(block_hash)
         supply = sum(states[i].supply for i in self.cfg.supply_ids)
         frozen = states[self.cfg.breaker_id].frozen
-        readings = read_all(self.providers, self.cfg.token, self.cfg.holder, "latest")
+        readings = read_all(self.providers, self.cfg.token, self.cfg.holder, "latest", self.cfg.max_block_age_s)
         comparison = compare(readings)
         decision, self.outage_since = decide(
             supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after
@@ -290,15 +338,13 @@ class Watchdog:
             self.freeze(decision, number)
         return record
 
-    def freeze(self, decision: Decision, seen_at_head: int) -> dict | None:
-        from .chain import submit
+    def freeze_calls(self, remark: str) -> list:
         from .multisig import other_signatories
 
-        remark = freeze_remark(self.cfg.breaker_id, decision, [p.name for p in self.providers])
         fmt = self.substrate.ss58_format or 42
         others = other_signatories(self.cfg.watchers, self.keypair.ss58_address, ss58_format=fmt)
         compose = self.substrate.compose_call
-        calls = [
+        return [
             compose(call_module="System", call_function="remark_with_event", call_params={"remark": remark}),
             compose(
                 call_module="Multisig",
@@ -310,20 +356,42 @@ class Watchdog:
                 },
             ),
         ]
+
+    def freeze_fee(self) -> int:
+        """Fee estimate for the freeze extrinsic (worst-case-length remark), from the node's payment API."""
+        probe = Decision(FAIL_CLOSED, 2**128 - 1, down_for_s=10**6)
+        remark = freeze_remark(self.cfg.breaker_id, probe, [p.name for p in self.providers])
+        batch = self.substrate.compose_call(call_module="Utility", call_function="batch_all",
+                                            call_params={"calls": self.freeze_calls(remark)})
+        info = self.substrate.get_payment_info(call=batch, keypair=self.keypair)
+        return int(info.get("partialFee", info.get("partial_fee")))  # RPC name vs runtime-API name
+
+    def freeze(self, decision: Decision, seen_at_head: int) -> dict | None:
+        from .chain import submit
+
+        try:
+            remark = freeze_remark(self.cfg.breaker_id, decision, [p.name for p in self.providers])
+        except ValueError:  # never let the reason text block the freeze
+            remark = f"{REMARK_PREFIX}|freeze|a={self.cfg.breaker_id}|why={decision.action}"
         submitted_at = self.clock()
         self.log("freeze-submit", head=seen_at_head, remark=remark, message=remark)
         try:
+            calls = self.freeze_calls(remark)
             r = submit(self.substrate, self.profile, self.keypair, "Utility", "batch_all", {"calls": calls},
                        step="watchdog_freeze",
                        call_label="Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]")
-        except Exception as exc:  # noqa: BLE001 — logged; the next check re-reads the asset (another watcher may have frozen it)
-            self.log("freeze-error", head=seen_at_head, message=f"{type(exc).__name__}: {exc}")
+        except Exception as exc:  # noqa: BLE001 — logged; the next poll re-reads the asset (another watcher may have frozen it)
+            self.retry_now = True
+            self.log("freeze-error", level="critical", head=seen_at_head, message=f"{type(exc).__name__}: {exc}")
             return None
         included_at = self.clock()
         frozen_event = "Assets.AssetFrozen" in r.event_names()
         ok = r.outcome.ok and frozen_event and all(o.ok for o in r.inner)
+        if not ok:
+            self.retry_now = True
         record = self.log(
             "freeze" if ok else "freeze-failed",
+            level="info" if ok else "critical",
             head=seen_at_head,
             remark=remark,
             receipt=r.as_dict(),
@@ -345,8 +413,9 @@ class Watchdog:
             except Exception as exc:  # noqa: BLE001 — the Portaldot node itself is down: log, keep polling
                 self.log("head-error", message=f"{type(exc).__name__}: {exc}")
                 number = None
-            if number is not None and (self.last_checked is None or number >= self.last_checked + self.cfg.poll_blocks):
-                self.last_checked = number
+            due = self.last_checked is None or self.retry_now
+            if number is not None and (due or number >= self.last_checked + self.cfg.poll_blocks):
+                self.last_checked, self.retry_now = number, False
                 try:
                     record = self.check(number, block_hash)
                 except Exception as exc:  # noqa: BLE001

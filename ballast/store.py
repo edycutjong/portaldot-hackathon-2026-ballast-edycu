@@ -53,6 +53,10 @@ class Store:
             self.db.execute("UPDATE mint_request SET exec_tx = ? WHERE id = ?", (exec_tx, row_id))
         self.db.commit()
 
+    def set_oracle_tx(self, remark_tx: str, oracle_tx: str) -> None:
+        self.db.execute("UPDATE attestation SET oracle_tx = ? WHERE remark_tx = ?", (oracle_tx, remark_tx))
+        self.db.commit()
+
     def attestation(self, **row) -> int:
         return self._insert("attestation", {"created_at": _now(), **row})
 

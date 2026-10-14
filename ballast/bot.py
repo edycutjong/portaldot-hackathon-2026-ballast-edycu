@@ -1,31 +1,38 @@
 """reserve_bot — key B, the mandatory co-signer. It signs only what the reserve covers, at a FINALIZED block.
 
 Gates (pure functions, unit-tested):
-  mint     sign <=> asset 1 not frozen (I7) and reserves_finalized >= S1 + S2 + amount
-  thaw     sign <=> asset 1 frozen and reserves_finalized >= S1 + S2   (wind-down branch: not built)
+  mint     sign <=> asset 1 not frozen (I7) and min(finalized, latest) reserves >= S1 + S2 + amount
+  thaw     sign <=> asset 1 frozen, finality has passed the freeze (the deficit block `eb` the watcher saw, else
+                    the freeze's own time), and min(finalized, latest) reserves >= S1 + S2   (wind-down: not built)
   set_team sign <=> issuer stays M_mint and the freezer is unchanged
+Both money gates also refuse while either asset's team differs from the role map (DISARMED) or S2 moved.
 S1 = supply of asset 1, S2 = supply of the control asset (fixed: its roles are keyless), both read at the head.
 Pending mints: the bot's approval is always the LAST one (2-of-2 / 2-of-3 with the operator first), so a signed
-mint executes in the same extrinsic — there is no "approved but not yet executed" supply to add.
+mint executes in the same extrinsic — there is no "approved but not yet executed" supply to add. Co-signing holds
+a file lock next to the decision log, so two bot processes can't both pass the gate on the same S1.
 
-The finalized reader asks every provider for its `finalized` block (drpc first on Sepolia: archive depth) and uses the
-LOWEST reserves among the answers; any provider disagreement on a block's hash or balance, or no answer at all,
-is a refusal — the bot never signs on a reading it cannot pin. Every decision is a row in `ballast.db`.
+The reserve view asks EVERY provider (drpc first on Sepolia: archive depth) for its `finalized` and its `latest`
+block. Any provider down or disagreeing on a block's hash or balance, or a finalized block older than
+`max_finalized_age_s`, is a refusal — the bot never signs on a reading it cannot pin. `latest` only ever LOWERS
+the number used (a drain not yet final still blocks a mint). Every decision is a row in `ballast.db`.
 """
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Iterator, Sequence
 
-from .multisig import public_key
 from .multisig_ops import MultisigAccount, Pending, call_hash, pending
 from .roles import Deployment, audit_team, same
 from .sepolia import EvmRpc, compare, read_all
 from .watchdog import asset_state
 
 READ_DEADLINE_S = 30.0
+MAX_FINALIZED_AGE_S = 3600.0  # Sepolia finality lags ~13–19 min; a "finalized" block an hour old = a stuck provider
+FREEZE_LOOKBACK_BLOCKS = 28_800  # how far back the thaw gate looks for the freeze (W on the 3 s stand-in, ~24 h)
 
 
 def parse_amount(text: str, decimals: int) -> int:
@@ -46,28 +53,62 @@ class Finalized:
     reserves: int | None = None
     block_number: int | None = None
     block_hash: str | None = None
+    block_timestamp: int | None = None  # seconds
     provider: str | None = None
     reason: str = ""
     readings: list[dict] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {"ok": self.ok, "reserves": None if self.reserves is None else str(self.reserves),
-                "block_number": self.block_number, "block_hash": self.block_hash, "provider": self.provider,
-                "reason": self.reason, "readings": self.readings}
+                "block_number": self.block_number, "block_hash": self.block_hash,
+                "block_timestamp": self.block_timestamp, "provider": self.provider, "reason": self.reason,
+                "readings": self.readings}
 
 
-def read_finalized(providers: Sequence[EvmRpc], token: str, holder: str, deadline_s: float = READ_DEADLINE_S) -> Finalized:
-    readings = read_all(providers, token, holder, "finalized", None, deadline_s)
+def read_finalized(providers: Sequence[EvmRpc], token: str, holder: str, *, tag: str = "finalized",
+                   require_all: bool = False, max_age_s: float | None = None,
+                   deadline_s: float = READ_DEADLINE_S) -> Finalized:
+    """The LOWEST reading across providers at `tag`. Refuses (ok=False) on silence, disagreement, a block older than
+    `max_age_s`, or — with `require_all` — any provider down."""
+    readings = read_all(providers, token, holder, tag, max_age_s, deadline_s)
     comp = compare(readings)
     rows = [r.as_dict() for r in readings]
     if not comp.ok:
-        return Finalized(False, reason="no provider answered a finalized reading", readings=rows)
+        return Finalized(False, reason=f"no provider answered a {tag} reading", readings=rows)
+    if require_all and comp.failed:
+        return Finalized(False, reason=f"{len(comp.failed)} provider(s) without a valid {tag} reading: "
+                                       + "; ".join(r.error or "?" for r in comp.failed), readings=rows)
     if comp.disagreements:
         return Finalized(False, reason="providers disagree: " + "; ".join(comp.disagreements), readings=rows)
     low = min(comp.ok, key=lambda r: r.reserves)
     down = f" ({len(comp.failed)} provider(s) down)" if comp.failed else ""
-    return Finalized(True, low.reserves, low.block_number, low.block_hash, low.provider,
-                     reason=f"lowest finalized reading{down}", readings=rows)
+    return Finalized(True, low.reserves, low.block_number, low.block_hash, low.block_timestamp, low.provider,
+                     reason=f"lowest {tag} reading{down}", readings=rows)
+
+
+@dataclass
+class ReserveView:
+    finalized: Finalized
+    latest: Finalized
+
+    @property
+    def ok(self) -> bool:
+        return self.finalized.ok and self.latest.ok
+
+    @property
+    def reason(self) -> str:
+        bad = [f"{name}: {v.reason}" for name, v in (("finalized", self.finalized), ("latest", self.latest)) if not v.ok]
+        return "; ".join(bad)
+
+    def as_dict(self) -> dict:
+        return {"finalized": self.finalized.as_dict(), "latest": self.latest.as_dict()}
+
+
+def read_view(providers: Sequence[EvmRpc], token: str, holder: str,
+              max_finalized_age_s: float | None = MAX_FINALIZED_AGE_S) -> ReserveView:
+    return ReserveView(
+        finalized=read_finalized(providers, token, holder, require_all=True, max_age_s=max_finalized_age_s),
+        latest=read_finalized(providers, token, holder, tag="latest", require_all=True))
 
 
 @dataclass(frozen=True)
@@ -80,35 +121,47 @@ class Gate:
         return "signed" if self.sign else "refused"
 
 
-def mint_gate(reserves: int | None, s1: int, s2: int, amount: int, frozen: bool) -> Gate:
+def mint_gate(finalized: int | None, latest: int | None, s1: int, s2: int, amount: int, frozen: bool) -> Gate:
     if frozen:
         return Gate(False, "I7: the breaker asset is frozen — no mint over a tripped breaker")
     if amount <= 0:
         return Gate(False, "amount must be > 0")
-    if reserves is None:
-        return Gate(False, "finalized reserves unknown")
+    if finalized is None or latest is None:
+        return Gate(False, "reserves unknown")
     need = s1 + s2 + amount
-    if reserves < need:
-        return Gate(False, f"over-mint: finalized reserves {reserves} < S1 {s1} + S2 {s2} + amount {amount} = {need}")
-    return Gate(True, f"finalized reserves {reserves} >= S1 {s1} + S2 {s2} + amount {amount} = {need}")
+    if finalized < need:
+        return Gate(False, f"over-mint: finalized reserves {finalized} < S1 {s1} + S2 {s2} + amount {amount} = {need}")
+    if latest < need:
+        return Gate(False, f"latest reserves {latest} < S1 + S2 + amount = {need} (a drain not yet final)")
+    return Gate(True, f"finalized reserves {finalized} (latest {latest}) >= S1 {s1} + S2 {s2} + amount {amount} = {need}")
 
 
-def thaw_gate(frozen: bool, reserves: int | None, s1: int, s2: int, finalized_block: int | None = None,
-              deficit_block: int | None = None) -> Gate:
-    """`deficit_block` = the reserve-chain block at which the freezing watcher saw the deficit (`eb` of its freeze
-    remark). A finalized reading OLDER than that predates the drain and would show full reserves: refused."""
+def thaw_gate(frozen: bool, finalized: int | None, latest: int | None, s1: int, s2: int, *,
+              finalized_block: int | None, finalized_ts: int | None, anchor: dict | None) -> Gate:
+    """`anchor` = the freeze being undone: {"eb": reserve-chain block the freezing watcher saw short (deficit
+    freezes), "freeze_ts_ms": Portaldot timestamp of the freeze block}. A finalized reading from before the drain
+    shows full reserves; it must never justify a thaw."""
     if not frozen:
         return Gate(False, "the breaker asset is not frozen")
-    if reserves is None or finalized_block is None:
-        return Gate(False, "finalized reserves unknown")
-    if deficit_block is None:
-        return Gate(False, "the freeze's deficit block is unknown: cannot tell whether finality has passed it")
-    if finalized_block < deficit_block:
-        return Gate(False, f"finalized block #{finalized_block} is older than the deficit block #{deficit_block}: "
-                           "finality has not reached the drain yet")
-    if reserves < s1 + s2:
-        return Gate(False, f"finalized reserves {reserves} < S1 {s1} + S2 {s2} = {s1 + s2}: still short at finality")
-    return Gate(True, f"finalized reserves {reserves} >= S1 {s1} + S2 {s2} = {s1 + s2}")
+    if finalized is None or latest is None or finalized_block is None:
+        return Gate(False, "reserves unknown")
+    if not anchor:
+        return Gate(False, "the freeze could not be located: cannot tell whether finality has passed it")
+    if anchor.get("eb") is not None:
+        if finalized_block < anchor["eb"]:
+            return Gate(False, f"finalized block #{finalized_block} is older than the deficit block #{anchor['eb']}: "
+                               "finality has not reached the drain yet")
+    elif anchor.get("freeze_ts_ms") is None or finalized_ts is None:
+        return Gate(False, "the freeze carries no deficit block and its time is unknown")
+    elif finalized_ts * 1000 < anchor["freeze_ts_ms"]:
+        return Gate(False, f"finalized block #{finalized_block} (t={finalized_ts}) predates the freeze "
+                           f"(t={anchor['freeze_ts_ms'] // 1000}): finality has not passed it yet")
+    if finalized < s1 + s2:
+        return Gate(False, f"finalized reserves {finalized} < S1 {s1} + S2 {s2} = {s1 + s2}: still short at finality")
+    if latest < s1 + s2:
+        return Gate(False, f"latest reserves {latest} < S1 + S2 = {s1 + s2}: short again")
+    return Gate(True, f"finalized reserves {finalized} (latest {latest}) >= S1 {s1} + S2 {s2} = {s1 + s2}, "
+                      f"finalized block #{finalized_block} past the freeze")
 
 
 def set_team_gate(current: dict, proposed: dict, m_mint: str) -> Gate:
@@ -119,45 +172,40 @@ def set_team_gate(current: dict, proposed: dict, m_mint: str) -> Gate:
     return Gate(True, "issuer stays M_mint and the freezer is unchanged")
 
 
-def frozen_since(substrate: Any, asset_id: int, head: int) -> int | None:
-    """The block at which the asset last went from live to frozen (archive state: galloping + binary search over
-    `Assets.Asset(id)` at past blocks). None if it is not frozen at `head`."""
-    def frozen_at(n: int) -> bool:
-        h = substrate.get_block_hash(n)
-        return asset_state(asset_id, substrate.query("Assets", "Asset", [asset_id], block_hash=h).value).frozen
-
-    if not frozen_at(head):
-        return None
-    hi, step = head, 1
-    while True:
-        lo = max(hi - step, 0)
-        if not frozen_at(lo):
-            break
-        if lo == 0:
-            return 0
-        hi, step = lo, step * 2
-    while hi - lo > 1:
-        mid = (lo + hi) // 2
-        if frozen_at(mid):
-            hi = mid
-        else:
-            lo = mid
-    return hi
+def last_freeze(substrate: Any, asset_id: int, head: int, max_lookback: int = FREEZE_LOOKBACK_BLOCKS) -> dict | None:
+    """The most recent `Assets.AssetFrozen` of the asset at or before `head` (backward event scan — exact, unlike a
+    storage bisection, when the asset was frozen and thawed more than once)."""
+    for n in range(head, max(head - max_lookback, 0) - 1, -1):
+        block_hash = substrate.get_block_hash(n)
+        for ev in substrate.get_events(block_hash):
+            v = ev.value
+            attrs = v.get("attributes")
+            if (v.get("module_id"), v.get("event_id")) == ("Assets", "AssetFrozen") and isinstance(attrs, dict) \
+                    and attrs.get("asset_id") == asset_id:
+                return {"block_number": n, "block_hash": block_hash, "extrinsic_index": v.get("extrinsic_idx")}
+    return None
 
 
-def deficit_anchor(substrate: Any, asset_id: int, freeze_block: int) -> dict:
-    """The freeze remark in the freeze block: {"reason", "eb", "remark", "extrinsic_id"}; eb is None if the freeze
-    carried no deficit block (providers-down / heartbeat / a freeze without a Ballast remark)."""
+def freeze_anchor(substrate: Any, asset_id: int, freeze: dict, watchers: Sequence[str]) -> dict:
+    """What the thaw gate needs about one freeze: its time, and the deficit block `eb` from the reason remark — only
+    a remark IN THE FREEZING EXTRINSIC and SENT BY A WATCHER counts (I5); anything else leaves `eb` unknown."""
     from .remarks import block_remarks, parse
 
-    block_hash = substrate.get_block_hash(freeze_block)
-    for rem in block_remarks(substrate, block_hash, prefix="BALLAST/1|freeze|"):
-        fields = parse(rem["text"])
+    ts = substrate.query("Timestamp", "Now", block_hash=freeze["block_hash"]).value
+    out = {"block_number": freeze["block_number"], "extrinsic_id": f"{freeze['block_number']}-{freeze['extrinsic_index']}",
+           "freeze_ts_ms": int(ts) if ts is not None else None, "reason": None, "eb": None, "remark": None}
+    for rem in block_remarks(substrate, freeze["block_hash"], prefix="BALLAST/1|freeze|"):
+        if rem["extrinsic_index"] != freeze["extrinsic_index"] or not any(same(rem["sender"], w) for w in watchers):
+            continue
+        try:
+            fields = parse(rem["text"])
+        except ValueError:
+            continue
         if fields.get("a") == str(asset_id):
             eb = fields.get("eb")
-            return {"reason": fields.get("reason"), "eb": int(eb) if eb and eb.isdigit() else None,
-                    "remark": rem["text"], "extrinsic_id": rem["extrinsic_id"]}
-    return {"reason": None, "eb": None, "remark": None, "extrinsic_id": None}
+            out |= {"reason": fields.get("reason"), "eb": int(eb) if eb and eb.isdigit() else None,
+                    "remark": rem["text"]}
+    return out
 
 
 class ReserveBot:
@@ -165,15 +213,26 @@ class ReserveBot:
     (final approval) or refuse. Never proposes."""
 
     def __init__(self, *, substrate: Any, profile: Any, keypair: Any, deployment: Deployment,
-                 providers: Sequence[EvmRpc], store: Any, log: Callable[[str], None] = print):
+                 providers: Sequence[EvmRpc], store: Any, log: Callable[[str], None] = print,
+                 max_finalized_age_s: float | None = MAX_FINALIZED_AGE_S):
         self.substrate, self.profile, self.keypair, self.dep = substrate, profile, keypair, deployment
         self.providers, self.store, self.log = providers, store, log
+        self.max_finalized_age_s = max_finalized_age_s
         self.rm = deployment.role_map()
         if not same(keypair.ss58_address, self.rm.b):
             raise ValueError(f"this key is not the bot key B {self.rm.b}")
         fmt = substrate.ss58_format or 42
         self.m_mint = MultisigAccount(self.rm.mint_signatories, 2, fmt)
         self.m_admin = MultisigAccount(self.rm.admin_signatories, 2, fmt)
+
+    @contextlib.contextmanager
+    def _lock(self) -> Iterator[None]:
+        with open(f"{self.store.path}.lock", "w") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(fh, fcntl.LOCK_UN)
 
     # --- reads -------------------------------------------------------------------------------------------
     def supplies(self, block_hash: str | None = None) -> dict:
@@ -183,13 +242,16 @@ class ReserveBot:
         if not a1.exists:
             raise RuntimeError(f"asset {self.dep.breaker} does not exist")
         problems = audit_team(d1, self.rm.breaker_team())
+        problems += [f"control asset: {p}" for p in audit_team(d2, self.rm.control_team())]
+        if a2.exists and a2.supply != self.dep.s2:
+            problems.append(f"control asset supply {a2.supply} != S2 {self.dep.s2} (S2 is fixed)")
         return {"s1": a1.supply, "s2": a2.supply if a2.exists else 0, "frozen": a1.frozen, "status": a1.status,
                 "team_problems": problems}
 
-    def finalized(self) -> Finalized:
-        fin = read_finalized(self.providers, self.dep.reserve["erc20"], self.dep.reserve["vault"])
-        self.store.readings(fin.readings)
-        return fin
+    def reserves(self) -> ReserveView:
+        view = read_view(self.providers, self.dep.reserve["erc20"], self.dep.reserve["vault"], self.max_finalized_age_s)
+        self.store.readings(view.finalized.readings + view.latest.readings)
+        return view
 
     def _pending(self, account: MultisigAccount, call: Any, proposers: Sequence[str]) -> Pending | None:
         op = pending(self.substrate, account.address, call_hash(call))
@@ -201,79 +263,97 @@ class ReserveBot:
             raise RuntimeError("the pending operation is not approved by an operator key")
         return op
 
-    def _record(self, kind: str, gate: Gate, fin: Finalized, st: dict, **extra) -> int:
+    def _record(self, kind: str, gate: Gate, view: ReserveView | None, st: dict, **extra) -> int:
+        fin = view.finalized if view else Finalized(False)
         return self.store.request(kind=kind, decision=gate.decision, reason=gate.reason,
                                   sep_block_finalized=fin.block_number, sep_hash_finalized=fin.block_hash,
                                   reserves=None if fin.reserves is None else str(fin.reserves),
                                   supply_before=f"{st['s1']}+{st['s2']}", frozen=int(st["frozen"]),
                                   profile=self.profile.name, **extra)
 
-    # --- co-signing --------------------------------------------------------------------------------------
-    def mint_call(self, amount: int, beneficiary: str):
-        return self.substrate.compose_call(call_module="Assets", call_function="mint",
-                                           call_params={"id": self.dep.breaker, "beneficiary": beneficiary,
-                                                        "amount": amount})
+    def _execute(self, account: MultisigAccount, call: Any, op: Pending, row: int, out: dict, *, step: str,
+                 label: str, event: str) -> None:
+        r = account.execute(self.substrate, self.profile, self.keypair, call, op, step=step, label=label)
+        ok = r.outcome.ok and bool(r.inner) and all(o.ok for o in r.inner) and event in r.event_names()
+        self.store.set_exec(row, r.extrinsic_id, "signed-executed" if ok else "signed-inner-failed")
+        out["receipt"], out["executed_ok"] = r.as_dict(), ok
 
-    def thaw_call(self):
-        return self.substrate.compose_call(call_module="Assets", call_function="thaw_asset",
-                                           call_params={"id": self.dep.breaker})
+    # --- co-signing --------------------------------------------------------------------------------------
+    def compose(self, function: str, **params: Any):
+        return self.substrate.compose_call(call_module="Assets", call_function=function,
+                                           call_params={"id": self.dep.breaker, **params})
 
     def cosign_mint(self, amount: int, beneficiary: str) -> dict:
-        call = self.mint_call(amount, beneficiary)
-        op = self._pending(self.m_mint, call, [self.rm.a])
-        if op is None:
-            return {"decision": "no-proposal", "reason": f"no pending M_mint proposal for {call_hash(call)}"}
-        st = self.supplies()
-        fin = self.finalized()
-        gate = mint_gate(fin.reserves if fin.ok else None, st["s1"], st["s2"], amount, st["frozen"])
-        if not fin.ok and not st["frozen"]:
-            gate = Gate(False, f"finalized reserves unreadable: {fin.reason}")
-        if st["team_problems"]:
-            gate = Gate(False, "DISARMED: " + "; ".join(st["team_problems"]))
-        row = self._record("mint", gate, fin, st, amount=str(amount), beneficiary=beneficiary, call_hash=op.call_hash)
-        out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash, "timepoint": op.timepoint,
-               "amount": str(amount), "state": st, "finalized": fin.as_dict(), "db_row": row}
-        if gate.sign:
-            r = self.m_mint.execute(self.substrate, self.profile, self.keypair, call, op, step="bot_mint",
-                                    label="Assets.mint")
-            self.store.set_exec(row, r.extrinsic_id)
-            out["receipt"] = r.as_dict()
-            out["executed_ok"] = r.outcome.ok and bool(r.inner) and all(o.ok for o in r.inner) and \
-                "Assets.Issued" in r.event_names()
-        return out
+        call = self.compose("mint", beneficiary=beneficiary, amount=amount)
+        with self._lock():
+            op = self._pending(self.m_mint, call, [self.rm.a])
+            if op is None:
+                return {"decision": "no-proposal", "reason": f"no pending M_mint proposal for {call_hash(call)}"}
+            st = self.supplies()
+            view = self.reserves()
+            gate = mint_gate(view.finalized.reserves if view.ok else None, view.latest.reserves if view.ok else None,
+                             st["s1"], st["s2"], amount, st["frozen"])
+            if not view.ok and not st["frozen"]:
+                gate = Gate(False, f"reserves unreadable: {view.reason}")
+            if st["team_problems"]:
+                gate = Gate(False, "DISARMED: " + "; ".join(st["team_problems"]))
+            row = self._record("mint", gate, view, st, amount=str(amount), beneficiary=beneficiary,
+                               call_hash=op.call_hash)
+            out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash,
+                   "timepoint": op.timepoint, "amount": str(amount), "state": st, "reserves": view.as_dict(),
+                   "finalized": view.finalized.as_dict(), "db_row": row}
+            if gate.sign:
+                self._execute(self.m_mint, call, op, row, out, step="bot_mint", label="Assets.mint",
+                              event="Assets.Issued")
+            return out
 
-    def cosign_thaw(self) -> dict:
-        call = self.thaw_call()
-        op = self._pending(self.m_admin, call, [self.rm.a, self.rm.a2])
-        if op is None:
-            return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
-        head = self.substrate.get_block_number(None)
-        st = self.supplies(self.substrate.get_block_hash(head))
-        since = frozen_since(self.substrate, self.dep.breaker, head) if st["frozen"] else None
-        anchor = deficit_anchor(self.substrate, self.dep.breaker, since) if since is not None else {}
-        fin = self.finalized()
-        gate = thaw_gate(st["frozen"], fin.reserves if fin.ok else None, st["s1"], st["s2"],
-                         fin.block_number if fin.ok else None, anchor.get("eb"))
-        if not fin.ok and st["frozen"]:
-            gate = Gate(False, f"finalized reserves unreadable: {fin.reason}")
-        row = self._record("thaw", gate, fin, st, call_hash=op.call_hash)
-        out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash, "timepoint": op.timepoint,
-               "state": st, "frozen_since": since, "freeze": anchor, "finalized": fin.as_dict(), "db_row": row}
-        if gate.sign:
-            r = self.m_admin.execute(self.substrate, self.profile, self.keypair, call, op, step="bot_thaw",
-                                     label="Assets.thaw_asset")
-            self.store.set_exec(row, r.extrinsic_id)
-            out["receipt"] = r.as_dict()
-            out["executed_ok"] = r.outcome.ok and bool(r.inner) and all(o.ok for o in r.inner) and \
-                "Assets.AssetThawed" in r.event_names()
-        return out
+    def cosign_thaw(self, max_lookback: int = FREEZE_LOOKBACK_BLOCKS) -> dict:
+        call = self.compose("thaw_asset")
+        with self._lock():
+            op = self._pending(self.m_admin, call, [self.rm.a, self.rm.a2])
+            if op is None:
+                return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
+            head = self.substrate.get_block_number(None)
+            st = self.supplies(self.substrate.get_block_hash(head))
+            freeze = last_freeze(self.substrate, self.dep.breaker, head, max_lookback) if st["frozen"] else None
+            anchor = freeze_anchor(self.substrate, self.dep.breaker, freeze, self.rm.watchers) if freeze else None
+            view = self.reserves()
+            fin = view.finalized
+            gate = thaw_gate(st["frozen"], fin.reserves if view.ok else None, view.latest.reserves if view.ok else None,
+                             st["s1"], st["s2"], finalized_block=fin.block_number if view.ok else None,
+                             finalized_ts=fin.block_timestamp, anchor=anchor)
+            if not view.ok and st["frozen"]:
+                gate = Gate(False, f"reserves unreadable: {view.reason}")
+            if st["team_problems"]:
+                gate = Gate(False, "DISARMED: " + "; ".join(st["team_problems"]))
+            row = self._record("thaw", gate, view, st, call_hash=op.call_hash)
+            out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash,
+                   "timepoint": op.timepoint, "state": st, "freeze": anchor, "reserves": view.as_dict(),
+                   "finalized": fin.as_dict(), "db_row": row}
+            if gate.sign:
+                self._execute(self.m_admin, call, op, row, out, step="bot_thaw", label="Assets.thaw_asset",
+                              event="Assets.AssetThawed")
+            return out
+
+    def cosign_team(self, issuer: str, admin: str, freezer: str) -> dict:
+        call = self.compose("set_team", issuer=issuer, admin=admin, freezer=freezer)
+        with self._lock():
+            op = self._pending(self.m_mint, call, [self.rm.a])  # owner = M_mint
+            if op is None:
+                return {"decision": "no-proposal", "reason": f"no pending M_mint proposal for {call_hash(call)}"}
+            current = self.substrate.query("Assets", "Asset", [self.dep.breaker]).value or {}
+            st = self.supplies()
+            gate = set_team_gate(current, {"issuer": issuer, "admin": admin, "freezer": freezer}, self.rm.m_mint)
+            row = self._record("set_team", gate, None, st, call_hash=op.call_hash)
+            out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash,
+                   "timepoint": op.timepoint, "proposed": {"issuer": issuer, "admin": admin, "freezer": freezer},
+                   "state": st, "db_row": row}
+            if gate.sign:
+                self._execute(self.m_mint, call, op, row, out, step="bot_team", label="Assets.set_team",
+                              event="Assets.TeamChanged")
+            return out
 
 
 def operator_accounts(deployment: Deployment, ss58_format: int) -> tuple[MultisigAccount, MultisigAccount]:
     rm = deployment.role_map()
     return MultisigAccount(rm.mint_signatories, 2, ss58_format), MultisigAccount(rm.admin_signatories, 2, ss58_format)
-
-
-def is_operator(deployment: Deployment, who: str) -> bool:
-    rm = deployment.role_map()
-    return public_key(who) in {public_key(rm.a), public_key(rm.a2)}

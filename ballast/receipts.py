@@ -15,7 +15,7 @@ EVIDENCE = ROOT / "evidence"
 RECEIPTS_MD = ROOT / "docs" / "RECEIPTS.md"
 
 
-RUN_PATTERNS = ("spike-assets-*.json", "drill-*.json", "oracle-*.json")
+RUN_PATTERNS = ("spike-assets-*.json", "drill-*.json", "oracle-*.json", "roles-*.json")
 
 
 def load_runs(patterns: tuple[str, ...] = RUN_PATTERNS) -> list[dict]:
@@ -143,7 +143,8 @@ def _steps_body(run: dict) -> list[str]:
 
 def render_drill_section(run: dict) -> list[str]:
     ident, reserve = run["chain"], run["reserve"]
-    title = {"drain": "reserve drained -> watchdog freezes", "outage": "every provider down -> fail-closed freeze"}
+    title = {"drain": "reserve drained -> watchdog freezes", "outage": "every provider down -> fail-closed freeze",
+             "heartbeat": "no bot heartbeat for K blocks -> freeze (I8)"}
     lines = [
         f"### Breaker drill ({run['scenario']}: {title.get(run['scenario'], run['scenario'])}) — asset "
         f"{run['asset_id']} — {run['started_at']}",
@@ -208,6 +209,41 @@ def render_oracle_section(run: dict) -> list[str]:
     return lines + _steps_body(run)
 
 
+ROLE_TITLES = {
+    "roles-setup": "Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle",
+    "roles-drill": "Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw",
+}
+
+
+def render_roles_section(run: dict) -> list[str]:
+    ident, reserve = run["chain"], run.get("reserve", {})
+    lines = [
+        f"### {ROLE_TITLES.get(run['kind'], run['kind'])} — {run['started_at']}",
+        "",
+        f"Chain: **{ident['label']}** · reserve: **{reserve.get('label')}** · raw JSON: "
+        f"[`evidence/{run['_file']}`](../evidence/{run['_file']}) · result: **{run['verdict']}** ({score(run)}) · "
+        f"{pin_text(run)}",
+        "",
+    ]
+    roles = run.get("roles")
+    if roles:
+        lines += [f"Role map: `M_mint` {roles['M_mint']['address']} (2-of-2 A, B) · `M_admin` "
+                  f"{roles['M_admin']['address']} (2-of-3 A, A2, B) · `M_watch` {roles['M_watch']['address']} "
+                  f"(1-of-{len(roles['watchers'])} watchers).", ""]
+    for key, value in (run.get("notes") or {}).items():
+        lines.append(f"- {key}: {value}")
+    if run.get("notes"):
+        lines.append("")
+    if run.get("evm_steps"):
+        lines += [f"Reserve-chain transactions ({reserve.get('label')}; vault `{reserve.get('vault')}`):", "",
+                  "| # | Step | Block | Tx hash | Observed |", "|---|---|---|---|---|"]
+        for i, row in enumerate(run["evm_steps"], 1):
+            lines.append(f"| {i} | {row['name']} | {row['block_number']} | `{row['tx_hash']}` | "
+                         f"{_mark(row['as_expected'])} status {row['status']} |")
+        lines += ["", "Portaldot extrinsics:", ""]
+    return lines + _steps_body(run)
+
+
 def v3_probe_line() -> list[str]:
     def stamp(path: Path) -> str:  # the probe's own UTC time from its first line, e.g. 2026-10-14T11:41:33Z
         found = re.search(r"\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?Z", path.read_text().splitlines()[0])
@@ -255,7 +291,8 @@ def render_receipts_md() -> str:
                     f"Chain label: {group[0]['chain']['label']}", ""]
         else:
             out += [f"## V3 receipts — {profile}", "", f"Chain label: {group[0]['chain']['label']}", ""]
-        kinds = (("drill", "drain"), ("drill", "outage"), ("oracle-deploy", None), ("spike-assets", None))
+        kinds = (("roles-drill", None), ("roles-setup", None), ("drill", "drain"), ("drill", "outage"),
+                 ("drill", "heartbeat"), ("oracle-deploy", None), ("spike-assets", None))
         for kind, scenario in kinds:
             runs_k = [r for r in group if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
             if not runs_k:
@@ -266,7 +303,8 @@ def render_receipts_md() -> str:
             runs_k = [lead] + [r for r in runs_k if r is not lead]
             for i, run in enumerate(runs_k):
                 if i == 0:
-                    render = {"drill": render_drill_section, "oracle-deploy": render_oracle_section}
+                    render = {"drill": render_drill_section, "oracle-deploy": render_oracle_section,
+                              "roles-setup": render_roles_section, "roles-drill": render_roles_section}
                     out += render.get(kind, render_spike_section)(run)
                 else:
                     if i == 1:

@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 import time
 from collections.abc import Iterable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -98,8 +99,18 @@ def _int(value: Any) -> int:
     if isinstance(value, int):
         return value
     if isinstance(value, str) and value.startswith("0x"):
-        return int(value, 16) if len(value) > 2 else 0
-    raise ProviderError(f"not a hex quantity: {value!r}")
+        try:
+            return int(value, 16) if len(value) > 2 else 0
+        except ValueError:
+            pass
+    raise ProviderError(f"not a hex quantity: {str(value)[:80]!r}")
+
+
+def _word(value: Any, what: str) -> int:
+    """An ABI return of exactly one 32-byte word. `0x` (no code at the address, wrong network) is an error, not 0."""
+    if not isinstance(value, str) or not re.fullmatch(r"0x[0-9a-fA-F]{64}", value):
+        raise ProviderError(f"{what}: expected one 32-byte word, got {str(value)[:80]!r}")
+    return int(value, 16)
 
 
 def _address_word(address: str) -> str:
@@ -121,8 +132,10 @@ def read_block(rpc: EvmRpc, tag: str | int) -> tuple[int, str, int]:
     """(number, hash, timestamp) of a block by tag (`latest` / `safe` / `finalized`) or number."""
     ref = tag if isinstance(tag, str) else hex(tag)
     block = rpc.call("eth_getBlockByNumber", [ref, False])
-    if not block or not block.get("hash"):
-        raise ProviderError(f"{rpc.name}: no block {tag!r}")
+    if not isinstance(block, dict) or not all(isinstance(block.get(k), str) for k in ("number", "hash", "timestamp")):
+        raise ProviderError(f"{rpc.name}: no block {tag!r} (reply: {str(block)[:80]!r})")
+    if not re.fullmatch(r"0x[0-9a-fA-F]{64}", block["hash"]):
+        raise ProviderError(f"{rpc.name}: bad block hash {block['hash'][:80]!r}")
     return _int(block["number"]), block["hash"], _int(block["timestamp"])
 
 
@@ -132,11 +145,11 @@ def call_at(rpc: EvmRpc, to: str, data: str, block_hash: str) -> str:
 
 
 def balance_at(rpc: EvmRpc, token: str, holder: str, block_hash: str) -> int:
-    return _int(call_at(rpc, token, balance_of_data(holder), block_hash))
+    return _word(call_at(rpc, token, balance_of_data(holder), block_hash), f"{rpc.name}: balanceOf")
 
 
 def token_decimals(rpc: EvmRpc, token: str) -> int:
-    return _int(rpc.call("eth_call", [{"to": token, "data": SELECTOR_DECIMALS}, "latest"]))
+    return _word(rpc.call("eth_call", [{"to": token, "data": SELECTOR_DECIMALS}, "latest"]), f"{rpc.name}: decimals")
 
 
 @dataclass
@@ -169,22 +182,34 @@ class ReserveReading:
         }
 
 
-def read_reserves(rpc: EvmRpc, token: str, holder: str, tag: str = "latest") -> ReserveReading:
-    """One provider, one consistent snapshot. Never raises: a failure is a reading with `error` set."""
+def read_reserves(
+    rpc: EvmRpc, token: str, holder: str, tag: str = "latest", max_block_age_s: float | None = None
+) -> ReserveReading:
+    """One provider, one consistent snapshot. Never raises: ANY failure (transport, JSON-RPC error, malformed reply,
+    a block older than `max_block_age_s`) is a reading with `error` set, so one bad provider can't stop a check."""
     started = time.monotonic()
     reading = ReserveReading(provider=rpc.name, tag=tag)
     try:
         number, block_hash, ts = read_block(rpc, tag)
         reading.block_number, reading.block_hash, reading.block_timestamp = number, block_hash, ts
+        if max_block_age_s and time.time() - ts > max_block_age_s:
+            raise ProviderError(f"{rpc.name}: {tag} block #{number} is {int(time.time() - ts)}s old "
+                                f"(> {int(max_block_age_s)}s): stale")
         reading.reserves = balance_at(rpc, token, holder, block_hash)
-    except (ProviderError, ValueError) as exc:
-        reading.error = str(exc)
+    except Exception as exc:  # noqa: BLE001 — every failure mode must become a reading, never abort the caller
+        reading.error = str(exc) if isinstance(exc, ProviderError) else f"{rpc.name}: {type(exc).__name__}: {exc}"[:300]
     reading.seconds = round(time.monotonic() - started, 3)
     return reading
 
 
-def read_all(providers: Sequence[EvmRpc], token: str, holder: str, tag: str = "latest") -> list[ReserveReading]:
-    return [read_reserves(p, token, holder, tag) for p in providers]
+def read_all(
+    providers: Sequence[EvmRpc], token: str, holder: str, tag: str = "latest", max_block_age_s: float | None = None
+) -> list[ReserveReading]:
+    """Every provider in parallel (a hung provider must not delay a healthy one), results in provider order."""
+    if len(providers) <= 1:
+        return [read_reserves(p, token, holder, tag, max_block_age_s) for p in providers]
+    with ThreadPoolExecutor(max_workers=len(providers)) as pool:
+        return list(pool.map(lambda p: read_reserves(p, token, holder, tag, max_block_age_s), providers))
 
 
 @dataclass

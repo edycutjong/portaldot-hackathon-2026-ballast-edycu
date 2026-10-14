@@ -39,7 +39,7 @@ class FakeRpc:
         if method == "eth_call":
             pin = params[1]
             assert pin == {"blockHash": pin["blockHash"], "requireCanonical": True}
-            return hex(self.balances[pin["blockHash"]])
+            return f"0x{self.balances[pin['blockHash']]:064x}"
         raise AssertionError(method)
 
 
@@ -121,3 +121,43 @@ def test_web3_provider_wraps_transport_errors():
     p = Web3Provider("closed", "http://127.0.0.1:9", timeout=2)
     with pytest.raises(ProviderError, match="closed: eth_chainId"):
         p.call("eth_chainId", [])
+
+
+class Malformed(FakeRpc):
+    """A provider that answers, but with garbage (rate-limit page, partial JSON, hostile gateway)."""
+
+    def __init__(self, name, block_reply=None, call_reply=None):
+        super().__init__(name, {}, {})
+        self.block_reply, self.call_reply = block_reply, call_reply
+
+    def call(self, method, params):
+        if method == "eth_getBlockByNumber":
+            return self.block_reply
+        return self.call_reply
+
+
+@pytest.mark.parametrize("block_reply", ["rate limited", {"hash": H100}, {"number": "0x1", "hash": "0xzz",
+                                                                         "timestamp": "0x1"}, None, [1, 2]])
+def test_malformed_block_reply_is_a_failed_reading_not_an_exception(block_reply):
+    r = read_reserves(Malformed("bad", block_reply=block_reply), USDC_ADDR, VAULT)
+    assert not r.ok and r.error
+
+
+@pytest.mark.parametrize("call_reply", ["0x", "0x" + "00" * 64, None, "0xnothex" + "0" * 58, 5])
+def test_eth_call_must_return_exactly_one_word(call_reply):
+    good_block = {"number": "0x64", "hash": H100, "timestamp": "0x1"}
+    r = read_reserves(Malformed("bad", block_reply=good_block, call_reply=call_reply), USDC_ADDR, VAULT)
+    assert not r.ok and ("32-byte word" in r.error or "hex quantity" in r.error)
+
+
+def test_one_malformed_provider_cannot_hide_anothers_deficit():
+    healthy = FakeRpc("a", {"latest": (100, H100)}, {H100: 70})
+    c = compare(read_all([healthy, Malformed("b", block_reply="oops")], USDC_ADDR, VAULT))
+    assert [r.provider for r in c.short(100)] == ["a"] and [r.provider for r in c.failed] == ["b"]
+
+
+def test_stale_latest_block_is_a_failed_reading():
+    rpc = FakeRpc("a", {"latest": (100, H100)}, {H100: 100})  # fake timestamps are from 2025: hours old
+    assert not read_reserves(rpc, USDC_ADDR, VAULT, max_block_age_s=300).ok
+    assert "stale" in read_reserves(rpc, USDC_ADDR, VAULT, max_block_age_s=300).error
+    assert read_reserves(rpc, USDC_ADDR, VAULT, max_block_age_s=None).ok

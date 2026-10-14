@@ -1,0 +1,45 @@
+flowchart LR
+  subgraph RES["Reserve chain (drills: local anvil, NOT Sepolia)"]
+    TOKEN["ERC-20 reserve token<br/>(MockUSDC on anvil · Circle test USDC on Sepolia)"]
+    VAULT["ReserveVault.sol<br/>reserves() · release() owner-only<br/>contracts/ReserveVault.sol"]
+    TOKEN --- VAULT
+  end
+
+  subgraph PROC["Off-chain processes (ballast CLI, one key each)"]
+    WD["watchdog / ballast watch<br/>keys W1, W2 · freeze only<br/>ballast/watchdog.py"]
+    BOT["reserve bot / ballast bot<br/>key B · co-signs mint · thaw · set_team<br/>ballast/bot.py"]
+    ATT["attester / ballast bot attest<br/>key B · BALLAST/1 remarks + oracle mirror<br/>ballast/attest.py"]
+    OP["operator / ballast mint · thaw · team<br/>keys A, A2 · proposes<br/>ballast/multisig_ops.py"]
+    VER["ballast verify<br/>re-reads both chains by block hash<br/>ballast/verify.py"]
+  end
+
+  subgraph PD["Portaldot chain (stand-in: substrate-node --dev, NOT V3)"]
+    ASSET["Assets: asset 1 pUSDC-test<br/>owner = issuer = M_mint · admin = M_admin · freezer = M_watch<br/>asset 2 control: keyless roles"]
+    MMINT["Multisig M_mint<br/>2-of-2 {A, B}"]
+    MADMIN["Multisig M_admin<br/>2-of-3 {A, A2, B}"]
+    MWATCH["Multisig M_watch<br/>1-of-2 {W1, W2}<br/>(as_multi_threshold_1)"]
+    REMARK["System.remark_with_event<br/>BALLAST/1 remarks"]
+    ORACLE["Revive: ReserveOracle.sol<br/>post() attester only · status() · isBacked(maxAge)<br/>(deployed on the stand-in only)"]
+  end
+
+  SQL[("ballast.db (SQLite)<br/>decision log, gitignored<br/>ballast/store.py")]
+
+  VAULT -- "balanceOf @ latest, each provider<br/>(EIP-1898 by block hash)" --> WD
+  VAULT -- "balanceOf @ finalized AND latest" --> BOT
+  VAULT -- "balanceOf @ finalized" --> ATT
+  WD -- "batch_all[remark, as_multi_threshold_1(freeze_asset)]" --> MWATCH
+  MWATCH -- "freeze_asset" --> ASSET
+  OP -- "as_multi (first approval)" --> MMINT
+  OP -- "as_multi (first approval)" --> MADMIN
+  BOT -- "as_multi (final approval)<br/>only if the gate passes" --> MMINT
+  BOT -- "as_multi (final approval)<br/>thaw gate" --> MADMIN
+  MMINT -- "mint · set_team" --> ASSET
+  MADMIN -- "thaw_asset" --> ASSET
+  ATT -- "attest / heartbeat" --> REMARK
+  ATT -- "post(), after the remark is included" --> ORACLE
+  BOT --> SQL
+  ATT --> SQL
+  VER -. reads .-> ASSET
+  VER -. reads .-> REMARK
+  VER -. reads .-> ORACLE
+  VER -. "eth_call at the attested block hash" .-> VAULT

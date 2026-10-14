@@ -2,14 +2,14 @@
 
 # Ballast
 
-**A reserve-gated circuit breaker for a test dollar on Portaldot's native Assets pallet.**
+**A reserve-gated circuit breaker for a test dollar, built on the Assets and Multisig pallets (so far demonstrated on a local stand-in chain, not Portaldot V3).**
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Chain: stand-in, not V3](https://img.shields.io/badge/chain-stand--in%2C%20not%20V3-orange)
 
 *Status: work in progress (Portaldot Hacker House 2026). The Assets + Multisig engine runs on a
-labelled local stand-in chain; the Portaldot V3 testnet has been unreachable since the build window opened.*
+labelled local stand-in chain; the Portaldot V3 testnet was unreachable when probed on 2026-10-14.*
 
 </div>
 
@@ -27,13 +27,14 @@ custodian's reserves drain, every holder keeps trading an IOU that is already wo
 
 ### Solution
 
-Ballast issues **pUSDC-test**, a clearly labelled test asset on Portaldot's native Assets pallet, intended to be
-backed 1:1 by Circle test USDC held in a small vault contract on Sepolia. Safety comes from role separation that the
-Portaldot runtime enforces, not from promises:
+Ballast defines **pUSDC-test**, a clearly labelled test asset on the Assets pallet (so far created only on the local
+stand-in chain, not Portaldot V3), intended to be backed 1:1 by Circle test USDC held in a small vault contract on
+Sepolia. Safety is meant to come from role separation that the pallet enforces, not from promises; whether V3 exposes
+the same calls is `UNVERIFIED`:
 
-1. **Breaker:** the Assets *freezer* role belongs to a 1-of-N watcher multisig. Any one watcher can freeze the asset
-   and nothing else, so a reserve shortfall cannot spread without leaving a public freeze on Portaldot.
-2. **Admin-only thaw:** the freezer cannot thaw. Only the asset admin can.
+1. **Breaker:** the Assets *freezer* role belongs to a 1-of-N watcher multisig. A watcher can freeze the asset and
+   its thaw attempts are refused (stand-in receipts 890-2, 891-2), so a reserve shortfall cannot spread without leaving a public freeze on Portaldot.
+2. **Admin thaw:** the freezer cannot thaw; the asset admin can (stand-in).
 3. **Reserve-gated mint** (planned): the issuer is a multisig in which a reserve bot is a mandatory co-signer.
 
 Only part 1 and the freezer/admin split of part 2 exist today, and only on a stand-in chain (see
@@ -44,13 +45,13 @@ pUSDC-test on Portaldot, a holder's transfer fails, the admin multisig thaws onc
 move the reserves. Ballast does not prevent that; it makes it visible and stops the shortfall from being minted
 over or spreading. In this build one person holds the operator keys, so the separation of the bot key is a production
 property, not a property of the demo. Everything is also subject to the chain's Root origin (`force_asset_status`),
-which on the V3 testnet belongs to the organisers.
+whose holder on the V3 testnet is `UNVERIFIED`.
 
 ### Blockchain Relevance
 
-The breaker is assembled from Portaldot runtime modules (Assets roles, Multisig), with no contract code in the
-enforcement path, and it freezes at the asset level, so every transfer is refused rather than one pool. An EVM
-status oracle on V3's Revive pallet is planned as a read-only mirror, never as the enforcement point.
+The breaker is assembled from pallet-native modules (Assets roles, Multisig), demonstrated on the upstream stand-in
+(V3 availability `UNVERIFIED`), with no contract code in the enforcement path, and it freezes at the asset level, so every transfer is refused rather than one pool. An EVM
+status oracle on V3's EVM/Revive layer (if present, `UNVERIFIED`) is planned as a read-only mirror, never as the enforcement point.
 
 ## Technical Architecture
 
@@ -109,8 +110,8 @@ Ballast is **pallet-native** so far: there is no deployed contract. `contracts/`
 | `Assets.thaw_asset` by the admin, then `Assets.transfer` | control | Ok |
 | `Utility.batch_all` | fund the demo accounts | Ok |
 
-Every step is a real extrinsic with its extrinsic id, block hash and tx hash in
-[`docs/RECEIPTS.md`](docs/RECEIPTS.md), with raw JSON in [`evidence/`](evidence/). These are **stand-in receipts, not
+Every step is a real extrinsic. The latest run is tabulated with extrinsic id, block hash and tx hash in
+[`docs/RECEIPTS.md`](docs/RECEIPTS.md); all four runs are in raw JSON in [`evidence/`](evidence/). These are **stand-in receipts, not
 V3**: the stand-in is a local `--dev` node, there is no public explorer for it, and a fresh node run produces new
 hashes. V3 asset and account IDs: none yet.
 
@@ -123,10 +124,11 @@ read-only status mirror). Neither exists yet.
 ## Installation & Setup
 
 **Requirements:** Python 3.11+, `curl`, `lsof`. For the local stand-in node: the prebuilt `substrate-node` binary for
-`polkadot-stable2606-3` (see the header of `scripts/standin_node.sh` for the release URL and sha256). It was tested on
+`polkadot-stable2606-3` (see `scripts/standin_node.sh`: release URL in the header, sha256 in the `SHA256=` default). It was tested on
 macOS arm64 only. The tests need no node.
 
 ```bash
+# the repo is private until submission; it goes public after a leak scan
 git clone https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu.git
 cd portaldot-hackathon-2026-ballast-edycu
 
@@ -144,7 +146,7 @@ python scripts/check_receipts.py         # re-fetch every receipt in evidence/ b
 scripts/standin_node.sh stop
 ```
 
-The spike appends a new run to `docs/RECEIPTS.md` and writes `evidence/spike-assets-<profile>-asset<id>.json`. Demo
+The spike regenerates `docs/RECEIPTS.md` from `evidence/` (newest run first) and writes `evidence/spike-assets-<profile>-asset<id>.json`. Demo
 accounts are deterministic dev URIs and the scripts refuse to use them on a non-stand-in profile. No deployment step
 exists yet because there are no contracts; there is no frontend to launch.
 

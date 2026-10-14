@@ -2,10 +2,29 @@
 
 Every extrinsic row below is a real extrinsic, identified by extrinsic id (`block-index`); decoded events are
 in the linked JSON. `python scripts/check_receipts.py` re-fetches every extrinsic from the chain it ran on and
-every drill reserve-chain tx from the local anvil. Read-only Sepolia reads are listed first.
+every drill reserve-chain tx from the local anvil. An index comes first, then the read-only Sepolia section.
 
-## Sepolia reads (read-only — no Ballast contract is deployed on Sepolia yet)
+## At a glance
 
+Three places, each labelled on every row: the Portaldot **stand-in** chain (not V3), the **local-anvil**
+reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its section).
+
+| Run | Portaldot chain | Reserve chain | Newest clean result | Evidence |
+|---|---|---|---|---|
+| Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 17/17 state checks) | [`roles-drill-standin-upstream-20261014T124759Z.json`](../evidence/roles-drill-standin-upstream-20261014T124759Z.json) |
+| Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-standin-upstream-20261014T125810Z.json`](../evidence/roles-attest-standin-upstream-20261014T125810Z.json) |
+| Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 5/5 state checks) | [`roles-setup-standin-upstream.json`](../evidence/roles-setup-standin-upstream.json) |
+| Breaker drill, scratch asset: drain -> freeze | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (14/14 steps as expected, 11/11 state checks) | [`drill-drain-standin-upstream-asset2033.json`](../evidence/drill-drain-standin-upstream-asset2033.json) |
+| Breaker drill, scratch asset: every provider down -> fail-closed freeze (I6) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 8/8 state checks) | [`drill-outage-standin-upstream-asset2035.json`](../evidence/drill-outage-standin-upstream-asset2035.json) |
+| Breaker drill, scratch asset: bot silent for K blocks -> freeze (I8) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 9/9 state checks) | [`drill-heartbeat-standin-upstream-asset2037.json`](../evidence/drill-heartbeat-standin-upstream-asset2037.json) |
+| ReserveOracle on Revive, mirroring a drill | standin-upstream (stand-in, NOT V3) | — | PASS (5/5 steps as expected, 6/6 state checks) | [`oracle-revive-standin-upstream-20261014T123308Z.json`](../evidence/oracle-revive-standin-upstream-20261014T123308Z.json) |
+| Assets spike: watcher-set freeze, freezer thaw refused | standin-upstream (stand-in, NOT V3) | — | PASS (11/11 steps as expected + 1 observation, 10/10 state checks) | [`spike-assets-standin-upstream-asset1008.json`](../evidence/spike-assets-standin-upstream-asset1008.json) |
+
+## Sepolia (read-only — no Ballast contract is deployed on Sepolia yet)
+
+The Sepolia `ReserveVault` deploy, its 100.00 USDC deposit and the real-Sepolia drill wait until the deployer wallet holds >= 100.00 Circle test USDC; the reads below show what it holds. Every drill above uses the local-anvil reserve instead, labelled as such.
+
+- [`evidence/sepolia-crosscheck-2026-10-14-p4.json`](../evidence/sepolia-crosscheck-2026-10-14-p4.json) — read at 2026-10-14T13:01:33.877Z: finalized block #11913325 via 2 providers — AGREE (publicnode: `0xa6dafd5bfb80b165a8d73274721d88e81b0e363af3cc2591d7a81139f7aa000d` reserves 20000000, drpc: `0xa6dafd5bfb80b165a8d73274721d88e81b0e363af3cc2591d7a81139f7aa000d` reserves 20000000). Note: holder = Ballast's Sepolia testnet deployer wallet, NOT a vault. P4 row 3 gate (2026-10-14): the ReserveVault deploy + 100.00 USDC deposit need >= 100000000 (100.00 USDC, 6 decimals) in this wallet; the balance read here is lower, so no Sepolia vault was deployed (waiting on the Circle faucet)
 - [`evidence/sepolia-crosscheck-2026-10-14.json`](../evidence/sepolia-crosscheck-2026-10-14.json) — read at 2026-10-14T11:41:44.199Z: finalized block #11912942 via 2 providers — AGREE (publicnode: `0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b` reserves 20000000, drpc: `0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b` reserves 20000000). Note: holder = Ballast's Sepolia testnet deployer wallet, NOT a vault: no ReserveVault is deployed on Sepolia yet; this file shows the two-provider reader agreeing on one finalized block
 
 ## Stand-in receipts — standin-upstream (not V3)

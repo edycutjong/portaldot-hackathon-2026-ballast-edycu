@@ -151,3 +151,16 @@ def test_source_pin_unknown_on_git_error_and_dirty_on_untracked(monkeypatch):
     monkeypatch.setattr(drill.subprocess, "run", git_dirty)
     assert drill.source_pin() == {"git_head": "abc123", "dirty": True}
     assert {"foundry.lock", ".gitmodules", "lib", "tests"} <= set(drill.PINNED_PATHS)
+
+
+def test_index_labels_chain_and_reserve_per_row():
+    from ballast.receipts import render_index
+
+    run = {"kind": "roles-drill", "scenario": None, "verdict": "PASS", "passed": 1, "counted_steps": 1,
+           "steps": [], "_file": "roles-drill-x.json", "source": {"dirty": False},
+           "chain": {"profile": "standin-upstream", "is_standin": True},
+           "reserve": {"label": "local-anvil (not Sepolia)"}}
+    lines = render_index([run])
+    row = next(ln for ln in lines if "roles-drill-x.json" in ln)
+    assert "stand-in, NOT V3" in row and "local-anvil (not Sepolia)" in row and "PASS" in row
+    assert render_index([]) == []

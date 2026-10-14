@@ -33,7 +33,7 @@ from ballast.drill import artifact, forge_build, source_pin  # noqa: E402
 from ballast.oracle import deploy as deploy_oracle  # noqa: E402
 from ballast.oracle import initcode  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
-from ballast.roles import DEPLOYMENTS, Deployment, RoleMap, audit_team  # noqa: E402
+from ballast.roles import JUDGE_URI, DEPLOYMENTS, Deployment, RoleMap, audit_team  # noqa: E402
 from ballast.rpc import HttpRpc  # noqa: E402
 from ballast.runlog import Run, now  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
@@ -44,7 +44,7 @@ DECIMALS = 6
 S1 = S2 = 50_000_000  # 50.00 each, 6 decimals like USDC
 SUPPORTED = ("standin-upstream",)
 KEYS = {"A": "//BallastA", "A2": "//BallastA2", "B": "//BallastB", "W1": "//BallastW1", "W2": "//BallastW2",
-        "Judge": "//BallastJudge//roles", "Peer": "//BallastPeer//roles"}
+        "Judge": JUDGE_URI, "Peer": "//BallastPeer//roles"}
 
 
 def main() -> int:

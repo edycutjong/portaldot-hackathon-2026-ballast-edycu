@@ -23,6 +23,7 @@ from scalecodec.utils.ss58 import ss58_encode
 from .multisig import multi_address, public_key
 
 KEYLESS_ROLES = ("owner", "issuer", "admin", "freezer")
+JUDGE_URI = "//BallastJudge//roles"  # the public judge account on a stand-in (its seed is public by design)
 DEPLOYMENTS = Path(__file__).resolve().parent.parent / "deployments"
 
 

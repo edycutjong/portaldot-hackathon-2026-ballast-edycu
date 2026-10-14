@@ -31,13 +31,12 @@ from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, read_log, source_pin  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
-from ballast.roles import Deployment  # noqa: E402
+from ballast.roles import JUDGE_URI as JUDGE, Deployment  # noqa: E402
 from ballast.rpc import HttpRpc  # noqa: E402
 from ballast.runlog import Run  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-JUDGE = "//BallastJudge//roles"
 ANVIL_FINALITY_LAG = 64
 
 

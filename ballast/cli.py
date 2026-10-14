@@ -390,6 +390,48 @@ def cmd_bot(args: argparse.Namespace) -> int:
     return 0 if out.get("executed_ok") else 3
 
 
+def cmd_judge_reset(args: argparse.Namespace) -> int:
+    """Before a demo: top the public judge account up to fees for --transfers transfers, then print what it holds."""
+    from .chain import submit
+    from .roles import JUDGE_URI
+    from .watchdog import asset_state
+
+    try:
+        profile, substrate, dep = _deployment_context(args)
+        funder = _key(profile, args.key, "BALLAST_FUNDER_SURI", "//Alice")
+        judge = _addresses(profile, [args.judge or JUDGE_URI])[0]
+        if args.transfers < 1:
+            raise ValueError("--transfers must be >= 1")
+    except Exception as exc:  # noqa: BLE001
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    transfer = substrate.compose_call(call_module="Assets", call_function="transfer",
+                                      call_params={"id": dep.breaker, "target": judge, "amount": 1})
+    fee = int(substrate.get_payment_info(call=transfer, keypair=funder)["partialFee"])
+    ed = substrate.get_constant("Balances", "ExistentialDeposit").value
+    target = ed + args.transfers * fee
+    free = substrate.query("System", "Account", [judge]).value["data"]["free"]
+    out: dict = {"profile": profile.name, "judge": judge, "fee_per_transfer": str(fee), "target_free": str(target),
+                 "free_before": str(free)}
+    if free < target:
+        r = submit(substrate, profile, funder, "Balances", "transfer_keep_alive",
+                   {"dest": judge, "value": target - free}, step="judge_reset")
+        out["top_up"] = {"extrinsic_id": r.extrinsic_id, "outcome": str(r.outcome), "amount": str(target - free)}
+        if not r.outcome.ok:
+            _print_json(out)
+            return 1
+    head = substrate.get_block_hash(None)
+    acct = substrate.query("Assets", "Account", [dep.breaker, judge], block_hash=head).value
+    st = asset_state(dep.breaker, substrate.query("Assets", "Asset", [dep.breaker], block_hash=head).value)
+    out |= {"free_after": str(substrate.query("System", "Account", [judge], block_hash=head).value["data"]["free"]),
+            "asset": dep.breaker, "asset_status": st.status, "judge_asset_balance": str(acct["balance"] if acct else 0),
+            "judge_account_status": str(acct["status"]) if acct else "none"}
+    if not acct or acct["balance"] == 0:
+        out["note"] = "the judge holds no asset 1: mint to it with `ballast mint` (operator) + `ballast bot cosign-mint`"
+    _print_json(out)
+    return 0
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     """Re-check every BALLAST/1 remark and asset-1 event of the deployment, on both chains."""
     from datetime import datetime, timezone
@@ -540,6 +582,12 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
         p.add_argument("--db", default="ballast.db", help="SQLite decision log (default ballast.db)")
     b.set_defaults(func=cmd_bot)
+
+    jr = sub.add_parser("judge-reset", help="before a demo: top up the public judge account's fees, print its holdings")
+    jr.add_argument("--judge", help="judge account (SS58, or //Dev on a stand-in; default: the deployment's judge)")
+    jr.add_argument("--transfers", type=int, default=20, help="fund fees for this many transfers (default 20)")
+    deployment_args(jr)
+    jr.set_defaults(func=cmd_judge_reset)
 
     v = sub.add_parser("verify", help="re-check every BALLAST/1 remark (per-type signers) and asset-1 event on both "
                        "chains; flags thaws without the bot, DISARMED teams, oracle posts without a remark")

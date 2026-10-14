@@ -37,7 +37,7 @@ from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, epoch, forge_build, read_log, source_pin  # noqa: E402
 from ballast.multisig_ops import pending  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
-from ballast.roles import Deployment, audit_team  # noqa: E402
+from ballast.roles import JUDGE_URI as JUDGE, Deployment, audit_team  # noqa: E402
 from ballast.rpc import HttpRpc  # noqa: E402
 from ballast.runlog import Run  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
@@ -46,7 +46,7 @@ from ballast.watchdog import asset_state, parse_remark  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 SUPPORTED = ("standin-upstream",)
 FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)"}
-JUDGE, PEER = "//BallastJudge//roles", "//BallastPeer//roles"
+PEER = "//BallastPeer//roles"
 ANVIL_FINALITY_LAG = 64
 
 

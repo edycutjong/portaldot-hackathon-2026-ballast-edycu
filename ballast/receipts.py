@@ -284,11 +284,12 @@ def render_receipts_md() -> str:
         "",
         "Every extrinsic row below is a real extrinsic, identified by extrinsic id (`block-index`); decoded events are",
         "in the linked JSON. `python scripts/check_receipts.py` re-fetches every extrinsic from the chain it ran on and",
-        "every drill reserve-chain tx from the local anvil. Read-only Sepolia reads are listed first.",
+        "every drill reserve-chain tx from the local anvil. An index comes first, then the read-only Sepolia section.",
         "",
     ]
     if not runs:
         out.append("_No receipts yet._")
+    out += render_index(runs)
     out += render_sepolia_reads()
     groups: dict[tuple[bool, str], list[dict]] = {}
     for run in runs:
@@ -333,11 +334,47 @@ def render_receipts_md() -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
+INDEX_ROWS = (
+    ("roles-drill", None, "Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw)"),
+    ("roles-attest", None, "Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED)"),
+    ("roles-setup", None, "Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless"),
+    ("drill", "drain", "Breaker drill, scratch asset: drain -> freeze"),
+    ("drill", "outage", "Breaker drill, scratch asset: every provider down -> fail-closed freeze (I6)"),
+    ("drill", "heartbeat", "Breaker drill, scratch asset: bot silent for K blocks -> freeze (I8)"),
+    ("oracle-deploy", None, "ReserveOracle on Revive, mirroring a drill"),
+    ("spike-assets", None, "Assets spike: watcher-set freeze, freezer thaw refused"),
+)
+
+
+def render_index(runs: list[dict]) -> list[str]:
+    """One row per run kind: where it ran (chain + reserve, both labelled) and its newest clean PASS."""
+    rows = []
+    for kind, scenario, what in INDEX_ROWS:
+        group = [r for r in runs if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
+        if not group:
+            continue
+        lead = next((r for r in group if clean_pass(r)), group[0])
+        chain = lead["chain"]["profile"] + (" (stand-in, NOT V3)" if lead["chain"]["is_standin"] else "")
+        reserve = (lead.get("reserve") or {}).get("label") or "—"
+        rows.append(f"| {what} | {chain} | {reserve} | {lead['verdict']} ({score(lead)}) | "
+                    f"[`{lead['_file']}`](../evidence/{lead['_file']}) |")
+    if not rows:
+        return []
+    return ["## At a glance", "",
+            "Three places, each labelled on every row: the Portaldot **stand-in** chain (not V3), the **local-anvil**",
+            "reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its section).", "",
+            "| Run | Portaldot chain | Reserve chain | Newest clean result | Evidence |", "|---|---|---|---|---|",
+            *rows, ""]
+
+
 def render_sepolia_reads() -> list[str]:
     files = sorted(EVIDENCE.glob("sepolia-crosscheck-*.json"))
     if not files:
         return []
-    out = ["## Sepolia reads (read-only — no Ballast contract is deployed on Sepolia yet)", ""]
+    out = ["## Sepolia (read-only — no Ballast contract is deployed on Sepolia yet)", "",
+           "The Sepolia `ReserveVault` deploy, its 100.00 USDC deposit and the real-Sepolia drill wait until the "
+           "deployer wallet holds >= 100.00 Circle test USDC; the reads below show what it holds. Every drill above "
+           "uses the local-anvil reserve instead, labelled as such.", ""]
     for f in files:
         rep = json.loads(f.read_text())
         cc = rep.get("cross_check", {})

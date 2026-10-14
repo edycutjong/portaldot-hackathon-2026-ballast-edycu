@@ -13,7 +13,7 @@ Scenario `drain` (the kill-rule flow):
   5. the watchdog sees reserves < S1 + S2 and freezes through M_watch (one batch: reason remark + freeze);
   6. the judge's transfer of the breaker asset is refused while frozen; the control asset is untouched.
 Scenario `outage`: same setup, but the watchdog's only providers are unreachable local URLs; with nothing to
-read it fails closed after `--fail-closed-after` seconds (production 300 s) and freezes with why=providers-down.
+read it fails closed after `--fail-closed-after` seconds (production 300 s) and freezes with reason=providers-down.
 
 Receipts: evidence/drill-<scenario>-<profile>-asset<id>.json (+ the watchdog's JSON-lines log), docs/RECEIPTS.md.
 """
@@ -69,12 +69,20 @@ def artifact(name: str) -> tuple[list, str]:
     return data["abi"], data["bytecode"]["object"]
 
 
+PINNED_PATHS = ("ballast", "contracts", "scripts", "tests", "lib", "foundry.toml", "hardhat.config.js",
+                "package.json", "package-lock.json", "pyproject.toml")
+
+
 def source_pin() -> dict:
-    """Which code ran: the build repo's HEAD (+ dirty flag) — recorded in every evidence file."""
-    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    dirty = subprocess.run(["git", "status", "--porcelain", "--", "ballast", "contracts", "scripts"], cwd=ROOT,
-                           capture_output=True, text=True).stdout.strip()
-    return {"git_head": head or None, "dirty": bool(dirty)}
+    """Which code ran: the build repo's HEAD + whether the code paths had uncommitted changes. `dirty` is None
+    (unknown) — never False — when git cannot tell."""
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True)
+        status = subprocess.run(["git", "status", "--porcelain", "--", *PINNED_PATHS], cwd=ROOT, capture_output=True,
+                                text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        return {"git_head": None, "dirty": None}
+    return {"git_head": head.stdout.strip() or None, "dirty": bool(status.stdout.strip())}
 
 
 def free_asset_id(substrate, start: int) -> int:
@@ -341,14 +349,16 @@ def run_drill(args: argparse.Namespace) -> int:
                   "watchdog log", ok=epoch(trigger["t"]) >= drain_sent_at)
             check("the triggering reading == post-drain reserves", trigger["decision"]["reserves_min"],
                   str(post_drain), "watchdog log")
-            levels_before = [r for r in recs if r["event"] == "check" and r["decision"]["action"] == "level"]
-            check("the watcher read level before the drain", bool(levels_before)
-                  and all(epoch(r["t"]) < drain_sent_at for r in levels_before), True, "watchdog log")
-        expected_why = "deficit" if args.scenario == "drain" else "fail-closed"
+            levels = [r for r in recs if r["event"] == "check" and r["decision"]["action"] == "level"]
+            # judged by when each level READ started (reading read_at), not when its record was logged
+            read_starts = [epoch(rd["read_at"]) for r in levels for rd in r["reserves"]["readings"]]
+            check("the watcher read level before the drain", bool(levels)
+                  and all(t < drain_sent_at for t in read_starts), True, "watchdog log")
+        expected_reason = "deficit" if args.scenario == "drain" else "providers-down"
         remark = parse_remark(freeze["remark"])
-        step(f"watchdog (W2) freezes asset {breaker} via M_watch, reason on chain (why={remark['why']})",
+        step(f"watchdog (W2) freezes asset {breaker} via M_watch, reason on chain (reason={remark.get('reason')})",
              "Ok + inner Ok + Assets.AssetFrozen + System.Remarked", fr,
-             fr["outcome"]["ok"] and all(o["ok"] for o in fr["inner"]) and remark["why"] == expected_why,
+             fr["outcome"]["ok"] and all(o["ok"] for o in fr["inner"]) and remark.get("reason") == expected_reason,
              ("Assets.AssetFrozen", "System.Remarked", "Multisig.MultisigExecuted"))
         check(f"Asset({breaker}).status after the freeze", details(breaker, fr["block_hash"]).get("status"),
               "Frozen", fr["block_hash"])

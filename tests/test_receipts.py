@@ -65,3 +65,69 @@ def test_empty_evidence_renders_a_placeholder(monkeypatch):
 
 def test_committed_receipts_md_is_exactly_the_render_of_committed_evidence():
     assert receipts.RECEIPTS_MD.read_text() == render_receipts_md()
+
+
+def test_failure_cause_names_the_error_and_the_failed_steps():
+    run = _run()
+    run["steps"][0]["as_expected"] = False
+    run["steps"][0]["receipt"]["outcome"]["text"] = "Err(Token.CannotCreate)"
+    run["error"] = "Traceback (most recent call last):\n  ...\nRuntimeError: no freeze in the watchdog log (exit 4)"
+    cause = receipts.failure_cause(summarize(run))
+    assert cause.startswith("RuntimeError: no freeze in the watchdog log (exit 4)")
+    assert "failed: create -> Err(Token.CannotCreate)" in cause
+
+
+def test_summarize_strips_local_paths_from_errors():
+    run = _run()
+    run["error"] = f'File "{receipts.ROOT}/ballast/drill.py", line 1 in {receipts.Path.home()}/x'
+    assert summarize(run)["error"] == 'File "<build>/ballast/drill.py", line 1 in ~/x'
+
+
+def test_lead_is_the_newest_clean_pinned_pass(monkeypatch):
+    def drill(started, verdict, dirty):
+        r = _run() | {"kind": "drill", "scenario": "drain", "started_at": started, "verdict": verdict,
+                      "reserve": {"label": "local-anvil (not Sepolia)"}, "watchdog_log": "w.jsonl", "_file": f"{started}.json",
+                      "evm_steps": []}
+        if dirty is not None:
+            r["source"] = {"git_head": "abc1234def", "dirty": dirty}
+        return summarize(r) | {"verdict": verdict}
+
+    runs = [drill("2026-10-14T12:00:03Z", "FAIL", False), drill("2026-10-14T12:00:02Z", "PASS", True),
+            drill("2026-10-14T12:00:01Z", "PASS", False), drill("2026-10-14T12:00:00Z", "PASS", None)]
+    monkeypatch.setattr(receipts, "load_runs", lambda *a, **k: runs)
+    md = render_receipts_md()
+    lead = md.split("### Breaker drill")[1].split("\n")[0]
+    assert "2026-10-14T12:00:01Z" in lead  # not the newer dirty PASS, not the newest FAIL
+    assert "`abc1234` (UNCOMMITTED CHANGES)" in md and "not pinned" in md
+
+
+def test_v3_probe_line_picks_the_newest_probe_by_its_own_timestamp(monkeypatch, tmp_path):
+    (tmp_path / "v3-probe-2026-10-14.txt").write_text("probe: 2026-10-14T10:06Z\n")
+    (tmp_path / "v3-probe-2026-10-14-p3.txt").write_text("# V3 reachability probe — 2026-10-14T11:41:33Z\n")
+    monkeypatch.setattr(receipts, "EVIDENCE", tmp_path)
+    assert "v3-probe-2026-10-14-p3.txt" in receipts.v3_probe_line()[0]
+
+
+def test_sepolia_reads_section(monkeypatch, tmp_path):
+    import json
+
+    report = {"note": "deployer wallet, not a vault", "cross_check": {
+        "read_at": "t", "block_number": 7, "agree": True,
+        "providers": {"a": {"block_hash": "0x" + "11" * 32, "reserves": "5"}, "b": {"error": "down"}}}}
+    (tmp_path / "sepolia-crosscheck-x.json").write_text(json.dumps(report))
+    monkeypatch.setattr(receipts, "EVIDENCE", tmp_path)
+    text = "\n".join(receipts.render_sepolia_reads())
+    assert "no Ballast contract is deployed on Sepolia" in text and "#7" in text and "AGREE" in text
+    assert "b: `down`" in text and "deployer wallet, not a vault" in text
+
+
+def test_committed_evidence_has_no_local_paths_and_clean_pinned_leads():
+    from pathlib import Path
+
+    home = str(Path.home())
+    for f in receipts.EVIDENCE.glob("*"):
+        assert home not in f.read_text(), f.name
+    drills = [r for r in receipts.load_runs() if r.get("kind") in ("drill", "oracle-deploy")]
+    for kind, scenario in {(r["kind"], r.get("scenario")) for r in drills}:
+        group = [r for r in drills if (r["kind"], r.get("scenario")) == (kind, scenario)]
+        assert any(receipts.clean_pass(r) for r in group), (kind, scenario)

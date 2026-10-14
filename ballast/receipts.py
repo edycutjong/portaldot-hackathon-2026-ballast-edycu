@@ -62,12 +62,32 @@ def score(run: dict) -> str:
 
 def failure_cause(run: dict) -> str:
     """One line: why a run is not PASS (its error, or the failed steps / checks)."""
+    parts = []
     if run.get("error"):
         last = [ln.strip() for ln in clean_text(run["error"]).splitlines() if ln.strip()]
-        return (last[-1] if last else run["error"])[:160]
-    bad = [s["name"] for s in run["steps"] + run.get("evm_steps", []) if s.get("counted", True) and not s["as_expected"]]
+        parts.append((last[-1] if last else run["error"])[:160])
+    bad = []
+    for st in run["steps"] + run.get("evm_steps", []):
+        if st.get("counted", True) and not st["as_expected"]:
+            outcome = st.get("receipt", {}).get("outcome", {}).get("text")
+            bad.append(f"{st['name']}" + (f" -> {outcome}" if outcome else ""))
     bad += [c["what"] for c in run.get("state_checks", []) if not c["ok"]]
-    return ("failed: " + "; ".join(bad))[:200] if bad else ""
+    if bad:
+        parts.append("failed: " + "; ".join(bad))
+    return " — ".join(parts)[:320]
+
+
+def pin_text(run: dict) -> str:
+    src = run.get("source")
+    if not src:
+        return "source: not pinned (recorded before pinning existed)"
+    head = (src.get("git_head") or "unknown")[:7]
+    state = {False: "clean", True: "UNCOMMITTED CHANGES", None: "unknown"}[src.get("dirty")]
+    return f"source: `{head}` ({state})"
+
+
+def clean_pass(run: dict) -> bool:
+    return run.get("verdict") == "PASS" and (run.get("source") or {}).get("dirty") is False
 
 
 def _mark(ok: bool | None) -> str:
@@ -131,9 +151,14 @@ def render_drill_section(run: dict) -> list[str]:
         f"Chain: **{ident['label']}** · reserve: **{reserve['label']}** · raw JSON: "
         f"[`evidence/{run['_file']}`](../evidence/{run['_file']}) · watchdog log: "
         f"[`evidence/{run['watchdog_log']}`](../evidence/{run['watchdog_log']}) · result: **{run['verdict']}** "
-        f"({score(run)})",
+        f"({score(run)}) · {pin_text(run)}",
         "",
     ]
+    src = run.get("source") or {}
+    hashes = {k: v for k, v in src.items() if k.endswith("_sha256")}
+    if hashes:
+        lines += ["Deployed initcode sha256: " + ", ".join(f"{k.removesuffix('_initcode_sha256')} `{v}`"
+                                                         for k, v in hashes.items()) + ".", ""]
     if reserve.get("watcher_read"):
         lines += [f"Watcher reserve reads: {reserve['watcher_read']}.", ""]
     if run.get("watchdog_cmd"):
@@ -171,7 +196,9 @@ def render_oracle_section(run: dict) -> list[str]:
         "",
         f"Chain: **{ident['label']}** (Revive accepts EVM bytecode on this stand-in; V3 deploy pending) · contract "
         f"`{oracle.get('address')}` · attester `{oracle.get('attester')}` · raw JSON: "
-        f"[`evidence/{run['_file']}`](../evidence/{run['_file']}) · result: **{run['verdict']}** ({score(run)})",
+        f"[`evidence/{run['_file']}`](../evidence/{run['_file']}) · result: **{run['verdict']}** ({score(run)}) · "
+        f"{pin_text(run)}" + (f" · initcode sha256 `{run['source']['ReserveOracle_initcode_sha256']}`"
+                              if (run.get("source") or {}).get("ReserveOracle_initcode_sha256") else ""),
         "",
         f"Posted values mirror drill `{run['mirrors']['drill']}` (reserve: {run['mirrors']['reserve']}); "
         f"{run['mirrors']['note']}.",
@@ -232,8 +259,9 @@ def render_receipts_md() -> str:
             runs_k = [r for r in group if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
             if not runs_k:
                 continue
-            # the newest PASS run leads; every other run (any verdict) is listed below it
-            lead = next((r for r in runs_k if r.get("verdict") == "PASS"), runs_k[0])
+            # the newest clean-pinned PASS leads (else the newest PASS, else the newest run); all others listed below
+            lead = next((r for r in runs_k if clean_pass(r)),
+                        next((r for r in runs_k if r.get("verdict") == "PASS"), runs_k[0]))
             runs_k = [lead] + [r for r in runs_k if r is not lead]
             for i, run in enumerate(runs_k):
                 if i == 0:
@@ -245,7 +273,8 @@ def render_receipts_md() -> str:
                     cause = failure_cause(run) if run.get("verdict") != "PASS" else ""
                     out.append(
                         f"- asset {run['asset_id']} — {run['started_at']} — {run['verdict']} ({score(run)}) — "
-                        f"[`evidence/{run['_file']}`](../evidence/{run['_file']})" + (f" — {cause}" if cause else "")
+                        f"{pin_text(run)} — [`evidence/{run['_file']}`](../evidence/{run['_file']})"
+                        + (f" — {cause}" if cause else "")
                     )
             out.append("")
     return "\n".join(out).rstrip() + "\n"

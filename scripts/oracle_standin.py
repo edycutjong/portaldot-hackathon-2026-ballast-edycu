@@ -34,7 +34,7 @@ from ballast.chain import Receipt, connect, dev_keypair, submit  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import forge_build, source_pin  # noqa: E402
-from ballast.receipts import EVIDENCE, score, summarize, write_receipts_md  # noqa: E402
+from ballast.receipts import EVIDENCE, clean_pass, score, summarize, write_receipts_md  # noqa: E402
 from ballast.revive import dry_call, dry_instantiate, eth_address  # noqa: E402
 from ballast.rpc import HttpRpc  # noqa: E402
 
@@ -57,9 +57,10 @@ def post_data(s1, s2, reserves, sep_block, sep_hash, pd_block, frozen) -> bytes:
 
 
 def latest_drain_drill() -> Path | None:
+    """The newest drain drill that PASSed from committed code (clean source pin) — never a dirty run."""
     runs = sorted(EVIDENCE.glob("drill-drain-*.json"), key=lambda p: json.loads(p.read_text())["started_at"])
-    passing = [p for p in runs if json.loads(p.read_text()).get("verdict") == "PASS"]
-    return passing[-1] if passing else None
+    good = [p for p in runs if clean_pass(json.loads(p.read_text()))]
+    return good[-1] if good else None
 
 
 def main() -> int:
@@ -82,7 +83,8 @@ def main() -> int:
         return 2
     drill_path = Path(args.drill) if args.drill else latest_drain_drill()
     if drill_path is None or not drill_path.exists():
-        print("oracle_standin: no PASS drain drill in evidence/ — run `ballast drill` first", file=sys.stderr)
+        print("oracle_standin: no clean-pinned PASS drain drill in evidence/ — commit, then run `ballast drill`",
+              file=sys.stderr)
         return 2
     drill = json.loads(drill_path.read_text())
     forge_build()  # always: a stale out/ must never be what gets deployed

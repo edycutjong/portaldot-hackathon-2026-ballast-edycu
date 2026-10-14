@@ -40,3 +40,64 @@ def test_new_reserve_block_alone_is_not_a_change():
 def test_oracle_state_matches_the_post_signature_order():
     s = snap()
     assert s.oracle_state() == (s.s, s.s2, s.r, s.eb, s.eh, s.pb, s.frozen)
+
+
+class Rx:
+    def __init__(self, ok, xid, events):
+        self.ok, self.extrinsic_id, self.block_number, self._events = ok, xid, int(xid.split("-")[0]), events
+
+        class O:
+            pass
+        self.outcome = O()
+        self.outcome.ok = ok
+
+    def event_names(self):
+        return self._events
+
+    def as_dict(self):
+        return {"extrinsic_id": self.extrinsic_id, "outcome": {"ok": self.ok, "text": "Ok" if self.ok else "Err"}}
+
+
+def test_failed_oracle_mirror_keeps_the_remark_and_retries(monkeypatch, tmp_path):
+    import ballast.attest as attest
+    from ballast.store import Store
+
+    calls = {"remark": 0, "oracle": 0}
+
+    def submit(*a, **k):
+        calls["remark"] += 1
+        return Rx(True, f"{40 + calls['remark']}-2", ["System.Remarked"])
+
+    def post(*a, **k):
+        calls["oracle"] += 1
+        if calls["oracle"] == 1:
+            raise RuntimeError("revive dry-run failed")
+        return Rx(True, "45-2", ["Revive.ContractEmitted"])
+
+    monkeypatch.setattr(attest, "submit", submit)
+    monkeypatch.setattr(attest.oracle_mod, "post", post)
+
+    class P:
+        name = "standin-upstream"
+
+    store = Store(tmp_path / "a.db")
+    logs = []
+    att = attest.Attester(substrate=None, profile=P(), keypair=None, dep=None, providers=[], store=store,
+                          log=lambda ev, **k: logs.append(ev) or {}, oracle="0x" + "ee" * 20)
+    rec = att.post("attest", snap())
+    assert rec["ok"] and rec["oracle_ok"] is False and att.last_key == snap().key() and att.posts == 1
+    assert att.pending_mirror is not None and "mirror-failed" in logs
+    # next round: the mirror is retried, the remark is NOT re-posted (no change -> due() is None)
+    assert att.mirror()["oracle_ok"] and att.pending_mirror is None
+    assert calls == {"remark": 1, "oracle": 2} and due(att.last_key, att.last_block, snap(), 42, 200) is None
+    assert store.rows("attestation")[0]["oracle_tx"] == "45-2"
+
+
+def test_announce_failure_does_not_raise():
+    import ballast.attest as attest
+
+    logs = []
+    att = attest.Attester(substrate=None, profile=None, keypair=None, dep=None, providers=[], store=None,
+                          log=lambda ev, **k: logs.append(ev) or {"event": ev}, oracle=None)
+    out = att.announce(["5" * 400], 1)  # one remark cannot hold this watcher set
+    assert out and logs == ["announce-failed"]

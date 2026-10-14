@@ -4,10 +4,13 @@
            |eb=<reserve block>|eh=<reserve block hash>|r=<vault balance>
   (`heartbeat` = the same fields, posted when nothing changed for H blocks; reserves are always the FINALIZED reading)
 
-S1, S2 and the frozen flag are read at Portaldot block `ph`; `r` is `balanceOf(vault)` at reserve-chain block `eh`.
+S1, S2 and the frozen flag are read at Portaldot block `ph` — the FINALIZED Portaldot head, so a reorg can never turn
+a true attestation into a false FAIL; `r` is `balanceOf(vault)` at reserve-chain block `eh`.
 Anyone re-reads both at those hashes (`ballast verify`). One remark per change of (S1, S2, frozen, r) plus a heartbeat
 every H blocks — watchers freeze if B's nonce does not move for K = 3H blocks (I8). After each remark is INCLUDED the
-same values are mirrored to ReserveOracle (`post`, I10: the mirror never leads). One-off binding remarks:
+same values are mirrored to ReserveOracle (`post`, I10: the mirror never leads); a failed mirror is retried every
+round until it lands, and never re-posts the remark. No heartbeat while the finalized reserve read fails — deliberate:
+the watchers' I8 rule then freezes (fail closed). One-off binding remarks:
   BALLAST/1|evm-attester|h160=<B's H160>|oracle=<address>   BALLAST/1|watchers|t=<threshold>|m=<ss58,ss58,…>
 """
 
@@ -76,6 +79,7 @@ class Attester:
         self.last_key: tuple | None = None
         self.last_block: int | None = None
         self.posts = 0
+        self.pending_mirror: tuple | None = None  # (kind, snapshot, remark extrinsic id) not yet on the oracle
 
     def snapshot(self, block_hash: str, number: int) -> Snapshot | None:
         q = lambda i: self.substrate.query("Assets", "Asset", [i], block_hash=block_hash).value  # noqa: E731
@@ -96,38 +100,61 @@ class Attester:
                    step=f"bot_{kind}", call_label=f"System.remark_with_event(BALLAST/1|{kind})")
         ok = r.outcome.ok and "System.Remarked" in r.event_names()
         record = {"kind": kind, "remark": text, "receipt": r.as_dict(), "ok": ok}
-        oracle_rx = None
-        if ok and self.oracle:  # I10: only after the remark is included
-            o = oracle_mod.post(self.substrate, self.profile, self.keypair, self.oracle, snap.oracle_state(),
-                                step=f"oracle_post_{kind}")
-            oracle_rx = o.as_dict()
-            record["oracle_receipt"] = oracle_rx
-            record["oracle_ok"] = o.outcome.ok and "Revive.ContractEmitted" in o.event_names()
-        self.store.attestation(kind=kind, pd_block=snap.pb, pd_hash=snap.ph, supply=str(snap.s), supply2=str(snap.s2),
-                               sep_block=snap.eb, sep_hash=snap.eh, reserves=str(snap.r), remark=text,
-                               remark_tx=r.extrinsic_id, oracle_tx=oracle_rx and oracle_rx["extrinsic_id"],
-                               profile=self.profile.name)
-        self.log("post" if ok else "post-failed", level="info" if ok else "critical", head=snap.pb, **record,
-                 message=f"{kind} {r.extrinsic_id} {r.outcome}" + (f" · oracle {oracle_rx['extrinsic_id']} "
-                                                                  f"{oracle_rx['outcome']['text']}" if oracle_rx else ""))
-        if ok:
+        if ok:  # the remark is on chain: record it before anything else can fail
             self.last_key, self.last_block = snap.key(), r.block_number
             self.posts += 1
+            self.pending_mirror = (kind, snap, r.extrinsic_id) if self.oracle else None
+        row = self.store.attestation(kind=kind, pd_block=snap.pb, pd_hash=snap.ph, supply=str(snap.s),
+                                     supply2=str(snap.s2), sep_block=snap.eb, sep_hash=snap.eh, reserves=str(snap.r),
+                                     remark=text, remark_tx=r.extrinsic_id if ok else None, profile=self.profile.name)
+        self.log("post" if ok else "post-failed", level="info" if ok else "critical", head=snap.pb, **record,
+                 message=f"{kind} {r.extrinsic_id} {r.outcome}")
+        if ok and self.oracle:
+            record |= self.mirror(row)
         return record
+
+    def mirror(self, row: int | None = None) -> dict:
+        """Mirror the last included remark to ReserveOracle (I10: only after inclusion). Failures stay pending and are
+        retried by the next round; the remark itself is never re-posted."""
+        if not self.pending_mirror:
+            return {}
+        kind, snap, remark_tx = self.pending_mirror
+        try:
+            o = oracle_mod.post(self.substrate, self.profile, self.keypair, self.oracle, snap.oracle_state(),
+                                step=f"oracle_post_{kind}")
+            rx = o.as_dict()
+            ok = o.outcome.ok and "Revive.ContractEmitted" in o.event_names()
+        except Exception as exc:  # noqa: BLE001 — a mirror failure must never stop attesting
+            rx, ok = {"error": f"{type(exc).__name__}: {exc}"[:300]}, False
+        if ok:
+            self.pending_mirror = None
+            self.store.set_oracle_tx(remark_tx, rx["extrinsic_id"])
+        self.log("mirror" if ok else "mirror-failed", level="info" if ok else "warning", head=snap.pb,
+                 remark_tx=remark_tx, oracle_receipt=rx, oracle_ok=ok,
+                 message=f"oracle mirror of {remark_tx}: " + (f"{rx['extrinsic_id']} {rx['outcome']['text']}" if ok
+                                                               else f"failed, retried next round ({rx.get('error') or rx.get('outcome')})"))
+        return {"oracle_receipt": rx, "oracle_ok": ok}
 
     def announce(self, watchers: list[str], threshold: int) -> list[dict]:
         out = []
-        texts = [encode("watchers", t=threshold, m=",".join(watchers))]
-        if self.oracle:
-            texts.append(encode("evm-attester", h160=oracle_mod.attester(self.substrate, self.keypair.ss58_address,
-                                                                           self.oracle), oracle=self.oracle))
+        try:
+            texts = [encode("watchers", t=threshold, m=",".join(watchers))]
+            if self.oracle:
+                texts.append(encode("evm-attester", h160=oracle_mod.attester(self.substrate, self.keypair.ss58_address,
+                                                                               self.oracle), oracle=self.oracle))
+        except Exception as exc:  # noqa: BLE001 — e.g. a watcher set too large for one remark: attesting goes on
+            out.append(self.log("announce-failed", level="critical", message=f"{type(exc).__name__}: {exc}"))
+            return out
         for text in texts:
             kind = text.split("|")[1]
-            r = submit(self.substrate, self.profile, self.keypair, "System", "remark_with_event", {"remark": text},
-                       step=f"bot_{kind}", call_label=f"System.remark_with_event(BALLAST/1|{kind})")
-            rec = self.log("announce", remark=text, receipt=r.as_dict(), ok=r.outcome.ok,
-                           message=f"{kind} {r.extrinsic_id} {r.outcome}")
-            out.append(rec)
+            try:
+                r = submit(self.substrate, self.profile, self.keypair, "System", "remark_with_event", {"remark": text},
+                           step=f"bot_{kind}", call_label=f"System.remark_with_event(BALLAST/1|{kind})")
+                out.append(self.log("announce", remark=text, receipt=r.as_dict(), ok=r.outcome.ok,
+                                    message=f"{kind} {r.extrinsic_id} {r.outcome}"))
+            except Exception as exc:  # noqa: BLE001
+                out.append(self.log("announce-failed", level="critical", remark=text,
+                                    message=f"{kind}: {type(exc).__name__}: {exc}"))
         return out
 
 
@@ -154,7 +181,7 @@ def run_attester(args: Any, *, profile: Any, substrate: Any, dep: Any, keypair: 
             att.announce(dep.roles["watchers"], dep.roles["M_watch"]["threshold"])
         while True:
             try:
-                block_hash = rpc.call("chain_getBlockHash", [])
+                block_hash = rpc.call("chain_getFinalizedHead", [])  # L2: attest finalized state only
                 number = int(rpc.call("chain_getHeader", [block_hash])["number"], 16)
             except Exception as exc:  # noqa: BLE001 — node hiccup: keep polling
                 log("head-error", message=f"{type(exc).__name__}: {exc}")
@@ -162,6 +189,7 @@ def run_attester(args: Any, *, profile: Any, substrate: Any, dep: Any, keypair: 
             if number is not None and (last_checked is None or number >= last_checked + n):
                 last_checked = number
                 try:
+                    att.mirror()  # a mirror that failed last round goes first (I10 order is kept: remark already in)
                     snap = att.snapshot(block_hash, number)
                     kind = due(att.last_key, att.last_block, snap, number, h) if snap else None
                     if kind:

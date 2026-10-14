@@ -75,8 +75,24 @@ def test_watch_bad_flags_exit_2_without_a_traceback(capsys):
 
 
 def test_watch_unreachable_node_exits_3(capsys):
-    assert main(["--profile", "standin-upstream", "--url", "http://127.0.0.1:9", "watch", "--breaker", "1",
+    assert main(["--profile", "standin-upstream", "--url", "ws://127.0.0.1:9", "watch", "--breaker", "1",
                  "--supply-assets", "1,2", "--holder", "0x" + "00" * 20, "--poll-blocks", "2"]) == 3
+
+
+def test_watch_refuses_an_http_node_url_it_could_never_freeze_through(capsys):
+    assert main(["--profile", "standin-upstream", "--url", "http://127.0.0.1:9", "watch", "--breaker", "1",
+                 "--supply-assets", "1,2", "--holder", "0x" + "00" * 20, "--poll-blocks", "2"]) == 2
+    assert "ws:// or wss://" in capsys.readouterr().err
+
+
+def test_watch_refuses_poll_blocks_below_one(capsys):
+    assert main(["--profile", "standin-upstream", "--url", "ws://127.0.0.1:9", "watch", "--breaker", "1",
+                 "--supply-assets", "1", "--holder", "0x" + "00" * 20, "--poll-blocks", "0"]) == 2
+
+
+def test_reserves_malformed_holder_is_a_usage_error_not_an_outage(capsys):
+    assert main(["reserves", "0x1234"]) == 2
+    assert "not an EVM address" in capsys.readouterr().err
 
 
 def test_watch_bad_provider_name_exits_2(capsys):

@@ -83,9 +83,11 @@ def cmd_chain(args: argparse.Namespace) -> int:
 
 def cmd_reserves(args: argparse.Namespace) -> int:
     """Reserve token balance of a holder (the vault) from every provider, latest + finalized, compared."""
-    from .sepolia import SEPOLIA_PROVIDERS, chain_id, compare, cross_check, providers_from, read_all
+    from .sepolia import SEPOLIA_PROVIDERS, balance_of_data, chain_id, compare, cross_check, providers_from, read_all
 
     try:
+        balance_of_data(args.holder)  # a malformed address is a usage error (2), not a provider outage (3)
+        balance_of_data(args.token)
         providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
     except ValueError as exc:
         print(f"ballast: {exc}", file=sys.stderr)
@@ -157,9 +159,10 @@ def cmd_watch(args: argparse.Namespace) -> int:
     from .sepolia import SEPOLIA_PROVIDERS, providers_from
     from .watchdog import JsonLog, WatchConfig, Watchdog
 
-    if args.max_block_age < 0 or args.fail_closed_after < 0 or args.poll_interval < 0 or args.timeout <= 0:
-        print("ballast: --max-block-age / --fail-closed-after / --poll-interval must be >= 0, --timeout > 0",
-              file=sys.stderr)
+    if (args.max_block_age < 0 or args.fail_closed_after < 0 or args.poll_interval < 0 or args.timeout <= 0
+            or (args.poll_blocks is not None and args.poll_blocks < 1)):
+        print("ballast: --max-block-age / --fail-closed-after / --poll-interval must be >= 0, --timeout > 0, "
+              "--poll-blocks >= 1", file=sys.stderr)
         return 2
     try:
         from .sepolia import balance_of_data
@@ -171,6 +174,9 @@ def cmd_watch(args: argparse.Namespace) -> int:
         balance_of_data(args.token)
         providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+        if not cfg.url.startswith(("ws://", "wss://")):
+            # submitting with wait-for-inclusion needs a websocket: an http URL would arm a watcher that cannot freeze
+            raise ValueError(f"node URL {cfg.url!r}: the watcher needs a ws:// or wss:// URL")
         ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=args.poll_blocks is None)
         poll_blocks = args.poll_blocks
         if poll_blocks is None:

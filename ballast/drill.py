@@ -24,6 +24,7 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 from datetime import datetime, timezone
@@ -118,13 +119,16 @@ def run_drill(args: argparse.Namespace) -> int:
     substrate = connect(profile, cfg.url)
     fmt = substrate.ss58_format or 42
     alice = dev_keypair(profile, "//Alice")
-    keys = {role: dev_keypair(profile, f"//Ballast{role}") for role in ("A", "W1", "W2", "Judge", "Peer")}
+    breaker = free_asset_id(substrate, DRILL_ASSET_FROM)
+    control = free_asset_id(substrate, breaker + 1)
+    keys = {role: dev_keypair(profile, f"//Ballast{role}") for role in ("A", "W1", "W2")}
+    # Holders are fresh per drill (//BallastJudge//<asset>): every non-sufficient asset an account holds costs it a
+    # consumer reference, and after ~15 drills a shared judge account hits the runtime's cap (Token.CannotCreate).
+    keys |= {role: dev_keypair(profile, f"//Ballast{role}//{breaker}") for role in ("Judge", "Peer")}
     addr = {role: kp.ss58_address for role, kp in keys.items()}
     watchers = [addr["W1"], addr["W2"]]
     m_watch = multi_address(watchers, 1, ss58_format=fmt)
     custodian = w3.eth.accounts[0]
-    breaker = free_asset_id(substrate, DRILL_ASSET_FROM)
-    control = free_asset_id(substrate, breaker + 1)
     EVIDENCE.mkdir(exist_ok=True)
     stem = f"drill-{args.scenario}-{profile.name}-asset{breaker}"
     log_path = EVIDENCE / f"{stem}.watchdog.jsonl"
@@ -249,19 +253,23 @@ def run_drill(args: argparse.Namespace) -> int:
                "--breaker", str(breaker), "--supply-assets", f"{breaker},{control}", "--holder", vault_addr,
                "--token", usdc_addr, "--watcher", "//BallastW2", "--watchers", "//BallastW1,//BallastW2",
                "--until-frozen", "--max-seconds", str(args.timeout), "--log", str(log_path.relative_to(ROOT)), "--timeout", "3",
-               "--fail-closed-after", str(args.fail_closed_after if args.scenario == "outage" else 300)]
+               "--fail-closed-after", str(args.fail_closed_after if args.scenario == "outage" else 300),
+               # anvil mines only when a tx lands, so its latest block ages while idle: block-age check off here
+               "--max-block-age", "0"]
         for p in providers:
             cmd += ["--provider", p]
         run["watchdog_cmd"] = " ".join(c if c != sys.executable else "python" for c in cmd)
-        proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        stderr_file = tempfile.TemporaryFile(mode="w+")  # a file, not a pipe: the watchdog can never block on it
+        proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=stderr_file, text=True)
         print(f"watchdog pid {proc.pid}: {run['watchdog_cmd']}")
         deadline = time.time() + 120
         want = "level" if args.scenario == "drain" else "outage"
         while time.time() < deadline:
             recs = read_log(log_path)
             if any(r["event"] == "not-armed" for r in recs) or proc.poll() is not None:
+                stderr_file.seek(0)
                 raise RuntimeError(f"watchdog exited early: {[r for r in recs if r['event'] in ('not-armed', 'stop')]}"
-                                   f" {proc.stderr.read()[-800:] if proc.poll() is not None else ''}")
+                                   f" {stderr_file.read()[-800:]}")
             if any(r["event"] == "check" and r["decision"]["action"] == want for r in recs):
                 break
             time.sleep(0.5)
@@ -270,6 +278,9 @@ def run_drill(args: argparse.Namespace) -> int:
         start_rec = next(r for r in read_log(log_path) if r["event"] == "start")
         run["watchdog"] = {k: start_rec.get(k) for k in ("watcher", "m_watch", "reserve", "poll_blocks",
                                                           "fail_closed_after", "providers", "supply_ids")}
+        if args.scenario == "outage":
+            run["reserve"]["watcher_read"] = ("none: the watcher's providers are unreachable by design "
+                                              f"({', '.join(UNREACHABLE)}); the vault was never read")
         check("watchdog armed: its M_watch == the breaker's freezer",
               public_key(start_rec["m_watch"]) == public_key(m_watch), True, "watchdog start record")
 
@@ -303,6 +314,15 @@ def run_drill(args: argparse.Namespace) -> int:
             raise RuntimeError(f"no freeze in the watchdog log (exit {proc.returncode})")
         trigger = next(r for r in recs if r["event"] == "check" and r["decision"]["freeze"])
         fr = freeze["receipt"]
+        if drain_at is not None:  # the freeze must be caused by THIS drain
+            post_drain = S1 + S2 - run["evm_steps"][-1]["amount"]
+            check("the triggering check ran after the drain", epoch(trigger["t"]) >= drain_at, True, "watchdog log",
+                  ok=epoch(trigger["t"]) >= drain_at)
+            check("the triggering reading == post-drain reserves", trigger["decision"]["reserves_min"],
+                  str(post_drain), "watchdog log")
+            levels_before = [r for r in recs if r["event"] == "check" and r["decision"]["action"] == "level"]
+            check("the watcher read level before the drain", bool(levels_before)
+                  and all(epoch(r["t"]) < drain_at for r in levels_before), True, "watchdog log")
         expected_why = "deficit" if args.scenario == "drain" else "fail-closed"
         remark = parse_remark(freeze["remark"])
         step(f"watchdog (W2) freezes asset {breaker} via M_watch, reason on chain (why={remark['why']})",
@@ -346,7 +366,7 @@ def run_drill(args: argparse.Namespace) -> int:
         else:
             first_outage = next(r for r in recs if r["event"] == "check" and r["decision"]["action"] == "outage")
             timing |= {
-                "fail_closed_after_s": run["watchdog"]["fail_closed_after"],
+                "fail_closed_after_s (drill override; production default 300)": run["watchdog"]["fail_closed_after"],
                 "first_outage_seen_to_freeze_included_s": round(freeze["included_at"] - epoch(first_outage["t"]), 2),
                 "down_for_s_in_remark": remark.get("down"),
             }

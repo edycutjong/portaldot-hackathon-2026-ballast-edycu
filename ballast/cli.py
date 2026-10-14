@@ -91,6 +91,8 @@ def cmd_reserves(args: argparse.Namespace) -> int:
         print(f"ballast: {exc}", file=sys.stderr)
         return 2
     report: dict = {"erc20": args.token, "holder": args.holder, "chain_ids": {}, "tags": {}}
+    if args.note:
+        report["note"] = args.note
     for p in providers:
         try:
             report["chain_ids"][p.name] = chain_id(p)
@@ -119,7 +121,8 @@ def cmd_reserves(args: argparse.Namespace) -> int:
             cc = report["cross_check"]
             print(f"  cross-check {cc['tag']} #{cc.get('block_number')} {cc.get('block_hash')}: "
                   f"{'AGREE' if cc['agree'] else 'DISAGREE'} {json.dumps(cc['providers'])}")
-    down = all(r["error"] for comp in report["tags"].values() for r in comp["readings"])
+    # any requested tag with no successful reading at all = that read is down
+    down = any(all(r["error"] for r in comp["readings"]) for comp in report["tags"].values())
     disagree = any(comp["disagreements"] for comp in report["tags"].values())
     if args.cross_check and not report["cross_check"]["agree"]:
         disagree = True
@@ -179,6 +182,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
         poll_blocks=poll_blocks,
         fail_closed_after=args.fail_closed_after,
         poll_interval_s=args.poll_interval,
+        max_block_age_s=args.max_block_age or None,
     )
     log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
     try:
@@ -186,11 +190,12 @@ def cmd_watch(args: argparse.Namespace) -> int:
                        keypair=keypair, providers=providers, cfg=wcfg, log=log)
         try:
             pre = dog.preflight()
-        except RuntimeError as exc:
-            log("not-armed", message=str(exc))
+        except Exception as exc:  # noqa: BLE001 — any preflight failure means "cannot freeze": say so, exit 2
+            log("not-armed", message=f"{type(exc).__name__}: {exc}" if not isinstance(exc, RuntimeError) else str(exc))
             return 2
         log.context["reserve"] = pre["reserve"]
         log("start", **pre, poll_blocks=poll_blocks, fail_closed_after=args.fail_closed_after,
+            max_block_age=args.max_block_age or "off",
             supply_ids=supply_ids, providers=[p.name for p in providers], erc20=args.token, holder=args.holder,
             message=f"armed: M_watch {pre['m_watch']} · reserve {pre['reserve']} · every {poll_blocks} blocks")
         return dog.run(until_frozen=args.until_frozen, max_seconds=args.max_seconds)
@@ -234,9 +239,11 @@ def build_parser() -> argparse.ArgumentParser:
     res.add_argument("--timeout", type=float, default=10.0)
     res.add_argument("--json", action="store_true")
     res.add_argument("--out", metavar="FILE", help="also write the report as JSON")
+    res.add_argument("--note", help="free-text label stored in the report (e.g. what the holder address is)")
     res.set_defaults(func=cmd_reserves)
 
-    w = sub.add_parser("watch", help="run a watcher: freeze on reserve deficit or total provider outage")
+    w = sub.add_parser("watch", help="run an OPERATOR watcher: freeze on reserve deficit (either provider) or "
+                       "total provider outage (I6); the community-watcher rule is not implemented")
     w.add_argument("--breaker", type=int, required=True, help="asset id to freeze (asset 1)")
     w.add_argument("--supply-assets", help="comma-separated asset ids whose supplies the reserve backs "
                    "(default: the breaker only; e.g. 1,2 = asset 1 + control asset 2)")
@@ -254,6 +261,9 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--fail-closed-after", type=float, default=300.0,
                    help="seconds with every provider unreachable before freezing (I6; default 300)")
     w.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
+    w.add_argument("--max-block-age", type=float, default=300.0,
+                   help="a provider whose latest block is older than this (s) counts as down; 0 = off "
+                   "(only for an instant-mining local anvil, whose blocks exist only when a tx lands)")
     w.add_argument("--until-frozen", action="store_true", help="exit 0 once the breaker asset is frozen")
     w.add_argument("--max-seconds", type=float, help="stop after this many seconds (exit 4 if --until-frozen)")
     w.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")
@@ -265,7 +275,8 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--evm-url", default="http://127.0.0.1:49545", help="local anvil (chain id 31337)")
     d.add_argument("--drain-pct", type=int, default=30)
     d.add_argument("--fail-closed-after", type=float, default=15.0,
-                   help="outage scenario: watcher fail-closed timeout in seconds (production default 300)")
+                   help="outage scenario: watcher fail-closed timeout in seconds — a drill override; "
+                   "the production default is 300 (I6)")
     d.add_argument("--timeout", type=float, default=180.0, help="max seconds to wait for the freeze")
     d.set_defaults(func=cmd_drill)
     return parser

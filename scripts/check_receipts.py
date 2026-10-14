@@ -32,6 +32,7 @@ def main() -> int:
     ap.add_argument("--profile")
     ap.add_argument("--url")
     ap.add_argument("--evm-url", default="http://127.0.0.1:49545", help="reserve chain to re-read drill txs from")
+    ap.add_argument("--skip-evm", action="store_true", help="do not require the drill reserve-chain txs")
     ap.add_argument("--regen", action="store_true")
     args = ap.parse_args()
 
@@ -89,6 +90,9 @@ def main() -> int:
                 else:
                     print(f"ok {run['_file']} evm #{row['block_number']} {row['tx_hash'][:18]}… status {row['status']}")
         print(f"[reserve {args.evm_url}] {evm_checked - evm_failed}/{evm_checked} reserve-chain txs confirmed")
+        if evm_checked == 0 and not args.skip_evm:
+            print("drill runs list reserve-chain txs but none were re-checked (pass --skip-evm to accept)")
+            evm_failed = 1
     if args.regen:
         print(f"rewrote {write_receipts_md()}")
     return 1 if failed or evm_failed or not checked else 0

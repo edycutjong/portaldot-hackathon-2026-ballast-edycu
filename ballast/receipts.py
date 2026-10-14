@@ -116,6 +116,8 @@ def render_drill_section(run: dict) -> list[str]:
         f"({score(run)})",
         "",
     ]
+    if reserve.get("watcher_read"):
+        lines += [f"Watcher reserve reads: {reserve['watcher_read']}.", ""]
     if run.get("remark"):
         lines += [f"Reason remark (in the freeze extrinsic): `{run['remark']}`", ""]
     if run.get("timing"):

@@ -61,3 +61,7 @@ def test_standin_and_v3_sections_are_labelled_differently(monkeypatch):
 def test_empty_evidence_renders_a_placeholder(monkeypatch):
     monkeypatch.setattr(receipts, "load_runs", lambda *a, **k: [])
     assert "_No receipts yet._" in render_receipts_md()
+
+
+def test_committed_receipts_md_is_exactly_the_render_of_committed_evidence():
+    assert receipts.RECEIPTS_MD.read_text() == render_receipts_md()

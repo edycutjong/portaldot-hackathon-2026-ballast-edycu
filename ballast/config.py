@@ -7,7 +7,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from .chain_profile import Profile, get_profile
+from .chain_profile import Profile, ProfileError, get_profile
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,6 @@ def load_chain_config(path: str | os.PathLike | None = None, *, profile: str | N
             data = tomllib.load(fh).get("chain", {})
     name = profile or data.get("profile")
     if not name:
-        raise SystemExit(f"no chain profile: pass --profile or set [chain] profile in {cfg_path}")
+        raise ProfileError(f"no chain profile: pass --profile or set [chain] profile in {cfg_path}")
     prof = get_profile(name)
     return ChainConfig(profile=prof, url=url or data.get("url") or prof.default_url)

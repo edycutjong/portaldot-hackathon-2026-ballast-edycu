@@ -98,7 +98,7 @@ def test_classify_profile_mismatch_fails_loudly():
 
 
 def test_v3_profile_pointed_at_a_standin_is_refused():
-    with pytest.raises(ProfileMismatch, match="'v3', the node is 'standin-upstream'"):
+    with pytest.raises(ProfileMismatch, match="configured profile is 'v3', the node is 'standin-upstream'"):
         classify(facts(), "v3")
 
 
@@ -121,7 +121,7 @@ def test_classify_standin_decimals_and_spec_version_are_checked():
 
 def test_v3_profile_is_a_stub_with_unverified_values():
     v3 = get_profile("v3")
-    # a node that reports spec portaldotV3/3000 and no decimals, genesis unknown to Ballast
+    # a node that reports spec name portaldotV3 (placeholder version) and no decimals; genesis unknown to Ballast
     ident = classify(facts(v3, spec_version=1, token_decimals=None, block_time_ms=None, mean_block_time_ms=None), "v3")
     data = ident.as_dict()
     assert not ident.profile.is_standin

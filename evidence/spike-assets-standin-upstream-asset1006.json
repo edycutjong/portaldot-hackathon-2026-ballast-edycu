@@ -4,13 +4,14 @@
     "profile": "standin-upstream",
     "label": "standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)",
     "is_standin": true,
+    "genesis_pinned": true,
     "genesis_hash": "0x0c4402ef4ccc34d28b16523e1cf26831716527c61a65d8e0840ab26e1636c8a2",
     "code_hash": "0x72e84be232be151b059440f89710895de0cb6b71b6529f97e9c02340765f1ec0",
     "spec_name": "node",
     "spec_version": 268,
     "token_decimals": 12,
     "decimals_source": "system_properties",
-    "head": 461,
+    "head": 704,
     "multisig_shape": "weight-v2",
     "block_counts": {
       "block_time_ms": 3000,
@@ -19,8 +20,8 @@
       "W": 28800,
       "N": 2,
       "block_time_basis": "median of per-block timestamp deltas, rounded to 100 ms",
-      "median_block_time_ms": 2999.5,
-      "mean_block_time_ms": 10800.05,
+      "median_block_time_ms": 3000.0,
+      "mean_block_time_ms": 3000.0,
       "measured_over_blocks": 20
     },
     "notes": [
@@ -29,8 +30,8 @@
     ],
     "url": "ws://127.0.0.1:49944"
   },
-  "started_at": "2026-10-14T09:40:39Z",
-  "asset_id": 1004,
+  "started_at": "2026-10-14T09:52:49Z",
+  "asset_id": 1006,
   "accounts": {
     "A": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
     "W1": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
@@ -70,11 +71,11 @@
         "step": "fund",
         "call": "Utility.batch_all[6 x Balances.transfer_keep_alive]",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-        "extrinsic_id": "463-2",
-        "block_number": 463,
-        "block_hash": "0xeb59d77a41a77467d83b0fe7a752aab06947514441b3f46f29218a59827b6361",
+        "extrinsic_id": "706-2",
+        "block_number": 706,
+        "block_hash": "0x51c6a53bd028a1db40332516e53914dd21c53f75d25a9fdbb5d41d7f3f583461",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0x702992276107ec02ce5eef8db5f32c66a306ce4b2bfb104ba52a91bea410760c",
+        "extrinsic_hash": "0x7dfa33396df4fa2a510d661b32798e73b1b79376ede102eb7ee84b2916cf5fed",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -88,7 +89,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-              "amount": 3661667795452
+              "amount": 3661666848458
             }
           },
           {
@@ -185,7 +186,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 3661667795452
+              "amount": 3661666848458
             }
           },
           {
@@ -193,7 +194,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-              "actual_fee": 3661667795452,
+              "actual_fee": 3661666848458,
               "tip": 0
             }
           },
@@ -228,11 +229,11 @@
         "step": "create",
         "call": "Assets.create",
         "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-        "extrinsic_id": "464-2",
-        "block_number": 464,
-        "block_hash": "0x37480e95c41cda606150df0de8e91b4c99bfd75d45a147877bf85053dc63d4fe",
+        "extrinsic_id": "707-2",
+        "block_number": 707,
+        "block_hash": "0x0f0cb6cc21adb6e18274ff54ec99f77db2e72645ad6a0c6d05f6d335b23cd320",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0xc870ad7736129b757b7084e9ab354a5a943ea69f4b523b0c5698f60351e845a1",
+        "extrinsic_hash": "0xa0b4f1e01579e8b9e01a9a06725f1f6f5f5388fcf3dbb055f12bc43496c33f3d",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -246,7 +247,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "amount": 1591239881496
+              "amount": 1591239194326
             }
           },
           {
@@ -261,7 +262,7 @@
             "module_id": "Assets",
             "event_id": "Created",
             "attributes": {
-              "asset_id": 1004,
+              "asset_id": 1006,
               "creator": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
               "owner": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm"
             }
@@ -271,7 +272,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1591239881496
+              "amount": 1591239194326
             }
           },
           {
@@ -279,7 +280,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "actual_fee": 1591239881496,
+              "actual_fee": 1591239194326,
               "tip": 0
             }
           },
@@ -314,11 +315,11 @@
         "step": "set_metadata",
         "call": "Assets.set_metadata",
         "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-        "extrinsic_id": "465-2",
-        "block_number": 465,
-        "block_hash": "0x63a9d715a9965e721a5794c9ce1d2abcc26c792d99a1143262520853317f7c27",
+        "extrinsic_id": "708-2",
+        "block_number": 708,
+        "block_hash": "0x273d65c289d57a0d18f4251c94af5289e7e8930e71c55d4d1728592f1af631bb",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0xc0fb3391bb38300ef8130cc5765f39399b3bbba164697864cb81630aa46d2253",
+        "extrinsic_hash": "0x703af6a80bb7a2a331b2925d54fd019a1d9af51c27dce611710d1eff4f302088",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -332,7 +333,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "amount": 1330783412834
+              "amount": 1330783002827
             }
           },
           {
@@ -347,7 +348,7 @@
             "module_id": "Assets",
             "event_id": "MetadataSet",
             "attributes": {
-              "asset_id": 1004,
+              "asset_id": 1006,
               "name": "pUSDC-test",
               "symbol": "pUSDC-test",
               "decimals": 6,
@@ -359,7 +360,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1330783412834
+              "amount": 1330783002827
             }
           },
           {
@@ -367,7 +368,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "actual_fee": 1330783412834,
+              "actual_fee": 1330783002827,
               "tip": 0
             }
           },
@@ -402,11 +403,11 @@
         "step": "set_team",
         "call": "Assets.set_team",
         "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-        "extrinsic_id": "466-2",
-        "block_number": 466,
-        "block_hash": "0x0a34403f6db877e2656d683aa91b02e8f090152c50b17860f0db9e09c55601a2",
+        "extrinsic_id": "709-2",
+        "block_number": 709,
+        "block_hash": "0x599415517c3b3d4709c45adef104060f8e895ec404950c99252a26a28e4a1e4c",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0x545ccc5073ab23cdbfbff54bba79570d8d18457b12b8e024cd08eb4651d73e21",
+        "extrinsic_hash": "0xd937d30db008d92c32fff50380d2eacc31464589ff61a44ad498e00ff500f1b4",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -420,14 +421,14 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "amount": 2090740655426
+              "amount": 2090740271380
             }
           },
           {
             "module_id": "Assets",
             "event_id": "TeamChanged",
             "attributes": {
-              "asset_id": 1004,
+              "asset_id": 1006,
               "issuer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
               "admin": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
               "freezer": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D"
@@ -438,7 +439,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 2090740655426
+              "amount": 2090740271380
             }
           },
           {
@@ -446,7 +447,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "actual_fee": 2090740655426,
+              "actual_fee": 2090740271380,
               "tip": 0
             }
           },
@@ -481,11 +482,11 @@
         "step": "mint",
         "call": "Assets.mint",
         "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-        "extrinsic_id": "467-2",
-        "block_number": 467,
-        "block_hash": "0x554c818b8e3f5b31a1139858006560fb83190a4dbc20337848bc5cdc93fc11e2",
+        "extrinsic_id": "710-2",
+        "block_number": 710,
+        "block_hash": "0x4cbc25d2d4cc20c9a819d3ab38c42eb668180e7047cd43f0f4486cff968c4162",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0x0f52f2ea851bf5878f3b83d0c3322914dcf7c41a61f4bcc03d6957804aee6298",
+        "extrinsic_hash": "0xcd809c67b4a4cb5fc59387bfb87bac8898840acbd36e5da3b453d1aada038edc",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -499,14 +500,14 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "amount": 1470877075852
+              "amount": 1470876608973
             }
           },
           {
             "module_id": "Assets",
             "event_id": "Issued",
             "attributes": {
-              "asset_id": 1004,
+              "asset_id": 1006,
               "owner": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
               "amount": 50000000
             }
@@ -516,7 +517,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1470877075852
+              "amount": 1470876608973
             }
           },
           {
@@ -524,7 +525,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "actual_fee": 1470877075852,
+              "actual_fee": 1470876608973,
               "tip": 0
             }
           },
@@ -559,11 +560,11 @@
         "step": "freeze",
         "call": "Multisig.as_multi_threshold_1(Assets.freeze_asset)",
         "signer": "5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP",
-        "extrinsic_id": "468-2",
-        "block_number": 468,
-        "block_hash": "0x4fd2f365a063e65951c053ce1235fb6db8d475d514fd3edf065eddbfeb5eeb65",
+        "extrinsic_id": "711-2",
+        "block_number": 711,
+        "block_hash": "0xb6cbafec0b1029dcd24e6859b87747651c45e50991321c49335661831f2abb11",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0x7841a37847bf518ec3e6e73701ecd0435aa4f2601f9a793ee8f282ae86318b08",
+        "extrinsic_hash": "0xad518681c4b6277793861563648212def87423cbfd932d2f8ed79d840a6622fb",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -584,14 +585,14 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP",
-              "amount": 1450936189858
+              "amount": 1450935687086
             }
           },
           {
             "module_id": "Assets",
             "event_id": "AssetFrozen",
             "attributes": {
-              "asset_id": 1004
+              "asset_id": 1006
             }
           },
           {
@@ -600,11 +601,11 @@
             "attributes": {
               "approving": "5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP",
               "timepoint": {
-                "height": 468,
+                "height": 711,
                 "index": 2
               },
               "multisig": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D",
-              "call_hash": "0xa3897969c71f8deb989a7d630fe8d70ec848cae0efcc3886c986ab28035c247a",
+              "call_hash": "0x6fd8dcd2449ef2e0ce74238413a66da962a4de8e0441bb72861a82bd6510d20f",
               "result": {
                 "Ok": []
               }
@@ -615,7 +616,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1450936189858
+              "amount": 1450935687086
             }
           },
           {
@@ -623,7 +624,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP",
-              "actual_fee": 1450936189858,
+              "actual_fee": 1450935687086,
               "tip": 0
             }
           },
@@ -656,11 +657,11 @@
         "step": "watcher_thaw_asset",
         "call": "Multisig.as_multi_threshold_1(Assets.thaw_asset)",
         "signer": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
-        "extrinsic_id": "469-2",
-        "block_number": 469,
-        "block_hash": "0x0c0e7a103fed68ab7c06f76297a3dc5269f74ffb80454f54dcb71d7501313c2a",
+        "extrinsic_id": "712-2",
+        "block_number": 712,
+        "block_hash": "0xc84aa2e318f6cc35cd93212940741cc86fce659cc7080d3222bad3cbef27c897",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0xaa6db65adbb46e7ea7fb2e57605d792eee740c571252d9db5dc939bed37fed78",
+        "extrinsic_hash": "0xbe0d79fb7189356ab684f9e726f8af7e90c62d1301fcef3b20372428854f1be8",
         "outcome": {
           "ok": false,
           "pallet": "Assets",
@@ -674,7 +675,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
-              "amount": 1450936128861
+              "amount": 1450935626126
             }
           },
           {
@@ -682,7 +683,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1450936128861
+              "amount": 1450935626126
             }
           },
           {
@@ -690,7 +691,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
-              "actual_fee": 1450936128861,
+              "actual_fee": 1450935626126,
               "tip": 0
             }
           },
@@ -729,11 +730,11 @@
         "step": "watcher_thaw_account",
         "call": "Multisig.as_multi_threshold_1(Assets.thaw)",
         "signer": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
-        "extrinsic_id": "470-2",
-        "block_number": 470,
-        "block_hash": "0x6c95c273edbc09daa84cf3b8ee50ede3972a0ea06746db13eb2734cb45e03ade",
+        "extrinsic_id": "713-2",
+        "block_number": 713,
+        "block_hash": "0x7e59e5203e3e82f177eff830c0cfddedc0344e591efd332d3ae36ea217f50b31",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0xf04c436365625d2d8f61d9101f2d0c8b45a25511d4ed937f6c51664048f30963",
+        "extrinsic_hash": "0x3ec6526a05a3ce724516da317cf5b758f448e63f4c22f9132962e3b77c5d39e8",
         "outcome": {
           "ok": false,
           "pallet": "Assets",
@@ -747,7 +748,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
-              "amount": 1780965991865
+              "amount": 1780965470998
             }
           },
           {
@@ -755,7 +756,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1780965991865
+              "amount": 1780965470998
             }
           },
           {
@@ -763,7 +764,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
-              "actual_fee": 1780965991865,
+              "actual_fee": 1780965470998,
               "tip": 0
             }
           },
@@ -802,11 +803,11 @@
         "step": "mint_while_frozen",
         "call": "Assets.mint",
         "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-        "extrinsic_id": "471-2",
-        "block_number": 471,
-        "block_hash": "0x46c946954480bc14e57209a7c8177b13ecdc9c33f61995b421be49f6c6523373",
+        "extrinsic_id": "714-2",
+        "block_number": 714,
+        "block_hash": "0x64cd84bf13db054a3dfdb7ad4c42b2aca4165526a1d76f250522dea53a4ab313",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0x076f43262ad0edc165c9053a2a437600df7af444904cc02f26b0c66ecd801126",
+        "extrinsic_hash": "0xe27388ddb1864c436636e18338df8fa086c47a16a26303ff88c163564526dc50",
         "outcome": {
           "ok": false,
           "pallet": "Assets",
@@ -820,7 +821,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "amount": 1450877068178
+              "amount": 1450876601304
             }
           },
           {
@@ -828,7 +829,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1450877068178
+              "amount": 1450876601304
             }
           },
           {
@@ -836,7 +837,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "actual_fee": 1450877068178,
+              "actual_fee": 1450876601304,
               "tip": 0
             }
           },
@@ -865,7 +866,7 @@
     },
     {
       "name": "holder transfer 1.00 while frozen fails",
-      "expected": "Err(Assets.AssetNotLive) or Err(Assets.Frozen)",
+      "expected": "Err(Assets.AssetNotLive)",
       "as_expected": true,
       "counted": true,
       "signer_role": "Judge",
@@ -875,11 +876,11 @@
         "step": "transfer_frozen",
         "call": "Assets.transfer",
         "signer": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
-        "extrinsic_id": "472-2",
-        "block_number": 472,
-        "block_hash": "0x673b23b490d22042aec7cfeefb9096284900f0832db710feb9205245e8f2906f",
+        "extrinsic_id": "715-2",
+        "block_number": 715,
+        "block_hash": "0x4996cedc6c81d5c75819e0ac4340c0f0e16ffef15b64dff6ae000aa5d6f6de24",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0x3dc2f40aeda783bbb568f38eae7ecf9225c8aa7b9e4ef15c8e085dd6109d22ac",
+        "extrinsic_hash": "0x2fdac925dfe4af53325a8c4ca1ddc160ccccce12ec6ddb278dcd8054e6e09834",
         "outcome": {
           "ok": false,
           "pallet": "Assets",
@@ -893,7 +894,7 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
-              "amount": 1471148447584
+              "amount": 1471147815931
             }
           },
           {
@@ -901,7 +902,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1471148447584
+              "amount": 1471147815931
             }
           },
           {
@@ -909,7 +910,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
-              "actual_fee": 1471148447584,
+              "actual_fee": 1471147815931,
               "tip": 0
             }
           },
@@ -950,11 +951,11 @@
         "step": "admin_thaw",
         "call": "Assets.thaw_asset",
         "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-        "extrinsic_id": "473-2",
-        "block_number": 473,
-        "block_hash": "0xfaf8d870bb1705ecbd83b058933149237eefeceb850a470ac1592525a340cadb",
+        "extrinsic_id": "716-2",
+        "block_number": 716,
+        "block_hash": "0x3fae9d9298d1f641a83b1cd41cfeb8a3a619b0f187c6ac171b3819e19914730f",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0xa5405b70a74ac815d9f158b1a08a82a774fc771abfbb8094f559674e02155590",
+        "extrinsic_hash": "0xea5ffab0d987233675253b9b2b92f1c7efe39ec384929639269f627f58046055",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -968,14 +969,14 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "amount": 1100740879101
+              "amount": 1100740494920
             }
           },
           {
             "module_id": "Assets",
             "event_id": "AssetThawed",
             "attributes": {
-              "asset_id": 1004
+              "asset_id": 1006
             }
           },
           {
@@ -983,7 +984,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1100740879101
+              "amount": 1100740494920
             }
           },
           {
@@ -991,7 +992,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
-              "actual_fee": 1100740879101,
+              "actual_fee": 1100740494920,
               "tip": 0
             }
           },
@@ -1026,11 +1027,11 @@
         "step": "transfer_level",
         "call": "Assets.transfer",
         "signer": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
-        "extrinsic_id": "474-2",
-        "block_number": 474,
-        "block_hash": "0x2e4c8d27fd4a875361bb76c41702cbfdd2c70783ba3c3ae9ad1e5dd87726a73b",
+        "extrinsic_id": "717-2",
+        "block_number": 717,
+        "block_hash": "0x23a4a08c619b1fd3cc9b256faf229131feaf68229b77b6776a4d22004c54a04e",
         "extrinsic_index": 2,
-        "extrinsic_hash": "0xd1b3375ac2a6695364e53539b5a58b5845cccfb078da360428675314be24721a",
+        "extrinsic_hash": "0x7a01fdf5b9b295f05e2d49ca65bfb31825caa4147a05a91b8b7f7f3836545f8b",
         "outcome": {
           "ok": true,
           "pallet": null,
@@ -1044,14 +1045,14 @@
             "event_id": "Withdraw",
             "attributes": {
               "who": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
-              "amount": 1471148442393
+              "amount": 1471147810744
             }
           },
           {
             "module_id": "Assets",
             "event_id": "Transferred",
             "attributes": {
-              "asset_id": 1004,
+              "asset_id": 1006,
               "from": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
               "to": "5GT6GvXvCnHjeLzNmgzRvKi8Sf413CgWDvM3onavXvgYCTwF",
               "amount": 1000000
@@ -1062,7 +1063,7 @@
             "event_id": "Deposit",
             "attributes": {
               "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-              "amount": 1471148442393
+              "amount": 1471147810744
             }
           },
           {
@@ -1070,7 +1071,7 @@
             "event_id": "TransactionFeePaid",
             "attributes": {
               "who": "5CfcKkAsxXNG547eeM2EWs5bJ9fz8kAKknEifetdWi9sNZ88",
-              "actual_fee": 1471148442393,
+              "actual_fee": 1471147810744,
               "tip": 0
             }
           },
@@ -1098,70 +1099,70 @@
       "expected": true,
       "observed": true,
       "ok": true,
-      "block_hash": "0xeb59d77a41a77467d83b0fe7a752aab06947514441b3f46f29218a59827b6361"
+      "block_hash": "0x51c6a53bd028a1db40332516e53914dd21c53f75d25a9fdbb5d41d7f3f583461"
     },
     {
-      "what": "Asset(1004) freezer is M_watch",
+      "what": "Asset(1006) freezer is M_watch",
       "expected": true,
       "observed": true,
       "ok": true,
-      "block_hash": "0x0a34403f6db877e2656d683aa91b02e8f090152c50b17860f0db9e09c55601a2"
+      "block_hash": "0x599415517c3b3d4709c45adef104060f8e895ec404950c99252a26a28e4a1e4c"
     },
     {
-      "what": "Asset(1004) issuer and admin are A",
+      "what": "Asset(1006) issuer and admin are A",
       "expected": true,
       "observed": true,
       "ok": true,
-      "block_hash": "0x0a34403f6db877e2656d683aa91b02e8f090152c50b17860f0db9e09c55601a2"
+      "block_hash": "0x599415517c3b3d4709c45adef104060f8e895ec404950c99252a26a28e4a1e4c"
     },
     {
       "what": "holder balance after mint",
       "expected": 50000000,
       "observed": 50000000,
       "ok": true,
-      "block_hash": "0x554c818b8e3f5b31a1139858006560fb83190a4dbc20337848bc5cdc93fc11e2"
+      "block_hash": "0x4cbc25d2d4cc20c9a819d3ab38c42eb668180e7047cd43f0f4486cff968c4162"
     },
     {
-      "what": "Asset(1004).status after freeze",
+      "what": "Asset(1006).status after freeze",
       "expected": "Frozen",
       "observed": "Frozen",
       "ok": true,
-      "block_hash": "0x4fd2f365a063e65951c053ce1235fb6db8d475d514fd3edf065eddbfeb5eeb65"
+      "block_hash": "0xb6cbafec0b1029dcd24e6859b87747651c45e50991321c49335661831f2abb11"
     },
     {
       "what": "MultisigExecuted.multisig is the locally derived M_watch",
       "expected": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D",
       "observed": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D",
       "ok": true,
-      "block_hash": "0x4fd2f365a063e65951c053ce1235fb6db8d475d514fd3edf065eddbfeb5eeb65"
+      "block_hash": "0xb6cbafec0b1029dcd24e6859b87747651c45e50991321c49335661831f2abb11"
     },
     {
-      "what": "Asset(1004).status after the refused thaw",
+      "what": "Asset(1006).status after the refused thaw",
       "expected": "Frozen",
       "observed": "Frozen",
       "ok": true,
-      "block_hash": "0x0c0e7a103fed68ab7c06f76297a3dc5269f74ffb80454f54dcb71d7501313c2a"
+      "block_hash": "0xc84aa2e318f6cc35cd93212940741cc86fce659cc7080d3222bad3cbef27c897"
     },
     {
       "what": "peer balance after the frozen transfer",
       "expected": 0,
       "observed": 0,
       "ok": true,
-      "block_hash": "0x673b23b490d22042aec7cfeefb9096284900f0832db710feb9205245e8f2906f"
+      "block_hash": "0x4996cedc6c81d5c75819e0ac4340c0f0e16ffef15b64dff6ae000aa5d6f6de24"
     },
     {
-      "what": "Asset(1004).status after admin thaw",
+      "what": "Asset(1006).status after admin thaw",
       "expected": "Live",
       "observed": "Live",
       "ok": true,
-      "block_hash": "0xfaf8d870bb1705ecbd83b058933149237eefeceb850a470ac1592525a340cadb"
+      "block_hash": "0x3fae9d9298d1f641a83b1cd41cfeb8a3a619b0f187c6ac171b3819e19914730f"
     },
     {
       "what": "peer balance after the level transfer",
       "expected": 1000000,
       "observed": 1000000,
       "ok": true,
-      "block_hash": "0x2e4c8d27fd4a875361bb76c41702cbfdd2c70783ba3c3ae9ad1e5dd87726a73b"
+      "block_hash": "0x23a4a08c619b1fd3cc9b256faf229131feaf68229b77b6776a4d22004c54a04e"
     }
   ],
   "frozen_transfer_error": "Err(Assets.AssetNotLive)",
@@ -1171,7 +1172,7 @@
     "freezer_thaw_asset": "Err(Assets.NoPermission)",
     "freezer_thaw_account": "Err(Assets.NoPermission)"
   },
-  "finished_at": "2026-10-14T09:41:15Z",
+  "finished_at": "2026-10-14T09:53:24Z",
   "passed": 11,
   "counted_steps": 11,
   "observation_steps": 1,

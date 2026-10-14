@@ -32,3 +32,12 @@ def test_patch_makes_assets_balance_u64_only(md_1002):
     balances = md.get_metadata_pallet("Balances")
     assert "u64" not in next(e for e in balances.events if e.value["name"] == "Transfer").value["args"]
     assert patch_assets_balance_u64(md) == 0  # idempotent
+
+
+def test_patch_also_retypes_compact_amounts(md_1002):
+    _, md = md_1002
+    patch_assets_balance_u64(md)
+    calls = {c.value["name"]: [a.value["type"] for a in c.args] for c in md.get_metadata_pallet("Assets").calls}
+    for name in ("mint", "burn", "transfer", "transfer_keep_alive", "force_transfer"):
+        assert calls[name][-1] == "Compact<u64>", name
+    assert "Compact<T::Balance>" not in sum(calls.values(), [])

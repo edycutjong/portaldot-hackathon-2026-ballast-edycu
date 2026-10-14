@@ -35,9 +35,9 @@ DECIMALS = 6
 MINT = 50_000_000  # 50.00 pUSDC-test
 MINT_WHILE_FROZEN = 10_000  # 0.01: does the pallet mint while the asset is frozen? (observation)
 TRANSFER = 1_000_000  # 1.00
-# Error a transfer of a frozen asset must fail with, per profile. standin-upstream: measured (AssetNotLive).
-# standin-1002: taken from that runtime's Assets error list (it has Frozen, no AssetNotLive); not run on 1002 here.
-FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)", "standin-1002": "Err(Assets.Frozen)"}
+# Error a transfer of a frozen asset must fail with, per profile this spike supports (measured on standin-upstream).
+# standin-1002 is not supported here: its events are positional and its AssetDetails has `is_frozen`, not `status`.
+FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)"}
 
 
 def now() -> str:
@@ -75,10 +75,14 @@ def main() -> int:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
         ident = identify(HttpRpc(cfg.url), cfg.profile.name)
         shape = require_multisig_shape(ident.profile)
-        frozen_error = FROZEN_TRANSFER_ERRORS[ident.profile.name]
-    except (ProfileError, OSError, KeyError) as exc:
+    except (ProfileError, OSError) as exc:
         print(f"spike_assets: {exc}", file=sys.stderr)
         return 2
+    if ident.profile.name not in FROZEN_TRANSFER_ERRORS:
+        print(f"spike_assets: profile {ident.profile.name!r} is not supported by this spike "
+              f"(supported: {', '.join(FROZEN_TRANSFER_ERRORS)})", file=sys.stderr)
+        return 2
+    frozen_error = FROZEN_TRANSFER_ERRORS[ident.profile.name]
     profile = ident.profile
     print(ident.banner())
     print(f"label: {profile.label} · as_multi shape: {shape}")

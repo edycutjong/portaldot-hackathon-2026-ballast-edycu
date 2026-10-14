@@ -4,8 +4,10 @@
   python scripts/check_receipts.py [--profile standin-upstream] [--url ws://127.0.0.1:49944] [--regen]
 
 For each row: block hash at that height, blake2-256 of the extrinsic at that index == the recorded tx hash,
-the decoded outcome (Ok / Err(Pallet.Error)), inner multisig results and the event list. Only runs recorded
-on the connected chain are checked. `--regen` rewrites docs/RECEIPTS.md from evidence/.
+the decoded outcome (Ok / Err(Pallet.Error)), inner multisig results and the event list. Runs are selected by
+genesis hash; every `--dev` chain of one binary shares a genesis, so stand-in receipts verify only against the
+node that recorded them (its persistent data dir) — a fresh or wiped dev node reports block-hash mismatches.
+`--regen` rewrites docs/RECEIPTS.md from evidence/.
 """
 
 from __future__ import annotations
@@ -17,10 +19,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ballast.chain import connect  # noqa: E402
-from ballast.chain_profile import identify  # noqa: E402
+from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.receipts import load_runs, refetch, write_receipts_md  # noqa: E402
-from ballast.rpc import HttpRpc  # noqa: E402
+from ballast.rpc import HttpRpc, RpcError  # noqa: E402
 
 
 def main() -> int:
@@ -31,8 +33,12 @@ def main() -> int:
     ap.add_argument("--regen", action="store_true")
     args = ap.parse_args()
 
-    cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-    ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+    try:
+        cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
+        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+    except (ProfileError, RpcError, OSError) as exc:
+        print(f"check_receipts: {exc}", file=sys.stderr)
+        return 2
     print(ident.banner())
     substrate = connect(ident.profile, cfg.url)
     runs = [r for r in load_runs() if r["chain"]["genesis_hash"] == ident.facts.genesis_hash]

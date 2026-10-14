@@ -6,6 +6,7 @@ and the blake2-256 hash of its `:code`; a mismatch with the configured profile f
 
 Block counts are derived from the block time measured on the chain in use:
 H (heartbeat) ~ 10 min, K = 3 x H (heartbeat freeze), W ~ 24 h (wind-down trigger), N = 2 (poll step).
+The durations are Ballast's design parameters, not chain facts; only the block time is measured.
 """
 
 from __future__ import annotations
@@ -101,7 +102,7 @@ PROFILES: dict[str, Profile] = {
         notes=(
             f"genesis hash, :code hash, decimals, block time and as_multi shape: {UNVERIFIED}",
             "URL and 14 decimals as published in the V3 testnet guide (github.com/ItsCogumellum/"
-            f"portaldot-v3-testnet-guide@d671a32 §1.1, §3.1), not yet checked by Ballast: {UNVERIFIED}",
+            f"portaldot-v3-testnet-guide@d671a32 §1.1), not yet checked by Ballast: {UNVERIFIED}",
             "spec name portaldotV3 as reported by a third party (github.com/finfreedom/portaldot-ink-toolchain "
             f"README, 2026-10-12), not yet checked by Ballast: {UNVERIFIED}",
         ),
@@ -329,7 +330,7 @@ def classify(facts: ChainFacts, profile_name: str) -> ChainIdentity:
             f"matches no profile (configured: {profile.name})"
         )
     if seen.name != profile.name:
-        raise ProfileMismatch(f"profile mismatch: ballast.toml says {profile.name!r}, the node is {seen.name!r}")
+        raise ProfileMismatch(f"profile mismatch: the configured profile is {profile.name!r}, the node is {seen.name!r}")
     notes = list(profile.notes)
     if profile.code_hash and profile.code_hash != facts.code_hash:
         raise ProfileMismatch(

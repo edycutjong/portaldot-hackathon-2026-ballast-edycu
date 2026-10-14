@@ -21,6 +21,7 @@ Receipts: evidence/drill-<scenario>-<profile>-asset<id>.json (+ the watchdog's J
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -58,12 +59,22 @@ def epoch(iso: str) -> float:
     return datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc).timestamp()
 
 
+def forge_build() -> None:
+    """Always build first (incremental, ~1 s): a stale out/ must never be what the drill deploys."""
+    subprocess.run(["forge", "build"], cwd=ROOT, check=True, capture_output=True)
+
+
 def artifact(name: str) -> tuple[list, str]:
-    path = OUT / f"{name}.sol" / f"{name}.json"
-    if not path.exists():
-        subprocess.run(["forge", "build"], cwd=ROOT, check=True, capture_output=True)
-    data = json.loads(path.read_text())
+    data = json.loads((OUT / f"{name}.sol" / f"{name}.json").read_text())
     return data["abi"], data["bytecode"]["object"]
+
+
+def source_pin() -> dict:
+    """Which code ran: the build repo's HEAD (+ dirty flag) — recorded in every evidence file."""
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "ballast", "contracts", "scripts"], cwd=ROOT,
+                           capture_output=True, text=True).stdout.strip()
+    return {"git_head": head or None, "dirty": bool(dirty)}
 
 
 def free_asset_id(substrate, start: int) -> int:
@@ -196,8 +207,13 @@ def run_drill(args: argparse.Namespace) -> int:
     proc = None
     try:
         # 1. EVM reserve on the local anvil chain.
+        forge_build()
         usdc_abi, usdc_bin = artifact("MockUSDC")
         vault_abi, vault_bin = artifact("ReserveVault")
+        run["source"] = source_pin() | {
+            "ReserveVault_initcode_sha256": hashlib.sha256(bytes.fromhex(vault_bin[2:])).hexdigest(),
+            "MockUSDC_initcode_sha256": hashlib.sha256(bytes.fromhex(usdc_bin[2:])).hexdigest(),
+        }
         tx = w3.eth.contract(abi=usdc_abi, bytecode=usdc_bin).constructor().transact({"from": custodian})
         usdc_addr = evm_step("deploy MockUSDC (test-only token)", "status 1", tx)["contract"]
         usdc = w3.eth.contract(address=usdc_addr, abi=usdc_abi)
@@ -290,10 +306,11 @@ def run_drill(args: argparse.Namespace) -> int:
             amount = (S1 + S2) * args.drain_pct // 100
             redeem_id = Web3.keccak(text=f"ballast-drill-{breaker}")
             pd_before = substrate.get_block_number(None)
+            drain_sent_at = time.time()  # causality: no check before this instant may have seen the drain
             tx = vault.functions.release(custodian, amount, redeem_id).transact({"from": custodian})
             row = evm_step(f"custodian drains {args.drain_pct}% ({amount / 1e6:.2f}) — release()",
                            "status 1 + Released", tx, redeem_id=redeem_id.to_0x_hex(), amount=amount)
-            drain_at = time.time()
+            drain_at = time.time()  # confirmed (anvil mines instantly): the latency clock starts here
             logs = vault.events.Released().process_receipt(w3.eth.get_transaction_receipt(tx), errors=DISCARD)
             row["released_event"] = bool(logs) and logs[0]["args"]["amount"] == amount
             row["as_expected"] = row["as_expected"] and row["released_event"]
@@ -314,15 +331,19 @@ def run_drill(args: argparse.Namespace) -> int:
             raise RuntimeError(f"no freeze in the watchdog log (exit {proc.returncode})")
         trigger = next(r for r in recs if r["event"] == "check" and r["decision"]["freeze"])
         fr = freeze["receipt"]
+        if args.scenario == "outage":  # the watcher must really have read nothing
+            readings = [rd for r in recs if r["event"] == "check" for rd in r["reserves"]["readings"]]
+            check("every watcher reading failed (providers unreachable by design)",
+                  bool(readings) and all(rd["error"] for rd in readings), True, "watchdog log")
         if drain_at is not None:  # the freeze must be caused by THIS drain
             post_drain = S1 + S2 - run["evm_steps"][-1]["amount"]
-            check("the triggering check ran after the drain", epoch(trigger["t"]) >= drain_at, True, "watchdog log",
-                  ok=epoch(trigger["t"]) >= drain_at)
+            check("the triggering check ran after the drain was sent", epoch(trigger["t"]) >= drain_sent_at, True,
+                  "watchdog log", ok=epoch(trigger["t"]) >= drain_sent_at)
             check("the triggering reading == post-drain reserves", trigger["decision"]["reserves_min"],
                   str(post_drain), "watchdog log")
             levels_before = [r for r in recs if r["event"] == "check" and r["decision"]["action"] == "level"]
             check("the watcher read level before the drain", bool(levels_before)
-                  and all(epoch(r["t"]) < drain_at for r in levels_before), True, "watchdog log")
+                  and all(epoch(r["t"]) < drain_sent_at for r in levels_before), True, "watchdog log")
         expected_why = "deficit" if args.scenario == "drain" else "fail-closed"
         remark = parse_remark(freeze["remark"])
         step(f"watchdog (W2) freezes asset {breaker} via M_watch, reason on chain (why={remark['why']})",

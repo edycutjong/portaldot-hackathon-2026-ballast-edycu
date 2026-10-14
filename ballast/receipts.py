@@ -24,8 +24,15 @@ def load_runs(patterns: tuple[str, ...] = RUN_PATTERNS) -> list[dict]:
     return sorted(runs, key=lambda r: r["started_at"], reverse=True)
 
 
+def clean_text(text: str) -> str:
+    """No local absolute paths in committed evidence."""
+    return text.replace(str(ROOT), "<build>").replace(str(Path.home()), "~")
+
+
 def summarize(run: dict) -> dict:
     """Verdict = every counted step as expected AND every state check ok AND no error. Observations don't count."""
+    if run.get("error"):
+        run["error"] = clean_text(run["error"])
     steps = run["steps"] + run.get("evm_steps", [])
     counted = [s for s in steps if s.get("counted", True)]
     run["passed"] = sum(1 for s in counted if s["as_expected"])
@@ -50,6 +57,16 @@ def score(run: dict) -> str:
     if checks:
         text += f", {sum(1 for c in checks if c['ok'])}/{len(checks)} state checks"
     return text
+
+
+def failure_cause(run: dict) -> str:
+    """One line: why a run is not PASS (its error, or the failed steps / checks)."""
+    if run.get("error"):
+        last = [ln.strip() for ln in clean_text(run["error"]).splitlines() if ln.strip()]
+        return (last[-1] if last else run["error"])[:160]
+    bad = [s["name"] for s in run["steps"] + run.get("evm_steps", []) if s.get("counted", True) and not s["as_expected"]]
+    bad += [c["what"] for c in run.get("state_checks", []) if not c["ok"]]
+    return ("failed: " + "; ".join(bad))[:200] if bad else ""
 
 
 def _mark(ok: bool | None) -> str:
@@ -118,6 +135,12 @@ def render_drill_section(run: dict) -> list[str]:
     ]
     if reserve.get("watcher_read"):
         lines += [f"Watcher reserve reads: {reserve['watcher_read']}.", ""]
+    if run.get("watchdog_cmd"):
+        params = {k: v for k, v in zip(run["watchdog_cmd"].split()[:-1], run["watchdog_cmd"].split()[1:])
+                  if k in ("--poll-blocks", "--fail-closed-after", "--max-block-age", "--timeout")}
+        if "--max-block-age" in params:
+            params["--max-block-age"] += " (stale-block check off: anvil mines only when a tx lands)"
+        lines += ["Watcher parameters: " + ", ".join(f"`{k} {v}`" for k, v in params.items()) + ".", ""]
     if run.get("remark"):
         lines += [f"Reason remark (in the freeze extrinsic): `{run['remark']}`", ""]
     if run.get("timing"):
@@ -156,6 +179,14 @@ def render_oracle_section(run: dict) -> list[str]:
     return lines + _steps_body(run)
 
 
+def v3_probe_line() -> list[str]:
+    probes = sorted(EVIDENCE.glob("v3-probe-*.txt"))
+    if not probes:
+        return []
+    first = probes[-1].read_text().splitlines()[0].lstrip("# ").strip()
+    return [f"Latest V3 reachability probe: [`evidence/{probes[-1].name}`](../evidence/{probes[-1].name}) ({first}).", ""]
+
+
 STANDIN_NOTE = [
     "Measured on a **local** stand-in chain while the Portaldot V3 testnet is unreachable. Nothing in this",
     "section is a V3 measurement. The chain is a local `--dev` node: `scripts/check_receipts.py` re-fetches",
@@ -176,13 +207,14 @@ def render_receipts_md() -> str:
     ]
     if not runs:
         out.append("_No receipts yet._")
+    out += render_sepolia_reads()
     groups: dict[tuple[bool, str], list[dict]] = {}
     for run in runs:
         groups.setdefault((run["chain"]["is_standin"], run["chain"]["profile"]), []).append(run)
     # V3 sections first, stand-ins after
     for (is_standin, profile), group in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1])):
         if is_standin:
-            out += [f"## Stand-in receipts — {profile} (not V3)", "", *STANDIN_NOTE]
+            out += [f"## Stand-in receipts — {profile} (not V3)", "", *STANDIN_NOTE, *v3_probe_line()]
         elif not group[0]["chain"].get("genesis_pinned", False):
             out += [f"## V3 receipts — {profile} (genesis not pinned: UNVERIFIED (V3 day-0))", "",
                     f"Chain label: {group[0]['chain']['label']}", ""]
@@ -202,13 +234,32 @@ def render_receipts_md() -> str:
                     out += render.get(kind, render_spike_section)(run)
                 else:
                     if i == 1:
-                        out += ["Earlier runs (full tables in the JSON):", ""]
+                        out += ["Other runs, newest first, any verdict (full tables in the JSON):", ""]
+                    cause = failure_cause(run) if run.get("verdict") != "PASS" else ""
                     out.append(
                         f"- asset {run['asset_id']} — {run['started_at']} — {run['verdict']} ({score(run)}) — "
-                        f"[`evidence/{run['_file']}`](../evidence/{run['_file']})"
+                        f"[`evidence/{run['_file']}`](../evidence/{run['_file']})" + (f" — {cause}" if cause else "")
                     )
             out.append("")
     return "\n".join(out).rstrip() + "\n"
+
+
+def render_sepolia_reads() -> list[str]:
+    files = sorted(EVIDENCE.glob("sepolia-crosscheck-*.json"))
+    if not files:
+        return []
+    out = ["## Sepolia reads (read-only — no Ballast contract is deployed on Sepolia yet)", ""]
+    for f in files:
+        rep = json.loads(f.read_text())
+        cc = rep.get("cross_check", {})
+        rows = ", ".join(f"{name}: `{p.get('block_hash', p.get('error'))}` reserves {p.get('reserves', '-')}"
+                         for name, p in cc.get("providers", {}).items())
+        out += [
+            f"- [`evidence/{f.name}`](../evidence/{f.name}) — read at {cc.get('read_at')}: finalized block "
+            f"#{cc.get('block_number')} via {len(cc.get('providers', {}))} providers — "
+            f"{'AGREE' if cc.get('agree') else 'DISAGREE'} ({rows}). Holder: {rep.get('note', rep.get('holder'))}",
+        ]
+    return out + [""]
 
 
 def write_receipts_md() -> Path:

@@ -37,6 +37,7 @@ case "${1:-status}" in
     if running; then
       pid="$(cat "$PIDFILE")"; kill "$pid"
       for _ in $(seq 1 15); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+      if kill -0 "$pid" 2>/dev/null; then echo "pid $pid still running after 15 s" >&2; exit 1; fi
       rm -f "$PIDFILE"; echo "stopped pid $pid"
     else
       echo "not running"

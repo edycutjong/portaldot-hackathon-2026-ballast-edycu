@@ -18,6 +18,7 @@ calls (`ReviveApi_call`) pinned to the block of each step. Receipts -> evidence/
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import traceback
@@ -32,6 +33,7 @@ from eth_utils import function_signature_to_4byte_selector as selector  # noqa: 
 from ballast.chain import Receipt, connect, dev_keypair, submit  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
+from ballast.drill import forge_build, source_pin  # noqa: E402
 from ballast.receipts import EVIDENCE, score, summarize, write_receipts_md  # noqa: E402
 from ballast.revive import dry_call, dry_instantiate, eth_address  # noqa: E402
 from ballast.rpc import HttpRpc  # noqa: E402
@@ -83,9 +85,7 @@ def main() -> int:
         print("oracle_standin: no PASS drain drill in evidence/ — run `ballast drill` first", file=sys.stderr)
         return 2
     drill = json.loads(drill_path.read_text())
-    if not ARTIFACT.exists():
-        print("oracle_standin: run `forge build` first", file=sys.stderr)
-        return 2
+    forge_build()  # always: a stale out/ must never be what gets deployed
     print(ident.banner())
 
     substrate = connect(profile, cfg.url)
@@ -118,6 +118,7 @@ def main() -> int:
         "steps": [],
         "reads": [],
         "state_checks": [],
+        "source": source_pin(),
     }
 
     def step(name: str, expected: str, r: Receipt, ok: bool, events: tuple[str, ...] = ()):
@@ -146,7 +147,9 @@ def main() -> int:
     try:
         ed = substrate.get_constant("Balances", "ExistentialDeposit").value
         attester = eth_address(substrate, bot.ss58_address)
-        code = bytes.fromhex(json.loads(ARTIFACT.read_text())["bytecode"]["object"][2:]) + encode(["address"], [attester])
+        initcode = bytes.fromhex(json.loads(ARTIFACT.read_text())["bytecode"]["object"][2:])
+        run["source"]["ReserveOracle_initcode_sha256"] = hashlib.sha256(initcode).hexdigest()
+        code = initcode + encode(["address"], [attester])
         dry = dry_instantiate(substrate, alice.ss58_address, code)
         if not dry.ok or dry.reverted:
             raise RuntimeError(f"deploy dry-run failed: {dry}")

@@ -100,3 +100,18 @@ def test_watch_bad_provider_name_exits_2(capsys):
                  "--supply-assets", "1", "--holder", "0x" + "00" * 20, "--poll-blocks", "2",
                  "--provider", "a|b=http://x"]) == 2
     assert "provider name" in capsys.readouterr().err
+
+
+def test_team_and_cosign_team_parse_and_reject_bad_input(capsys):
+    from ballast.cli import build_parser
+
+    a = build_parser().parse_args(["team", "--issuer", "x", "--admin", "y", "--freezer", "z", "--cancel"])
+    assert a.command == "team" and a.cancel and a.freezer == "z"
+    b = build_parser().parse_args(["bot", "cosign-team", "--issuer", "x", "--admin", "y", "--freezer", "z"])
+    assert b.bot_command == "cosign-team" and b.max_finalized_age == 3600.0
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["bot", "cosign-team", "--issuer", "x"])  # admin + freezer required
+    # unreachable node: a usage-time failure exits 2 without a traceback
+    assert main(["--profile", "standin-upstream", "--url", "http://127.0.0.1:9", "bot", "cosign-thaw",
+                 "--max-finalized-age", "-1"]) == 2
+    assert "Traceback" not in capsys.readouterr().err

@@ -352,6 +352,38 @@ def cmd_thaw(args: argparse.Namespace) -> int:
     return 0 if r.outcome.ok and "Multisig.NewMultisig" in r.event_names() else 1
 
 
+def cmd_team(args: argparse.Namespace) -> int:
+    """Operator (key A): propose set_team on asset 1 through M_mint (the owner) — executes only if the bot co-signs."""
+    from .bot import operator_accounts
+    from .multisig_ops import call_hash, pending
+
+    try:
+        profile, substrate, dep = _deployment_context(args)
+        key = _key(profile, args.key, "BALLAST_OPERATOR_SURI", "//BallastA")
+        issuer, admin, freezer = _addresses(profile, [args.issuer, args.admin, args.freezer])
+    except Exception as exc:  # noqa: BLE001
+        print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    m_mint, _ = operator_accounts(dep, substrate.ss58_format or 42)
+    call = substrate.compose_call(call_module="Assets", call_function="set_team",
+                                  call_params={"id": dep.breaker, "issuer": issuer, "admin": admin, "freezer": freezer})
+    op = pending(substrate, m_mint.address, call_hash(call))
+    if args.cancel:
+        if op is None:
+            _print_json({"action": "cancel", "result": "nothing pending", "call_hash": call_hash(call)})
+            return 1
+        r = m_mint.cancel(substrate, profile, key, op, step="operator_cancel_team", label="Assets.set_team")
+        _print_json({"action": "cancel", "call_hash": op.call_hash, "receipt": r.as_dict()})
+        return 0 if r.outcome.ok and "Multisig.MultisigCancelled" in r.event_names() else 1
+    if op is not None:
+        _print_json({"action": "propose", "result": "already pending", "call_hash": op.call_hash, "timepoint": op.timepoint})
+        return 1
+    r = m_mint.propose(substrate, profile, key, call, step="operator_propose_team", label="Assets.set_team")
+    _print_json({"action": "propose", "call_hash": call_hash(call), "proposed": {"issuer": issuer, "admin": admin,
+                 "freezer": freezer}, "receipt": r.as_dict()})
+    return 0 if r.outcome.ok and "Multisig.NewMultisig" in r.event_names() else 1
+
+
 def cmd_bot(args: argparse.Namespace) -> int:
     """Reserve bot (key B): co-sign the operator's pending mint / thaw only if the finalized reserve covers it."""
     from .bot import ReserveBot, parse_amount
@@ -362,11 +394,16 @@ def cmd_bot(args: argparse.Namespace) -> int:
         key = _key(profile, args.key, "BALLAST_BOT_SURI", "//BallastB")
         providers = _providers(args, dep, bot_order=True)
         store = Store(args.db)
+        max_age = getattr(args, "max_finalized_age", None)
+        if max_age is not None and max_age < 0:
+            raise ValueError("--max-finalized-age must be >= 0 (0 = off)")
         bot = ReserveBot(substrate=substrate, profile=profile, keypair=key, deployment=dep, providers=providers,
-                         store=store)
+                         store=store, max_finalized_age_s=None if max_age == 0 else max_age)
         if args.bot_command == "cosign-mint":
             amount = parse_amount(args.amount, dep.decimals)
             beneficiary = _addresses(profile, [args.beneficiary])[0]
+        elif args.bot_command == "cosign-team":
+            team = _addresses(profile, [args.issuer, args.admin, args.freezer])
     except Exception as exc:  # noqa: BLE001
         print(f"ballast: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
@@ -375,6 +412,8 @@ def cmd_bot(args: argparse.Namespace) -> int:
             out = bot.cosign_mint(amount, beneficiary)
         elif args.bot_command == "cosign-thaw":
             out = bot.cosign_thaw()
+        elif args.bot_command == "cosign-team":
+            out = bot.cosign_team(*team)
         else:
             from .attest import run_attester
 
@@ -442,10 +481,11 @@ def cmd_verify(args: argparse.Namespace) -> int:
     try:
         profile, substrate, dep = _deployment_context(args)
         providers = _providers(args, dep, bot_order=True)
+        setup = json.loads((EVIDENCE / dep.setup_evidence).read_text())
+        setup_blocks = [st["receipt"]["block_number"] for st in setup["steps"] if st.get("receipt")]
         start = args.from_block
         if start is None:
-            setup = json.loads((EVIDENCE / dep.setup_evidence).read_text())
-            start = min(st["receipt"]["block_number"] for st in setup["steps"])
+            start = min(setup_blocks)
         end = args.to_block or substrate.get_block_number(None)
         if start > end:
             raise ValueError(f"--from {start} > --to {end}")
@@ -454,7 +494,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 2
     quiet = args.json
     v = Verifier(substrate, Roles.from_deployment(dep), providers, dep.reserve["vault"], dep.reserve["erc20"],
-                 log=(lambda s: None) if quiet else print)
+                 log=(lambda s: None) if quiet else print, control_settled_at=max(setup_blocks))
     if not quiet:
         print(f"[{profile.name}] verify blocks #{start}..#{end} · asset {dep.breaker} · reserve {dep.reserve['label']}")
     findings = v.run(start, end)
@@ -558,13 +598,28 @@ def build_parser() -> argparse.ArgumentParser:
     deployment_args(t)
     t.set_defaults(func=cmd_thaw)
 
-    b = sub.add_parser("bot", help="reserve bot (key B): co-sign gated mints / thaws, post attestations")
+    tm = sub.add_parser("team", help="operator: propose set_team on asset 1 through M_mint (executes only if the "
+                        "reserve bot co-signs: issuer stays M_mint, freezer unchanged)")
+    tm.add_argument("--issuer", required=True)
+    tm.add_argument("--admin", required=True)
+    tm.add_argument("--freezer", required=True)
+    tm.add_argument("--cancel", action="store_true")
+    deployment_args(tm)
+    tm.set_defaults(func=cmd_team)
+
+    b = sub.add_parser("bot", help="reserve bot (key B): co-sign gated mints / thaws / team changes, post attestations")
     bsub = b.add_subparsers(dest="bot_command", required=True)
     bm = bsub.add_parser("cosign-mint", help="co-sign the pending mint iff finalized reserves >= S1 + S2 + amount "
                          "and asset 1 is not frozen (I7)")
     bm.add_argument("amount")
     bm.add_argument("beneficiary")
-    bsub.add_parser("cosign-thaw", help="co-sign the pending thaw iff finalized reserves >= S1 + S2")
+    bsub.add_parser("cosign-thaw", help="co-sign the pending thaw iff finality has passed the freeze and "
+                    "finalized + latest reserves >= S1 + S2")
+    bt = bsub.add_parser("cosign-team", help="co-sign the pending set_team iff the issuer stays M_mint and the "
+                         "freezer is unchanged")
+    bt.add_argument("--issuer", required=True)
+    bt.add_argument("--admin", required=True)
+    bt.add_argument("--freezer", required=True)
     ba = bsub.add_parser("attest", help="post BALLAST/1 attestations on change + a heartbeat every H blocks, "
                          "mirrored to ReserveOracle after each included remark")
     ba.add_argument("--heartbeat-blocks", type=int, help="H (default: the profile's measured H)")
@@ -575,7 +630,11 @@ def build_parser() -> argparse.ArgumentParser:
     ba.add_argument("--max-seconds", type=float, help="stop after this many seconds")
     ba.add_argument("--max-posts", type=int, help="stop after this many remarks")
     ba.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")
-    for p in (bm, bsub.choices["cosign-thaw"], ba):
+    for p in (bm, bsub.choices["cosign-thaw"], bt):
+        p.add_argument("--max-finalized-age", type=float, default=3600.0,
+                       help="refuse when the finalized reserve block is older than this (s; default 3600, 0 = off — "
+                       "only for a local reserve chain that mines on demand)")
+    for p in (bm, bsub.choices["cosign-thaw"], bt, ba):
         deployment_args(p)
         p.add_argument("--provider", action="append", metavar="NAME=URL",
                        help="EVM provider, repeatable (default: the manifest's, else Sepolia drpc + publicnode)")

@@ -212,6 +212,7 @@ def render_oracle_section(run: dict) -> list[str]:
 ROLE_TITLES = {
     "roles-setup": "Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle",
     "roles-drill": "Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw",
+    "roles-attest": "Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control",
 }
 
 
@@ -230,6 +231,16 @@ def render_roles_section(run: dict) -> list[str]:
         lines += [f"Role map: `M_mint` {roles['M_mint']['address']} (2-of-2 A, B) · `M_admin` "
                   f"{roles['M_admin']['address']} (2-of-3 A, A2, B) · `M_watch` {roles['M_watch']['address']} "
                   f"(1-of-{len(roles['watchers'])} watchers).", ""]
+    if run.get("verify"):
+        vs = run["verify"]["summary"]
+        lines += [f"`ballast verify` blocks #{run['verify']['from']}..#{run['verify']['to']} "
+                  f"([`evidence/{run['verify']['file']}`](../evidence/{run['verify']['file']})): **{vs['verdict']}** — "
+                  f"{vs['attestations_pass']}/{vs['attestations_counted']} B attestations PASS on both chains, "
+                  f"{vs['rejected']} REJECTED (not counted), {vs['failures_or_flags']} FAIL/FLAGGED.", ""]
+    if run.get("heartbeat"):
+        hb = run["heartbeat"]
+        lines += [f"Heartbeat H = {hb['H_used']} blocks ({hb['basis']}; production H = "
+                  f"{hb['production_H_on_this_profile']}, K = {hb['production_K_on_this_profile']} on this profile).", ""]
     for key, value in (run.get("notes") or {}).items():
         lines.append(f"- {key}: {value}")
     if run.get("notes"):
@@ -291,7 +302,7 @@ def render_receipts_md() -> str:
                     f"Chain label: {group[0]['chain']['label']}", ""]
         else:
             out += [f"## V3 receipts — {profile}", "", f"Chain label: {group[0]['chain']['label']}", ""]
-        kinds = (("roles-drill", None), ("roles-setup", None), ("drill", "drain"), ("drill", "outage"),
+        kinds = (("roles-drill", None), ("roles-attest", None), ("roles-setup", None), ("drill", "drain"), ("drill", "outage"),
                  ("drill", "heartbeat"), ("oracle-deploy", None), ("spike-assets", None))
         for kind, scenario in kinds:
             runs_k = [r for r in group if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
@@ -304,7 +315,8 @@ def render_receipts_md() -> str:
             for i, run in enumerate(runs_k):
                 if i == 0:
                     render = {"drill": render_drill_section, "oracle-deploy": render_oracle_section,
-                              "roles-setup": render_roles_section, "roles-drill": render_roles_section}
+                              "roles-setup": render_roles_section, "roles-drill": render_roles_section,
+                              "roles-attest": render_roles_section}
                     out += render.get(kind, render_spike_section)(run)
                 else:
                     if i == 1:

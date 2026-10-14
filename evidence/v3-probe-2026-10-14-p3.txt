@@ -1,0 +1,8 @@
+# V3 reachability probe — 2026-10-14T11:41:33Z
+$ dig +short testnetv3-node.feso-apps.xyz @1.1.1.1
+(exit 0; empty output = no DNS record)
+$ dig +short testnetv3-eth-rpc.feso-apps.xyz @1.1.1.1
+(exit 0)
+$ curl -sS -m 10 -H "Content-Type: application/json" -d {"id":1,"jsonrpc":"2.0","method":"system_chain","params":[]} https://testnetv3-node.feso-apps.xyz
+curl: (6) Could not resolve host: testnetv3-node.feso-apps.xyz
+(exit 6)

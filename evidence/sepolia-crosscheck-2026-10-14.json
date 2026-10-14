@@ -11,24 +11,24 @@
         {
           "provider": "publicnode",
           "tag": "latest",
-          "block_number": 11912974,
-          "block_hash": "0x792e7f96a670d082b0a262800f1763e7df922adb6c6ad92bec09d9807342e925",
-          "block_timestamp": 1791977556,
+          "block_number": 11913018,
+          "block_hash": "0x3f06f5e03800b79e51b7dfad184e3db9972656881713138d4401697bf28ae157",
+          "block_timestamp": 1791978096,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:32:45.285Z",
-          "seconds": 0.396
+          "read_at": "2026-10-14T11:41:42.104Z",
+          "seconds": 0.475
         },
         {
           "provider": "drpc",
           "tag": "latest",
-          "block_number": 11912974,
-          "block_hash": "0x792e7f96a670d082b0a262800f1763e7df922adb6c6ad92bec09d9807342e925",
-          "block_timestamp": 1791977556,
+          "block_number": 11913018,
+          "block_hash": "0x3f06f5e03800b79e51b7dfad184e3db9972656881713138d4401697bf28ae157",
+          "block_timestamp": 1791978096,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:32:45.681Z",
-          "seconds": 0.595
+          "read_at": "2026-10-14T11:41:42.104Z",
+          "seconds": 0.581
         }
       ],
       "disagreements": []
@@ -38,47 +38,48 @@
         {
           "provider": "publicnode",
           "tag": "finalized",
-          "block_number": 11912879,
-          "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
-          "block_timestamp": 1791976404,
+          "block_number": 11912942,
+          "block_hash": "0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b",
+          "block_timestamp": 1791977172,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:32:46.276Z",
-          "seconds": 0.382
+          "read_at": "2026-10-14T11:41:42.685Z",
+          "seconds": 0.439
         },
         {
           "provider": "drpc",
           "tag": "finalized",
-          "block_number": 11912879,
-          "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
-          "block_timestamp": 1791976404,
+          "block_number": 11912942,
+          "block_hash": "0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b",
+          "block_timestamp": 1791977172,
           "reserves": "20000000",
           "error": null,
-          "read_at": "2026-10-14T11:32:46.657Z",
-          "seconds": 0.481
+          "read_at": "2026-10-14T11:41:42.686Z",
+          "seconds": 0.376
         }
       ],
       "disagreements": []
     }
   },
+  "note": "holder = Ballast's Sepolia testnet deployer wallet, NOT a vault: no ReserveVault is deployed on Sepolia yet; this file shows the two-provider reader agreeing on one finalized block",
   "cross_check": {
     "tag": "finalized",
     "anchor_provider": "publicnode",
-    "block_number": 11912879,
-    "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
+    "block_number": 11912942,
+    "block_hash": "0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b",
     "erc20": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     "holder": "0xDEf7Cd11f524C2246571654110b43476C2BD9300",
     "providers": {
       "publicnode": {
-        "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
+        "block_hash": "0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b",
         "reserves": "20000000"
       },
       "drpc": {
-        "block_hash": "0x552e0987383d2d20a59f5122a2c399f650110075c499f97b803b08d28d55f1da",
+        "block_hash": "0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b",
         "reserves": "20000000"
       }
     },
     "agree": true,
-    "read_at": "2026-10-14T11:32:48.155Z"
+    "read_at": "2026-10-14T11:41:44.199Z"
   }
 }

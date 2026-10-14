@@ -79,3 +79,37 @@ def test_as_multi_shape_legacy_1002():
 def test_as_multi_shape_unverified_on_v3():
     with pytest.raises(ProfileUnverified):
         as_multi_params(None, threshold=2, other_signatories=[B], maybe_timepoint=None, call="C", max_weight=0)
+
+
+def _encode_as_multi(md_pair, shape, profile_preset_call):
+    from ballast.metadata import encode_call
+
+    config, md = md_pair
+    params = as_multi_params(
+        shape, threshold=2, other_signatories=[B], maybe_timepoint=None, call=profile_preset_call,
+        max_weight={"ref_time": 1_000_000_000, "proof_size": 65_536},
+    )
+    return encode_call(config, md, "Multisig", "as_multi", params)
+
+
+def test_weight_v2_params_encode_against_the_standin_upstream_metadata(upstream_md):
+    inner = {"call_module": "Assets", "call_function": "freeze_asset", "call_args": {"id": 1}}
+    encoded = _encode_as_multi(upstream_md, SHAPE_WEIGHT_V2, inner)
+    assert encoded[:1] == bytes([36])  # Multisig pallet index on standin-upstream
+
+
+def test_legacy_params_encode_against_the_1002_metadata(md_1002):
+    from ballast.metadata import encode_call
+
+    config, md = md_1002
+    inner = {"call_module": "Assets", "call_function": "freeze_asset", "call_args": {"id": 1}}
+    raw_inner = encode_call(config, md, "Assets", "freeze_asset", {"id": 1})
+    params = as_multi_params(
+        SHAPE_LEGACY_1002, threshold=2, other_signatories=[B], maybe_timepoint=None, call=inner,
+        max_weight={"ref_time": 1_000_000_000, "proof_size": 0}, store_call=True,
+    )
+    encoded = encode_call(config, md, "Multisig", "as_multi", params)
+    assert encoded[:1] == bytes([24])  # Multisig pallet index on spec 1002
+    # OpaqueCall = length-prefixed inner call, then store_call: bool, then max_weight: u64
+    assert raw_inner in encoded
+    assert encoded.endswith(b"\x01" + (1_000_000_000).to_bytes(8, "little"))

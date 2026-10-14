@@ -12,7 +12,7 @@ reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its secti
 | Run | Portaldot chain | Reserve chain | Newest clean result | Evidence |
 |---|---|---|---|---|
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-standin-upstream-20261014T144419Z.json`](../evidence/roles-drill-standin-upstream-20261014T144419Z.json) |
-| Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-standin-upstream-20261014T125810Z.json`](../evidence/roles-attest-standin-upstream-20261014T125810Z.json) |
+| Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-standin-upstream-20261014T144603Z.json`](../evidence/roles-attest-standin-upstream-20261014T144603Z.json) |
 | Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 5/5 state checks) | [`roles-setup-standin-upstream.json`](../evidence/roles-setup-standin-upstream.json) |
 | Breaker drill, scratch asset: drain -> freeze | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (14/14 steps as expected, 11/11 state checks) | [`drill-drain-standin-upstream-asset2033.json`](../evidence/drill-drain-standin-upstream-asset2033.json) |
 | Breaker drill, scratch asset: every provider down -> fail-closed freeze (I6) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 8/8 state checks) | [`drill-outage-standin-upstream-asset2035.json`](../evidence/drill-outage-standin-upstream-asset2035.json) |
@@ -128,11 +128,11 @@ Other runs, newest first, any verdict (full tables in the JSON):
 - asset 1 — 2026-10-14T14:30:22Z — PASS (20/20 steps as expected, 19/19 state checks) — source: `8665dda` (UNCOMMITTED CHANGES) — [`evidence/roles-drill-standin-upstream-20261014T143022Z.json`](../evidence/roles-drill-standin-upstream-20261014T143022Z.json)
 - asset 1 — 2026-10-14T12:47:59Z — PASS (16/16 steps as expected, 17/17 state checks) — source: `25c6f22` (clean) — [`evidence/roles-drill-standin-upstream-20261014T124759Z.json`](../evidence/roles-drill-standin-upstream-20261014T124759Z.json)
 
-### Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control — 2026-10-14T12:58:10Z
+### Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control — 2026-10-14T14:46:04Z
 
-Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-attest-standin-upstream-20261014T125810Z.json`](../evidence/roles-attest-standin-upstream-20261014T125810Z.json) · result: **PASS** (15/15 steps as expected, 6/6 state checks) · source: `aa9c877` (clean)
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-attest-standin-upstream-20261014T144603Z.json`](../evidence/roles-attest-standin-upstream-20261014T144603Z.json) · result: **PASS** (15/15 steps as expected, 6/6 state checks) · source: `e70d2b0` (clean)
 
-`ballast verify` blocks #4412..#4450 ([`evidence/verify-standin-upstream-20261014T125810Z.json`](../evidence/verify-standin-upstream-20261014T125810Z.json)): **PASS** — 4/4 B attestations PASS on both chains, 1 REJECTED (not counted), 0 FAIL/FLAGGED.
+`ballast verify` blocks #6570..#6608 ([`evidence/verify-standin-upstream-20261014T144603Z.json`](../evidence/verify-standin-upstream-20261014T144603Z.json)): **PASS** — 4/4 B attestations PASS on both chains, 1 REJECTED (not counted), 0 FAIL/FLAGGED.
 
 Heartbeat H = 20 blocks (drill override; production H = 200, K = 600 on this profile).
 
@@ -142,58 +142,59 @@ Reserve-chain transactions (local-anvil (not Sepolia); vault `0x162A433068F51e18
 
 | # | Step | Block | Tx hash | Observed |
 |---|---|---|---|---|
-| 1 | custodian receives 1.00 test token | 269 | `0x663f6fd552bcb0f3497f86e40d79872854d5affbb1235b2b5d9639f8a7f28bcc` | ✅ status 1 |
-| 2 | custodian deposits 1.00 into the vault | 270 | `0x8ffed259631ce8eb71b62831ce9fd46cb564d1871b83b57d1fac436993b1ae2e` | ✅ status 1 |
+| 1 | custodian receives 1.00 test token | 738 | `0xaad9eeebab4230445adff5fce1c2e5fc6f7d1d694f10821647f28e758d136b3c` | ✅ status 1 |
+| 2 | custodian deposits 1.00 into the vault | 739 | `0x7bc23158277750494b57ef60019b37b4aa7e5c8aac025da0fa1aafd053a1850a` | ✅ status 1 |
 
 Portaldot extrinsics:
 
 | # | Step | Call (signer) | Extrinsic id | Expected | Observed |
 |---|---|---|---|---|---|
-| 1 | bot announces watchers (BALLAST/1|watchers|t=1|m=5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhR…) | `System.remark_with_event(BALLAST/1|watchers)` (B (reserve bot)) | `4415-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 2 | bot announces evm-attester (BALLAST/1|evm-attester|h160=0x4dc969838572d068ead3ab83139904…) | `System.remark_with_event(BALLAST/1|evm-attester)` (B (reserve bot)) | `4416-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 3 | bot posts attest (pb 4416) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `4417-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 4 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4418-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 5 | bot posts attest (pb 4420) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `4421-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 6 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4422-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 7 | A proposes mint 1.00 through M_mint | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `4423-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
-| 8 | bot B co-signs (finalized reserves cover it) | `Multisig.as_multi(Assets.mint) — final approval` (B (reserve bot)) | `4424-2` | Ok + inner Ok + Assets.Issued | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Issued |
-| 9 | bot posts attest (pb 4424) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `4425-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 10 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4426-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 11 | bot posts heartbeat (pb 4446) | `System.remark_with_event(BALLAST/1|heartbeat)` (B (reserve bot)) | `4447-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 12 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4448-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 13 | negative control: the judge key posts a copy of the bot's attestation | `System.remark_with_event(BALLAST/1|attest) — forged by a non-bot key` (Judge (negative control)) | `4449-2` | Ok + System.Remarked (included — verify must REJECT it) | ✅ Ok · System.Remarked |
+| 1 | bot announces watchers (BALLAST/1|watchers|t=1|m=5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhR…) | `System.remark_with_event(BALLAST/1|watchers)` (B (reserve bot)) | `6572-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 2 | bot announces evm-attester (BALLAST/1|evm-attester|h160=0x4dc969838572d068ead3ab83139904…) | `System.remark_with_event(BALLAST/1|evm-attester)` (B (reserve bot)) | `6573-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 3 | bot posts attest (pb 6570) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `6574-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 4 | bot mirrors 6574-2 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `6575-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 5 | bot posts attest (pb 6573) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `6576-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 6 | A proposes mint 1.00 through M_mint | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `6577-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 7 | bot mirrors 6576-2 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `6577-3` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 8 | bot B co-signs (finalized reserves cover it) | `Multisig.as_multi(Assets.mint) — final approval` (B (reserve bot)) | `6579-2` | Ok + inner Ok + Assets.Issued | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Issued |
+| 9 | bot posts attest (pb 6579) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `6582-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 10 | bot mirrors 6582-2 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `6583-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 11 | bot posts heartbeat (pb 6603) | `System.remark_with_event(BALLAST/1|heartbeat)` (B (reserve bot)) | `6606-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 12 | negative control: the judge key posts a copy of the bot's attestation | `System.remark_with_event(BALLAST/1|attest) — forged by a non-bot key` (Judge (negative control)) | `6607-2` | Ok + System.Remarked (included — verify must REJECT it) | ✅ Ok · System.Remarked |
+| 13 | bot mirrors 6606-2 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `6607-3` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
 
 Block and transaction hashes (full):
 
 ```
- 1    4415-2 block 0xb6773a0e4246dfb051bfb5618ca14015dc725dfd9b3d3fae1922861236936606  tx 0x691950f043786a8a544aa15a492271144e645ed4db0fdaf3a669bc78db4fd649
- 2    4416-2 block 0x5ef5d7cdeefd0c32c783aa97a50c1312d41fecccb1390b621660fcf459be169f  tx 0xb803811f7e88dad79c4899fb3cc834e788b68950a70aacada459681ad4b864af
- 3    4417-2 block 0x5c001860f12f96b1614d61c3a4e14e1da9d47ba2e6bb8a70f02dffe8db47195f  tx 0xb34d097078f4a0aeaf64d6244e5b840ddaa8cea1dfcf87a255295c7e87b9de4e
- 4    4418-2 block 0x1e87d45151ddf099a4ec36ba13bad9ea4482121f9adc435cf478b3c78b4e1a85  tx 0x7aafb565081e1679850571aeab5b354b5aa8eff37b6cb5159a13df5c9f4548c5
- 5    4421-2 block 0xf4eee14ac7f47ed6aa40857d3c3fe6068be0b227c0277a783d8c12322c056682  tx 0xabeac63a187990a83d28f73abde76fad653d467990efe71df90a652a8bbda14e
- 6    4422-2 block 0x6720c5256b21eac1dfd9e8fcbe3e0347c0d2cef25ac5be3ac00e1ab88b002601  tx 0x38956d7e393295027fe974754546d2c63f8f4bb386443de65f249ef2a8f891b3
- 7    4423-2 block 0xf383f1294dc0ecb9d7a3501dcc1fb152ebf1a8fc2a7129ab7caaf9c96850373c  tx 0xe1fe8f7b66f3bad94051f860f38c2bdba8105cca33e916588227d41c2b712fb7
- 8    4424-2 block 0x8f99cca52f3c98c3012851461f9956b4e0f85a9b66a2b5bd02b9c11f71a6fec9  tx 0x35f063bfa2ddd5d12f7292abc53961d30d3fcbaf504bab77041e56dc4f3c241d
- 9    4425-2 block 0x8fd77bf250dbaf5eb5ade5b63fefa4f15ca40c51adac1d04120a0d5b5e7fe397  tx 0xbbf75130887561dc0bdcdfccf8aae8d5a2152e4f12a11448eb4f19ebf4f1bf82
-10    4426-2 block 0x01e052bdcb4a01d96a3d6a9d25317aa6fe05207c6131d79949a8acc55e30f9b9  tx 0x728305a11ecaab0fbccde8a525bd1bfb460680fe5c815612d5f6931b3cf7f8e2
-11    4447-2 block 0xe604c2df2696a161edf3ab6acc82c63ef5039bf2763e7a5b9fb511453104cc70  tx 0x76b8e6c41d5dbbb8953313d7495891c4f749bf6f483c39f5de3a3838957df457
-12    4448-2 block 0x58cd688fc080f32157ee1d45e2fedc5c790b2683e4267e936002bc3eab46856f  tx 0xb85c29ad2877a9e4cd53164d26a11c486c729d15a5add084fd710be2f880592f
-13    4449-2 block 0xdfac98c3f43d7687bd3943c32fd1296e2db96bdfb3f780e5fe536350674efa8b  tx 0x5a787cf027e7aa7454e89be134426af43a1acb4219bceb418c6756c49f674496
+ 1    6572-2 block 0x9b16cc1b6ddbb86051e0048d3afa2e36220d73bfbc76dbb9429d679cd849729b  tx 0x0c4f5a8cc0279f717bf52d8e297c860466a6f460783a7d4a942388a347450ae7
+ 2    6573-2 block 0xe9cb086383400f0f1629f2475645b9c2fc1058aab4bc6c7a96a8600e526a6aa9  tx 0xfec5d8f3cd8b6b06b1987c6246fce9e3e7540f34f2e98f5a48d8aa9269998c84
+ 3    6574-2 block 0x6aca692838c81c00d53e45fe18fe93aac3a131783c3e2da8e707da99ab6a8337  tx 0x9fe59719a556e9ba50e5cb38c16869b55c0118fbefcca6547aa9e1dc7b1b09bf
+ 4    6575-2 block 0x597b1e1931fda671ed52731d543edbdcf9e78c1b009510b4a5a98f8c72983d22  tx 0x17292243d57e78c6dbad392c02f1258cf1edc4d48de9997b39bf6d9ef3f10525
+ 5    6576-2 block 0xdc21508404e17b7712933d62cc3e3194b2b4e571cc58026cdb9b5bb4f307b132  tx 0xd5e5a34ffbf5a9e3ea704583473717150e05bb05e517d37d9220e3c01832012a
+ 6    6577-2 block 0xc8186222f8d98348ba918e4c86a059e967881dbcdc16294f94b9255d05837b71  tx 0xa170d5db82a89c245fc1f096830d96b80134d715893d3d379517130cc19a8294
+ 7    6577-3 block 0xc8186222f8d98348ba918e4c86a059e967881dbcdc16294f94b9255d05837b71  tx 0xd36eabf50ffbcae898642471810cc3e4bc1c55dad953e8da1165cc469639f014
+ 8    6579-2 block 0x1e3b1c0fa33d94d44cc206fc42b701050da71448a7260665116743e56c8a250b  tx 0xd17801ce67a58870c97f4736dae180c983e0d43b437879f19dbb20b2b3d112ca
+ 9    6582-2 block 0xff3f929a0cbc15fcf025b54023e0ea7c1a7107e94d1deefe87e241942b389fdf  tx 0xc9adb432477e069e31e2cda60b7ef42f9283fa3f7fbf7cdef771e2bcdc053c68
+10    6583-2 block 0x8bcfa71b3ccae33d882f8d9f54617e12e476b6083a830e17aa282fa989b3d1ae  tx 0x822f03639c6c29c44da50be65ab888a0c28b0233584bcf7efc6c624b80cf6268
+11    6606-2 block 0xbe4b57c6073c87b8c26367d6fe1a1880472f7c9dd495c67905b7176618dba2d9  tx 0x8388a5e45b7a9fb9e0996de75f53ac9bc91e097c1f423afb9c1ad13e9b00aee9
+12    6607-2 block 0xfccbc7cde875ec6700f7d5eac1109bd3833959f3d1bf25dd1485f8208ce60b98  tx 0xf1744f2802f14fd6f218d3dfa5b7a5cfacdf938c272bc9f84b42ec5f51b06970
+13    6607-3 block 0xfccbc7cde875ec6700f7d5eac1109bd3833959f3d1bf25dd1485f8208ce60b98  tx 0xe1e1c40d9b5dd0a9b4ec311daa570f65a30ea8d939efe531704cc4cb8788a0fa
 ```
 
 State checks (storage/events read at the step's block):
 
-- ✅ the post after H quiet blocks is a heartbeat: expected `heartbeat`, observed `heartbeat` at block `0xe604c2df2696a161edf3ab6acc82c63ef5039bf2763e7a5b9fb511453104cc70`
+- ✅ the post after H quiet blocks is a heartbeat: expected `heartbeat`, observed `heartbeat` at block `0xbe4b57c6073c87b8c26367d6fe1a1880472f7c9dd495c67905b7176618dba2d9`
 - ✅ verify exit 0 and verdict PASS: expected `[0, 'PASS']`, observed `[0, 'PASS']` at block `verify`
 - ✅ every bot attestation/heartbeat PASSes on both chains: expected `4`, observed `4` at block `verify`
 - ✅ every oracle post matches a PASSing remark (I10): expected `4`, observed `4` at block `verify`
-- ✅ the forged remark is listed REJECTED (not counted): expected `['4449-2']`, observed `['4449-2']` at block `verify`
+- ✅ the forged remark is listed REJECTED (not counted): expected `['6607-2']`, observed `['6607-2']` at block `verify`
 - ✅ watcher-set and evm-attester announcements PASS: expected `[1, 1]`, observed `[1, 1]` at block `verify`
 
 Other runs, newest first, any verdict (full tables in the JSON):
 
 - asset 1 — 2026-10-14T14:34:22Z — PASS (15/15 steps as expected, 6/6 state checks) — source: `7b6a2f8` (UNCOMMITTED CHANGES) — [`evidence/roles-attest-standin-upstream-20261014T143422Z.json`](../evidence/roles-attest-standin-upstream-20261014T143422Z.json)
 - asset 1 — 2026-10-14T14:32:00Z — FAIL (11/11 steps as expected, 5/6 state checks) — source: `7b6a2f8` (UNCOMMITTED CHANGES) — [`evidence/roles-attest-standin-upstream-20261014T143200Z.json`](../evidence/roles-attest-standin-upstream-20261014T143200Z.json) — failed: every oracle post matches a PASSing remark (I10)
+- asset 1 — 2026-10-14T12:58:10Z — PASS (15/15 steps as expected, 6/6 state checks) — source: `aa9c877` (clean) — [`evidence/roles-attest-standin-upstream-20261014T125810Z.json`](../evidence/roles-attest-standin-upstream-20261014T125810Z.json)
 
 ### Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle — 2026-10-14T12:41:19Z
 

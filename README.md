@@ -9,7 +9,7 @@
 ![Chain: stand-in, not V3](https://img.shields.io/badge/chain-stand--in%2C%20not%20V3-orange)
 
 *Status: work in progress (Portaldot Hacker House 2026). The Assets + Multisig engine runs on a
-labelled local stand-in chain; the Portaldot V3 testnet was unreachable when probed on 2026-10-14.*
+labelled local stand-in chain; the Portaldot V3 testnet was unreachable when probed on 2026-10-14 ([`evidence/v3-probe-2026-10-14.txt`](evidence/v3-probe-2026-10-14.txt)).*
 
 </div>
 
@@ -21,7 +21,7 @@ labelled local stand-in chain; the Portaldot V3 testnet was unreachable when pro
 
 ### Problem Statement
 
-Portaldot has no stable unit of account. POT is volatile, so a dApp that wants to price in dollars has nothing to
+As far as we found, Portaldot has no stable unit of account. POT is volatile, so a dApp that wants to price in dollars has nothing to
 price with. The realistic first step is a **custodial wrapped dollar**, and its failure mode is silent: if the
 custodian's reserves drain, every holder keeps trading an IOU that is already worth less than its face value.
 
@@ -29,11 +29,11 @@ custodian's reserves drain, every holder keeps trading an IOU that is already wo
 
 Ballast defines **pUSDC-test**, a clearly labelled test asset on the Assets pallet (so far created only on the local
 stand-in chain, not Portaldot V3), intended to be backed 1:1 by Circle test USDC held in a small vault contract on
-Sepolia. Safety is meant to come from role separation that the pallet enforces, not from promises; whether V3 exposes
+Sepolia. Safety is meant to come from role separation that the pallet enforces (shown on the stand-in), not from promises; whether V3 exposes
 the same calls is `UNVERIFIED`:
 
 1. **Breaker:** the Assets *freezer* role belongs to a 1-of-N watcher multisig. A watcher can freeze the asset and
-   its thaw attempts are refused (stand-in receipts 890-2, 891-2), so a reserve shortfall cannot spread without leaving a public freeze on Portaldot.
+   its thaw attempts are refused (stand-in receipts 890-2, 891-2), so a reserve shortfall cannot spread without leaving a public on-chain freeze (shown on the stand-in only; planned for V3).
 2. **Admin thaw:** the freezer cannot thaw; the asset admin can (stand-in).
 3. **Reserve-gated mint** (planned): the issuer is a multisig in which a reserve bot is a mandatory co-signer.
 
@@ -142,7 +142,7 @@ pytest -q                                # 52 tests, offline (metadata fixtures 
 scripts/standin_node.sh start            # RPC on 127.0.0.1:49944, no peers
 ballast chain                            # identify the chain, print its label and block-derived constants
 python scripts/spike_assets.py           # the Assets + Multisig spike; prints one line per extrinsic
-python scripts/check_receipts.py         # re-fetch every receipt in evidence/ by extrinsic id
+python scripts/check_receipts.py         # re-fetch receipts by extrinsic id; matches only the node that recorded them
 scripts/standin_node.sh stop
 ```
 

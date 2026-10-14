@@ -1,0 +1,3 @@
+probe: 2026-10-14T10:06Z
+dig +short testnetv3-node.feso-apps.xyz @1.1.1.1 ->
+(empty = no DNS record)

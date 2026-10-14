@@ -16,3 +16,5 @@ cache/
 *.db
 ballast.toml
 .DS_Store
+artifacts/
+typechain-types/

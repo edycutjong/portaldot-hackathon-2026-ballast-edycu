@@ -90,6 +90,69 @@ State checks (storage/events read at the step's block):
 - ✅ asset 1 team unchanged (ARMED): expected `[]`, observed `[]` at block `head`
 
 
+### Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control — 2026-10-14T12:58:10Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-attest-standin-upstream-20261014T125810Z.json`](../evidence/roles-attest-standin-upstream-20261014T125810Z.json) · result: **PASS** (15/15 steps as expected, 6/6 state checks) · source: `aa9c877` (clean)
+
+`ballast verify` blocks #4412..#4450 ([`evidence/verify-standin-upstream-20261014T125810Z.json`](../evidence/verify-standin-upstream-20261014T125810Z.json)): **PASS** — 4/4 B attestations PASS on both chains, 1 REJECTED (not counted), 0 FAIL/FLAGGED.
+
+Heartbeat H = 20 blocks (drill override; production H = 200, K = 600 on this profile).
+
+- finality (anvil): mined 65 blocks: finalized = latest − 64
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x162A433068F51e18b7d13932F27e66a3f99E6890`):
+
+| # | Step | Block | Tx hash | Observed |
+|---|---|---|---|---|
+| 1 | custodian receives 1.00 test token | 269 | `0x663f6fd552bcb0f3497f86e40d79872854d5affbb1235b2b5d9639f8a7f28bcc` | ✅ status 1 |
+| 2 | custodian deposits 1.00 into the vault | 270 | `0x8ffed259631ce8eb71b62831ce9fd46cb564d1871b83b57d1fac436993b1ae2e` | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | bot announces watchers (BALLAST/1|watchers|t=1|m=5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhR…) | `System.remark_with_event(BALLAST/1|watchers)` (B (reserve bot)) | `4415-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 2 | bot announces evm-attester (BALLAST/1|evm-attester|h160=0x4dc969838572d068ead3ab83139904…) | `System.remark_with_event(BALLAST/1|evm-attester)` (B (reserve bot)) | `4416-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 3 | bot posts attest (pb 4416) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `4417-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 4 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4418-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 5 | bot posts attest (pb 4420) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `4421-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 6 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4422-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 7 | A proposes mint 1.00 through M_mint | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `4423-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 8 | bot B co-signs (finalized reserves cover it) | `Multisig.as_multi(Assets.mint) — final approval` (B (reserve bot)) | `4424-2` | Ok + inner Ok + Assets.Issued | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Issued |
+| 9 | bot posts attest (pb 4424) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `4425-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 10 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4426-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 11 | bot posts heartbeat (pb 4446) | `System.remark_with_event(BALLAST/1|heartbeat)` (B (reserve bot)) | `4447-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 12 | bot mirrors it to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `4448-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 13 | negative control: the judge key posts a copy of the bot's attestation | `System.remark_with_event(BALLAST/1|attest) — forged by a non-bot key` (Judge (negative control)) | `4449-2` | Ok + System.Remarked (included — verify must REJECT it) | ✅ Ok · System.Remarked |
+
+Block and transaction hashes (full):
+
+```
+ 1    4415-2 block 0xb6773a0e4246dfb051bfb5618ca14015dc725dfd9b3d3fae1922861236936606  tx 0x691950f043786a8a544aa15a492271144e645ed4db0fdaf3a669bc78db4fd649
+ 2    4416-2 block 0x5ef5d7cdeefd0c32c783aa97a50c1312d41fecccb1390b621660fcf459be169f  tx 0xb803811f7e88dad79c4899fb3cc834e788b68950a70aacada459681ad4b864af
+ 3    4417-2 block 0x5c001860f12f96b1614d61c3a4e14e1da9d47ba2e6bb8a70f02dffe8db47195f  tx 0xb34d097078f4a0aeaf64d6244e5b840ddaa8cea1dfcf87a255295c7e87b9de4e
+ 4    4418-2 block 0x1e87d45151ddf099a4ec36ba13bad9ea4482121f9adc435cf478b3c78b4e1a85  tx 0x7aafb565081e1679850571aeab5b354b5aa8eff37b6cb5159a13df5c9f4548c5
+ 5    4421-2 block 0xf4eee14ac7f47ed6aa40857d3c3fe6068be0b227c0277a783d8c12322c056682  tx 0xabeac63a187990a83d28f73abde76fad653d467990efe71df90a652a8bbda14e
+ 6    4422-2 block 0x6720c5256b21eac1dfd9e8fcbe3e0347c0d2cef25ac5be3ac00e1ab88b002601  tx 0x38956d7e393295027fe974754546d2c63f8f4bb386443de65f249ef2a8f891b3
+ 7    4423-2 block 0xf383f1294dc0ecb9d7a3501dcc1fb152ebf1a8fc2a7129ab7caaf9c96850373c  tx 0xe1fe8f7b66f3bad94051f860f38c2bdba8105cca33e916588227d41c2b712fb7
+ 8    4424-2 block 0x8f99cca52f3c98c3012851461f9956b4e0f85a9b66a2b5bd02b9c11f71a6fec9  tx 0x35f063bfa2ddd5d12f7292abc53961d30d3fcbaf504bab77041e56dc4f3c241d
+ 9    4425-2 block 0x8fd77bf250dbaf5eb5ade5b63fefa4f15ca40c51adac1d04120a0d5b5e7fe397  tx 0xbbf75130887561dc0bdcdfccf8aae8d5a2152e4f12a11448eb4f19ebf4f1bf82
+10    4426-2 block 0x01e052bdcb4a01d96a3d6a9d25317aa6fe05207c6131d79949a8acc55e30f9b9  tx 0x728305a11ecaab0fbccde8a525bd1bfb460680fe5c815612d5f6931b3cf7f8e2
+11    4447-2 block 0xe604c2df2696a161edf3ab6acc82c63ef5039bf2763e7a5b9fb511453104cc70  tx 0x76b8e6c41d5dbbb8953313d7495891c4f749bf6f483c39f5de3a3838957df457
+12    4448-2 block 0x58cd688fc080f32157ee1d45e2fedc5c790b2683e4267e936002bc3eab46856f  tx 0xb85c29ad2877a9e4cd53164d26a11c486c729d15a5add084fd710be2f880592f
+13    4449-2 block 0xdfac98c3f43d7687bd3943c32fd1296e2db96bdfb3f780e5fe536350674efa8b  tx 0x5a787cf027e7aa7454e89be134426af43a1acb4219bceb418c6756c49f674496
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ the post after H quiet blocks is a heartbeat: expected `heartbeat`, observed `heartbeat` at block `0xe604c2df2696a161edf3ab6acc82c63ef5039bf2763e7a5b9fb511453104cc70`
+- ✅ verify exit 0 and verdict PASS: expected `[0, 'PASS']`, observed `[0, 'PASS']` at block `verify`
+- ✅ every bot attestation/heartbeat PASSes on both chains: expected `4`, observed `4` at block `verify`
+- ✅ every oracle post matches a PASSing remark (I10): expected `4`, observed `4` at block `verify`
+- ✅ the forged remark is listed REJECTED (not counted): expected `['4449-2']`, observed `['4449-2']` at block `verify`
+- ✅ watcher-set and evm-attester announcements PASS: expected `[1, 1]`, observed `[1, 1]` at block `verify`
+
+
 ### Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle — 2026-10-14T12:41:19Z
 
 Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-setup-standin-upstream.json`](../evidence/roles-setup-standin-upstream.json) · result: **PASS** (16/16 steps as expected, 5/5 state checks) · source: `ab1f8ec` (clean)

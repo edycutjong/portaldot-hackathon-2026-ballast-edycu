@@ -208,8 +208,8 @@ is not written because V3 did not resolve. There is no frontend to launch.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
   and the commands above on a fresh chain (they produce new ids and hashes; the committed receipts re-fetch only against the author's node).
 - **The drill in numbers** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
-  drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s; the earlier four ran on older or uncommitted code) and 6.33 s in the latest
-  scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over blocks #4076 to #7035 (role-split setup to the last drill): 25/25 bot attestations pass on both chains, 6 forged
+  drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s; the earlier four took 7.9 to 8.4 s, one of them on uncommitted code and one on the same `ballast/` code as the latest, so the spread is run-to-run variance on one machine) and 6.33 s in the latest
+  scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over blocks #4076 to #7035 (role-split setup to just after the ReserveOracle run): 25/25 bot attestations pass on both chains, 6 forged
   remarks REJECTED, 0 FAIL or FLAGGED ([`evidence/verify-standin-upstream-p5-fullrange.json`](evidence/verify-standin-upstream-p5-fullrange.json)).
 - **Test accounts / data:** deterministic dev keys on the stand-in only. Public role addresses are in
   [`deployments/standin-upstream.json`](deployments/standin-upstream.json).

@@ -10,7 +10,7 @@ Ballast protects a custodial test dollar, `pUSDC-test` (Assets pallet, asset 1),
 EVM vault. The protection is assembled from runtime modules, not from contract code:
 
 - the **issuer** of the asset is a 2-of-2 multisig in which a reserve bot is a mandatory co-signer, so a mint needs the bot's signature, and the bot signs only when reserves cover it (the gate is bot code; see the trust caveat below);
-- the **freezer** is a 1-of-N watcher multisig that whose role is freezing (`freeze_asset`, `freeze`, `block`; its thaw is refused), so a reserve shortfall stops transfers a few blocks later (3 Portaldot blocks and 6.3 to 6.8 s wall clock in the scratch-asset drain drills; 5.5 to 8.4 s over the five role-split drills; one machine);
+- the **freezer** is a 1-of-N watcher multisig whose role is freezing (`freeze_asset`, `freeze`, `block`; its thaw is refused), so a reserve shortfall stops transfers a few blocks later (3 Portaldot blocks and 6.3 to 6.8 s wall clock in the scratch-asset drain drills; 5.5 to 8.4 s over the five role-split drills; one machine);
 - the **admin** is a 2-of-3 multisig whose thaw the bot only co-signs once *finalized* reserves cover supply again.
 
 Ballast is **not a trustless bridge**: the vault owner can still move the reserves. Ballast makes that visible and stops the shortfall from spreading.

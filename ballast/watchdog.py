@@ -17,8 +17,8 @@ Loop (one watcher key, freeze-only):
      multisig, never a single key. `as_multi_threshold_1` returns the wrapped call's error as its own (measured on
      standin-upstream: a watcher thaw through it fails as Err(Assets.NoPermission) — docs/RECEIPTS.md, spike step 7),
      so `batch_all` reverts the remark with a failed freeze; the receipt is still checked for Assets.AssetFrozen and
-     every inner multisig result (I9). A failed freeze is logged `critical` and retried on the next poll, not N
-     blocks later.
+     every inner multisig result (I9). A failed freeze is logged `critical` and retried on the next poll (up to
+     FAST_RETRIES in a row, then every N blocks — never abandoned); a freeze lost to another watcher is `freeze-raced`.
 Scope: an OPERATOR watcher (freeze on either provider short; fail-closed I6). The community-watcher rule (both
 providers short at the same block, no I6) is not implemented here.
 Every record is one JSON line (`log`) with the chain profile and the reserve label on it.
@@ -48,7 +48,8 @@ from .sepolia import (
 REMARK_PREFIX = "BALLAST/1"
 REMARK_MAX_BYTES = 320  # our own budget for any BALLAST/1 remark (architecture: attestation format)
 FAIL_CLOSED_AFTER_S = 300.0  # I6: both providers unreachable for > 5 minutes -> freeze
-MAX_BLOCK_AGE_S = 300.0  # a `latest` block older than this is a failed reading (stuck cache / lagging node)
+MAX_BLOCK_AGE_S = 120.0  # a `latest` block older than this is a failed reading (stuck cache / lagging node; 10 Sepolia slots)
+FAST_RETRIES = 3  # consecutive failures retried on the very next poll; after that, every poll_blocks (never give up)
 FEE_HEADROOM = 10  # the watcher key must hold ED + 10 x the freeze extrinsic's fee
 
 LEVEL, DEFICIT, OUTAGE, FAIL_CLOSED, ALREADY_FROZEN = "level", "deficit", "outage", "fail-closed", "already-frozen"
@@ -181,21 +182,26 @@ def parse_remark(text: str) -> dict:
 
 
 class JsonLog:
-    """One JSON object per line to a file (and a short human line to stderr)."""
+    """One JSON object per line to a file (and a short human line to stderr). Logging can never raise: a full disk
+    or a closed pipe must not stop a freeze — failed writes are counted in `dropped`."""
 
     def __init__(self, path: str | None, echo: bool = True, **context: Any):
         self.path, self.echo, self.context = path, echo, context
         self._fh = open(path, "a", buffering=1) if path else None
+        self.dropped = 0
 
     def __call__(self, event: str, **fields: Any) -> dict:
         record = {"t": now_iso(), "event": event, **self.context, **fields}
-        if self._fh:
-            self._fh.write(json.dumps(record, default=str) + "\n")
-        if self.echo:
-            summary = fields.get("decision", {}).get("detail") if isinstance(fields.get("decision"), dict) else None
-            msg = fields.get("message") or summary or ""
-            head = f" #{fields['head']}" if "head" in fields else ""
-            print(f"[watchdog {self.context.get('profile', '?')}] {event}{head} {msg}".rstrip(), file=sys.stderr)
+        try:
+            if self._fh:
+                self._fh.write(json.dumps(record, default=str) + "\n")
+            if self.echo:
+                summary = fields.get("decision", {}).get("detail") if isinstance(fields.get("decision"), dict) else None
+                msg = fields.get("message") or summary or ""
+                head = f" #{fields['head']}" if "head" in fields else ""
+                print(f"[watchdog {self.context.get('profile', '?')}] {event}{head} {msg}".rstrip(), file=sys.stderr)
+        except Exception:  # noqa: BLE001
+            self.dropped += 1
         return record
 
     def close(self) -> None:
@@ -215,6 +221,7 @@ class WatchConfig:
     fail_closed_after: float = FAIL_CLOSED_AFTER_S
     poll_interval_s: float = 1.0
     max_block_age_s: float | None = MAX_BLOCK_AGE_S  # None/0 = off (e.g. an instant-mining local anvil)
+    read_deadline_s: float | None = 20.0  # a provider still busy after this is a failed reading
 
 
 class Watchdog:
@@ -238,7 +245,9 @@ class Watchdog:
         self.outage_since: float | None = None
         self.last_checked: int | None = None
         self.freezes: list[dict] = []
-        self.retry_now = False  # set by a failed freeze: check again on the next poll
+        self.retry_now = False  # set after a failure: check again on the next poll
+        self.failures = 0  # consecutive failed checks / freezes
+        self.freeze_failed = False
 
     # --- reads -------------------------------------------------------------------------------------------
     def head(self) -> tuple[int, str]:
@@ -281,16 +290,24 @@ class Watchdog:
         known = {v for v in evm_ids.values() if isinstance(v, int)}
         if len(known) > 1:
             raise RuntimeError(f"providers serve different EVM chains: {evm_ids}")
+        if known:  # a provider answers: prove the reserve is READABLE with the production parameters, or don't arm
+            probe = read_all(self.providers, self.cfg.token, self.cfg.holder, "latest", self.cfg.max_block_age_s,
+                             self.cfg.read_deadline_s)
+            if not any(r.ok for r in probe):
+                raise RuntimeError("providers answer but no valid reserve reading (wrong token/holder/network, or "
+                                   f"stale blocks / local clock skew): {[r.error for r in probe]}")
         # Supply and reserves are compared raw: every backed asset must use the reserve token's decimals.
         decimals = {i: (self.substrate.query("Assets", "Metadata", [i], block_hash=block_hash).value or {}).get("decimals")
                     for i in states}
-        token_dec = None
+        token_dec, dec_errors = None, []
         for p in self.providers:
             try:
                 token_dec = token_decimals(p, self.cfg.token)
                 break
-            except Exception:  # noqa: BLE001 — try the next provider
-                continue
+            except Exception as exc:  # noqa: BLE001 — try the next provider
+                dec_errors.append(str(exc))
+        if token_dec is None and known:
+            raise RuntimeError(f"reserve token {self.cfg.token} answers no decimals(): {dec_errors}")
         if token_dec is not None and any(d != token_dec for d in decimals.values()):
             raise RuntimeError(f"decimals mismatch: assets {decimals} vs reserve token {token_dec}")
         # The watcher key must be able to pay for the freeze when it matters.
@@ -317,10 +334,12 @@ class Watchdog:
 
     # --- one check ---------------------------------------------------------------------------------------
     def check(self, number: int, block_hash: str) -> dict:
+        self.freeze_failed = False
         states = self.assets(block_hash)
         supply = sum(states[i].supply for i in self.cfg.supply_ids)
         frozen = states[self.cfg.breaker_id].frozen
-        readings = read_all(self.providers, self.cfg.token, self.cfg.holder, "latest", self.cfg.max_block_age_s)
+        readings = read_all(self.providers, self.cfg.token, self.cfg.holder, "latest", self.cfg.max_block_age_s,
+                            self.cfg.read_deadline_s)
         comparison = compare(readings)
         decision, self.outage_since = decide(
             supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after
@@ -381,14 +400,18 @@ class Watchdog:
                        step="watchdog_freeze",
                        call_label="Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]")
         except Exception as exc:  # noqa: BLE001 — logged; the next poll re-reads the asset (another watcher may have frozen it)
-            self.retry_now = True
-            self.log("freeze-error", level="critical", head=seen_at_head, message=f"{type(exc).__name__}: {exc}")
+            if self.raced(seen_at_head, f"{type(exc).__name__}: {exc}"):
+                return None
+            self.freeze_failed = True
+            self.log("freeze-error", level="critical", head=seen_at_head, failures=self.failures + 1,
+                     message=f"{type(exc).__name__}: {exc}")
             return None
         included_at = self.clock()
         frozen_event = "Assets.AssetFrozen" in r.event_names()
         ok = r.outcome.ok and frozen_event and all(o.ok for o in r.inner)
-        if not ok:
-            self.retry_now = True
+        if not ok and self.raced(seen_at_head, f"{r.extrinsic_id} {r.outcome}"):
+            return None
+        self.freeze_failed = not ok
         record = self.log(
             "freeze" if ok else "freeze-failed",
             level="info" if ok else "critical",
@@ -402,6 +425,17 @@ class Watchdog:
         if ok:
             self.freezes.append(record)
         return record
+
+    def raced(self, head: int, why: str) -> bool:
+        """After a failed freeze: if the asset is frozen anyway (another watcher won), that is not a failure."""
+        try:
+            number, block_hash = self.head()
+            frozen = self.assets(block_hash)[self.cfg.breaker_id].frozen
+        except Exception:  # noqa: BLE001 — can't tell: treat as a failure (retried)
+            return False
+        if frozen:
+            self.log("freeze-raced", level="info", head=number, message=f"asset already frozen at #{number} ({why})")
+        return frozen
 
     # --- loop --------------------------------------------------------------------------------------------
     def run(self, *, until_frozen: bool = False, max_seconds: float | None = None) -> int:
@@ -419,8 +453,14 @@ class Watchdog:
                 try:
                     record = self.check(number, block_hash)
                 except Exception as exc:  # noqa: BLE001
-                    self.log("check-error", head=number, message=f"{type(exc).__name__}: {exc}")
+                    self.log("check-error", level="critical", head=number, failures=self.failures + 1,
+                             message=f"{type(exc).__name__}: {exc}")
                     record = None
+                if record is None or self.freeze_failed:
+                    self.failures += 1
+                    self.retry_now = self.failures <= FAST_RETRIES  # then back to every poll_blocks, never abandoned
+                else:
+                    self.failures = 0
                 if until_frozen and record is not None and (record["frozen"] or self.freezes):
                     self.log("stop", head=number, message="asset frozen")
                     return 0

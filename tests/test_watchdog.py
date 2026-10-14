@@ -300,13 +300,15 @@ def test_preflight_reports_the_reserve_label(monkeypatch):
 
 # --- failure paths --------------------------------------------------------------------------------------------
 def test_submit_error_is_critical_and_retried_on_the_next_poll(monkeypatch):
-    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=70, heads=(10, 11, 12), outcomes=["raise", "ok"])
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=70, heads=(10, 11, 12, 13),
+                                               outcomes=["raise", "ok"])
+    dog.cfg.poll_blocks = 10
     assert dog.run(until_frozen=True, max_seconds=50) == 0
     events = [e["event"] for e in logs]
     assert events.count("freeze-error") == 1 and events.count("freeze") == 1
     assert next(e for e in logs if e["event"] == "freeze-error")["level"] == "critical"
-    # retried at head 11 — the very next poll, not poll_blocks (2) later
-    assert [e["head"] for e in logs if e["event"] == "check"] == [10, 11] and len(submitted) == 2
+    # retried on the next poll (head 12; head 11 was the race probe), not poll_blocks (10) later
+    assert [e["head"] for e in logs if e["event"] == "check"] == [10, 12] and len(submitted) == 2
 
 
 def test_inner_error_is_a_failed_freeze_and_retried(monkeypatch):
@@ -388,3 +390,65 @@ def test_long_provider_names_never_block_the_fail_closed_remark():
     d = Decision(FAIL_CLOSED, 100, down_for_s=301)
     text = freeze_remark(1, d, ["p" * 200, "q" * 200])
     assert text.endswith("|p=2-providers") and len(text.encode()) <= REMARK_MAX_BYTES
+
+
+def test_lost_race_is_not_a_failure(monkeypatch):
+    dog, substrate, submitted, logs = make_dog(monkeypatch, reserves=70, outcomes=["raise"])
+    real_submit = ballast.chain.submit
+
+    def racing_submit(*a, **k):
+        substrate.assets[1]["status"] = "Frozen"  # another watcher froze it first
+        return real_submit(*a, **k)
+
+    monkeypatch.setattr(ballast.chain, "submit", racing_submit)
+    dog.check(10, H)
+    assert [e["event"] for e in logs] == ["check", "freeze-submit", "freeze-raced"] and not dog.freeze_failed
+
+
+def test_retries_are_fast_then_every_n_blocks_and_never_stop(monkeypatch):
+    dog, _, submitted, logs = make_dog(monkeypatch, reserves=70, heads=tuple(range(10, 80)),
+                                       outcomes=["raise"] * 50)
+    dog.cfg.poll_blocks = 10
+    dog.raced = lambda head, why: False  # keep the fake head sequence simple
+    assert dog.run(until_frozen=True, max_seconds=60) == 4
+    heads = [e["head"] for e in logs if e["event"] == "check"]
+    gaps = [b - a for a, b in zip(heads, heads[1:])]
+    assert gaps[:3] == [1, 1, 1] and set(gaps[3:]) == {10} and len(heads) >= 6
+    assert all(e["level"] == "critical" for e in logs if e["event"] == "freeze-error")
+    assert dog.failures == len(heads)
+
+
+def test_a_logging_failure_never_blocks_the_freeze(monkeypatch, tmp_path):
+    from ballast.watchdog import JsonLog
+
+    log = JsonLog(str(tmp_path / "w.jsonl"), echo=True)
+    log._fh.close()  # writes now raise ValueError (closed file)
+    dog, _, submitted, _ = make_dog(monkeypatch, reserves=70)
+    dog.log = log
+    dog.check(10, H)
+    assert len(submitted) == 1 and log.dropped >= 2
+
+
+def test_zero_reserves_is_a_deficit(monkeypatch):
+    d, _ = decide(100, False, compare([ok("a", 0)]), None, 0.0)
+    assert d.action == DEFICIT and d.reserves_min == 0
+    dog, _, submitted, _ = make_dog(monkeypatch, reserves=0)
+    assert dog.check(10, H)["decision"]["action"] == DEFICIT and len(submitted) == 1
+
+
+def test_preflight_refuses_when_providers_answer_but_the_reserve_is_unreadable(monkeypatch):
+    class NoCode(FakeEvm):
+        def call(self, method, params):
+            if method == "eth_call":
+                return "0x"  # no contract at the token address
+            return super().call(method, params)
+
+    dog, *_ = make_dog(monkeypatch, reserves=100, providers=[NoCode("a", 100)])
+    with pytest.raises(RuntimeError, match="no valid reserve reading"):
+        dog.preflight()
+
+
+def test_preflight_arms_when_every_provider_is_down(monkeypatch):
+    # nothing to read at start is an outage, not a misconfiguration: arm, and let I6 decide
+    dog, *_ = make_dog(monkeypatch, reserves=None)
+    assert dog.preflight()["reserve"].startswith("unknown")

@@ -1,7 +1,7 @@
 {
   "name": "ballast-contracts",
   "private": true,
-  "description": "Hardhat tests for ReserveOracle (the V3 Revive mirror). ReserveVault uses Foundry (foundry.toml).",
+  "description": "Hardhat tests for ReserveOracle (the Revive mirror (Portaldot V3 is the target)). ReserveVault uses Foundry (foundry.toml).",
   "license": "MIT",
   "scripts": {
     "test:oracle": "hardhat test",

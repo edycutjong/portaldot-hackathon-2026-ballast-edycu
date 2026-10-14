@@ -10,7 +10,7 @@ Ballast protects a custodial test dollar, `pUSDC-test` (Assets pallet, asset 1),
 EVM vault. The protection is assembled from runtime modules, not from contract code:
 
 - the **issuer** of the asset is a 2-of-2 multisig in which a reserve bot is a mandatory co-signer, so a mint needs the bot's signature, and the bot signs only when reserves cover it (the gate is bot code; see the trust caveat below);
-- the **freezer** is a 1-of-N watcher multisig that can freeze and nothing else, so a reserve shortfall stops transfers a few blocks later (3 blocks, 5.48 s to 6.33 s wall clock in the stand-in drills);
+- the **freezer** is a 1-of-N watcher multisig that can freeze (freeze-type calls only: `freeze_asset`, `freeze`, `block`), so a reserve shortfall stops transfers a few blocks later (3 Portaldot blocks and 6.3 to 6.8 s wall clock in the scratch-asset drain drills; 5.5 to 8.4 s over the five role-split drills; one machine);
 - the **admin** is a 2-of-3 multisig whose thaw the bot only co-signs once *finalized* reserves cover supply again.
 
 Ballast is **not a trustless bridge**: the vault owner can still move the reserves. Ballast makes that visible and stops the shortfall from spreading.
@@ -112,13 +112,13 @@ Asset 2 (`pUSDC-ctl`, control supply S2 = 50.00) is minted once; owner, issuer, 
 | I3 | breaker: reserves short on either provider freezes the asset | `watchdog.py:123` `decide` (deficit branch at `:140`) | `tests/test_watchdog.py`; drain drills |
 | I4 | thaw is gated on finalized reserves past the drain | `bot.py:160` `thaw_gate`; `verify.py` flags a thaw without the bot or an override remark | role drill steps 10-11 (refused until anvil finality passed the drain block, then co-signed) |
 | I5 | remark signers fixed per type; others REJECTED, never counted | `verify.py:78` `signer_verdict` | `tests/test_verify.py`; attest drill step 12 (forged remark REJECTED) |
-| I6 | all providers unreachable for > 300 s freezes (operator watcher) | `watchdog.py:55,160` | outage drill (15 s drill override, labelled) |
+| I6 | all providers unreachable for > 300 s freezes (operator watcher) | `watchdog.py:55,161` | outage drill (15 s drill override, labelled) |
 | I7 | no mint while the asset is frozen | `bot.py:147` | role drill step 8 (refused live) |
 | I8 | no bot activity for K = 3H blocks freezes | `watchdog.py:152` (bot nonce unchanged) | heartbeat drill (K = 10 drill override, labelled) |
-| I9 | outer `Ok` is not inner `Ok` | `dispatch.py`, `multisig_ops.py:77`, `verify.py` | every multisig receipt in `docs/RECEIPTS.md` carries the inner result |
-| I10 | the oracle mirror never leads the remark | `attest.py:120`; `verify.py` flags a `Posted` with no matching remark | attest drill (4 mirrors, all matched) |
+| I9 | outer `Ok` is not inner `Ok` | `dispatch.py`, `multisig_ops.py:77`, `verify.py` | every executing multisig receipt in `docs/RECEIPTS.md` carries the inner result |
+| I10 | the oracle mirror never leads the remark | `attest.py:119`; `verify.py` flags a `Posted` with no matching remark | attest drill (4 mirrors, all matched) |
 
-I1, I3, I6 and I8 are checks inside our own off-chain processes; I2 and the multisig thresholds are enforced by the runtime. Trust caveat: in this build one person holds A, A2, B and both watchers, and A + A2 can thaw without B, so the separation is real in the runtime but not yet between independent humans. A stopped process
+I1, I3, I4, I6, I7, I8 and I10 are checks inside our own off-chain processes (I7 is also backed by the stand-in's pallet refusing a mint while frozen); I2 and the multisig thresholds are enforced by the runtime. Trust caveat: in this build one person holds A, A2, B and both watchers, and A + A2 can thaw without B, so the separation is real in the runtime but not yet between independent humans. A stopped process
 enforces nothing, which is exactly what I8 and the heartbeat exist to make visible.
 
 ## Attestation format (on-chain, `System.remark_with_event`)

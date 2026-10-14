@@ -39,8 +39,8 @@ enforces, not from promises:
 1. **Breaker.** The Assets *freezer* is a 1-of-N watcher multisig (`M_watch`, `Multisig.as_multi_threshold_1`). A watcher that sees the
    reserve fall below supply freezes the asset; every transfer is then refused (`Assets.AssetNotLive` on the stand-in). The freezing
    extrinsic carries the reason as a `BALLAST/1|freeze` remark.
-2. **Inert freezer.** A watcher's thaw attempts (`thaw_asset` and `thaw` of one account) fail with `Assets.NoPermission` (measured). The freezer slot carries the freeze
-   calls only; mint and re-team stay with `M_mint`, and no drill has yet tried a watcher mint or `set_team`.
+2. **Inert freezer.** A watcher's thaw attempts (`thaw_asset` and `thaw` of one account) fail with `Assets.NoPermission` (measured). The freezer slot carries freeze-type calls
+   only (`freeze_asset`, `freeze`, `block`); mint and re-team stay with `M_mint`, and no drill has yet tried a watcher mint or `set_team`.
 3. **Reserve-gated mint.** The issuer is a 2-of-2 multisig (`M_mint`, {operator A, reserve bot B}). The bot co-signs a mint only if
    *finalized* reserves cover supply plus the amount, and never while the asset is frozen.
 4. **Gated thaw.** The asset admin is a 2-of-3 multisig (`M_admin`). The bot co-signs a thaw only after finality has passed the drain block
@@ -140,7 +140,7 @@ Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are 
 | [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) only. **Not on Sepolia** |
 | [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | the stand-in's Revive pallet only. **Not on V3** |
 
-A multisig can report `MultisigExecuted` while the call inside it failed, so every multisig receipt records the *inner* result (the
+A multisig can report `MultisigExecuted` while the call inside it failed, so every executing multisig receipt records the *inner* result (the
 executed rows in `docs/RECEIPTS.md` read `inner Ok`). The freezer's thaw through `as_multi_threshold_1` fails the whole
 extrinsic with `Assets.NoPermission` (`6904-2` in the newest role-split drill).
 
@@ -203,8 +203,8 @@ is not written because V3 did not resolve. There is no frontend to launch.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
   and the commands above on a fresh node.
 - **The drill in numbers** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
-  drain to freeze included took 5.48 s in the latest role-split drill and 6.33 s in the latest scratch-asset drill (that one: 3 Portaldot blocks from
-  the head before the drain to the freeze). `ballast verify` over the whole stand-in history: 25/25 bot attestations pass on both chains, 6 forged
+  drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s) and 6.33 s in the latest
+  scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over the whole stand-in history: 25/25 bot attestations pass on both chains, 6 forged
   remarks REJECTED, 0 FAIL or FLAGGED ([`evidence/verify-standin-upstream-p5-fullrange.json`](evidence/verify-standin-upstream-p5-fullrange.json)).
 - **Test accounts / data:** deterministic dev keys on the stand-in only. Public role addresses are in
   [`deployments/standin-upstream.json`](deployments/standin-upstream.json).

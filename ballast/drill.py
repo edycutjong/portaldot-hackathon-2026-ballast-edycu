@@ -69,8 +69,8 @@ def artifact(name: str) -> tuple[list, str]:
     return data["abi"], data["bytecode"]["object"]
 
 
-PINNED_PATHS = ("ballast", "contracts", "scripts", "tests", "lib", "foundry.toml", "hardhat.config.js",
-                "package.json", "package-lock.json", "pyproject.toml")
+PINNED_PATHS = ("ballast", "contracts", "scripts", "tests", "lib", "foundry.toml", "foundry.lock", ".gitmodules",
+                "hardhat.config.js", "package.json", "package-lock.json", "pyproject.toml")
 
 
 def source_pin() -> dict:

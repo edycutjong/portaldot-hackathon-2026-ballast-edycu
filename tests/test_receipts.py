@@ -131,3 +131,23 @@ def test_committed_evidence_has_no_local_paths_and_clean_pinned_leads():
     for kind, scenario in {(r["kind"], r.get("scenario")) for r in drills}:
         group = [r for r in drills if (r["kind"], r.get("scenario")) == (kind, scenario)]
         assert any(receipts.clean_pass(r) for r in group), (kind, scenario)
+
+
+def test_source_pin_unknown_on_git_error_and_dirty_on_untracked(monkeypatch):
+    import subprocess
+
+    import ballast.drill as drill
+
+    def git_fails(*a, **k):
+        raise subprocess.CalledProcessError(128, a[0])
+
+    monkeypatch.setattr(drill.subprocess, "run", git_fails)
+    assert drill.source_pin() == {"git_head": None, "dirty": None}  # unknown — never "clean"
+
+    def git_dirty(cmd, **k):
+        out = "abc123\n" if cmd[1] == "rev-parse" else "?? scripts/new_tool.py\n"
+        return subprocess.CompletedProcess(cmd, 0, stdout=out, stderr="")
+
+    monkeypatch.setattr(drill.subprocess, "run", git_dirty)
+    assert drill.source_pin() == {"git_head": "abc123", "dirty": True}
+    assert {"foundry.lock", ".gitmodules", "lib", "tests"} <= set(drill.PINNED_PATHS)

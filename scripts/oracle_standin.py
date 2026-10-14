@@ -87,6 +87,10 @@ def main() -> int:
               file=sys.stderr)
         return 2
     drill = json.loads(drill_path.read_text())
+    if not clean_pass(drill):
+        print(f"oracle_standin: {drill_path.name} is not a PASS from committed code (clean source pin); refusing to "
+              "mirror it", file=sys.stderr)
+        return 2
     forge_build()  # always: a stale out/ must never be what gets deployed
     print(ident.banner())
 
@@ -214,7 +218,8 @@ def main() -> int:
         check("isBacked(3600) after the frozen/drained post", _is_backed(substrate, bot, contract, r.block_hash, run),
               False, r.block_hash)
         status = read(contract, "status()", STATUS_TYPES, r.block_hash)[0]
-        check("status() = (S1, S2, reserves, sepBlock, sepHash, pdBlock, frozen) of the drained drill state",
+        check("status() = (S1, S2, reserves, sepBlock, sepHash, pdBlock, frozen) of the drained drill state "
+              "(sepBlock/sepHash = local-anvil block, not Sepolia)",
               [status[0], status[1], status[2], status[3], "0x" + status[4].hex(), status[5], status[6]],
               list(drained_state), r.block_hash)
     except Exception as exc:  # noqa: BLE001 — keep every receipt that landed

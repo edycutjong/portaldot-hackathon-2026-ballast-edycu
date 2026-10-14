@@ -101,7 +101,7 @@ def render_spike_section(run: dict) -> list[str]:
         "",
         f"Chain: **{ident['label']}** · genesis `{ident['genesis_hash']}` · spec `{ident['spec_name']}/"
         f"{ident['spec_version']}` · raw JSON: [`evidence/{run['_file']}`](../evidence/{run['_file']}) · "
-        f"result: **{run['verdict']}** ({score(run)})",
+        f"result: **{run['verdict']}** ({score(run)}) · {pin_text(run)}",
         "",
     ]
     return lines + _steps_body(run)
@@ -168,7 +168,8 @@ def render_drill_section(run: dict) -> list[str]:
             params["--max-block-age"] += " (stale-block check off: anvil mines only when a tx lands)"
         lines += ["Watcher parameters: " + ", ".join(f"`{k} {v}`" for k, v in params.items()) + ".", ""]
     if run.get("remark"):
-        lines += [f"Reason remark (in the freeze extrinsic): `{run['remark']}`", ""]
+        note = " (`eb`/`eh` = the local-anvil block the watcher read, not Sepolia)" if "|eb=" in run["remark"] else ""
+        lines += [f"Reason remark (in the freeze extrinsic): `{run['remark']}`{note}", ""]
     if run.get("timing"):
         t = run["timing"]
         lines += [f"Timing ({t['basis']}):", ""]
@@ -271,8 +272,10 @@ def render_receipts_md() -> str:
                     if i == 1:
                         out += ["Other runs, newest first, any verdict (full tables in the JSON):", ""]
                     cause = failure_cause(run) if run.get("verdict") != "PASS" else ""
+                    what = (f"contract `{(run.get('oracle') or {}).get('address')}`" if kind == "oracle-deploy"
+                            else f"asset {run['asset_id']}")
                     out.append(
-                        f"- asset {run['asset_id']} — {run['started_at']} — {run['verdict']} ({score(run)}) — "
+                        f"- {what} — {run['started_at']} — {run['verdict']} ({score(run)}) — "
                         f"{pin_text(run)} — [`evidence/{run['_file']}`](../evidence/{run['_file']})"
                         + (f" — {cause}" if cause else "")
                     )

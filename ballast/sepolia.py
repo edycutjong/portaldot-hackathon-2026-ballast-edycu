@@ -60,15 +60,23 @@ class Web3Provider:
         if not isinstance(reply, dict):
             raise ProviderError(f"{self.name}: {method}: malformed reply")
         if reply.get("error"):
-            raise ProviderError(f"{self.name}: {method}: {reply['error']}")
+            raise ProviderError(f"{self.name}: {method}: {scrub(str(reply['error']))[:200]}")
         if "result" not in reply:
             raise ProviderError(f"{self.name}: {method}: no result")
         return reply["result"]
 
 
+URL = re.compile(r"(?:https?|wss?)://\S+")
+
+
+def scrub(text: str) -> str:
+    """Error text without URLs: a provider URL may carry an API key, and errors land in logs and evidence."""
+    return URL.sub("<url>", text)
+
+
 def _short(exc: Exception) -> str:
-    """`ConnectionError: [Errno 61] Connection refused` rather than a urllib3 retry essay."""
-    text = str(exc)
+    """`ConnectionError: [Errno 61] Connection refused` rather than a urllib3 retry essay; never a URL."""
+    text = scrub(str(exc))
     errno = re.search(r"\[Errno -?\d+\][^'\")]*", text)
     if errno:
         return f"{type(exc).__name__}: {errno.group(0).strip()}"
@@ -157,7 +165,14 @@ def balance_at(rpc: EvmRpc, token: str, holder: str, block_hash: str) -> int:
 
 
 def token_decimals(rpc: EvmRpc, token: str) -> int:
-    return _word(rpc.call("eth_call", [{"to": token, "data": SELECTOR_DECIMALS}, "latest"]), f"{rpc.name}: decimals")
+    """ERC-20 `decimals()` (a uint8). The token must be a contract: precompiles answer any call with some word."""
+    code = rpc.call("eth_getCode", [token, "latest"])
+    if not isinstance(code, str) or code in ("0x", "0x0", ""):
+        raise ProviderError(f"{rpc.name}: no contract code at {token}")
+    value = _word(rpc.call("eth_call", [{"to": token, "data": SELECTOR_DECIMALS}, "latest"]), f"{rpc.name}: decimals")
+    if value > 255:
+        raise ProviderError(f"{rpc.name}: decimals() returned {value}: not an ERC-20")
+    return value
 
 
 @dataclass
@@ -205,7 +220,7 @@ def read_reserves(
                                 f"(> {int(max_block_age_s)}s): stale")
         reading.reserves = balance_at(rpc, token, holder, block_hash)
     except Exception as exc:  # noqa: BLE001 — every failure mode must become a reading, never abort the caller
-        reading.error = str(exc) if isinstance(exc, ProviderError) else f"{rpc.name}: {type(exc).__name__}: {exc}"[:300]
+        reading.error = scrub(str(exc) if isinstance(exc, ProviderError) else f"{rpc.name}: {type(exc).__name__}: {exc}")[:300]
     reading.seconds = round(time.monotonic() - started, 3)
     return reading
 

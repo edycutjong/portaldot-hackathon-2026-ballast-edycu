@@ -161,3 +161,94 @@ def test_stale_latest_block_is_a_failed_reading():
     assert not read_reserves(rpc, USDC_ADDR, VAULT, max_block_age_s=300).ok
     assert "stale" in read_reserves(rpc, USDC_ADDR, VAULT, max_block_age_s=300).error
     assert read_reserves(rpc, USDC_ADDR, VAULT, max_block_age_s=None).ok
+
+
+def test_read_deadline_turns_a_hung_provider_into_a_failed_reading():
+    import time as _time
+
+    class Hung(FakeRpc):
+        def call(self, method, params):
+            _time.sleep(2)
+            return super().call(method, params)
+
+    healthy = FakeRpc("a", {"latest": (100, H100)}, {H100: 70})
+    started = _time.monotonic()
+    readings = read_all([Hung("slow", {"latest": (100, H100)}, {H100: 100}), healthy], USDC_ADDR, VAULT,
+                        deadline_s=0.3)
+    assert _time.monotonic() - started < 1.5  # bounded by the deadline, not the hung provider
+    slow, fast = readings
+    assert not slow.ok and "no answer within 0.3s" in slow.error and slow.seconds == 0.3
+    assert fast.ok and compare(readings).short(100)[0].provider == "a"
+
+
+def test_one_request_is_one_timeout_no_library_retries():
+    """A provider that accepts the connection and never answers costs ONE timeout, not web3's 5 retries."""
+    import socket
+    import threading
+    import time as _time
+
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen(8)
+    held = []
+    stop = threading.Event()
+
+    def accept():
+        server.settimeout(0.2)
+        while not stop.is_set():
+            try:
+                held.append(server.accept()[0])  # accept, never reply
+            except OSError:
+                pass
+
+    threading.Thread(target=accept, daemon=True).start()
+    try:
+        p = Web3Provider("blackhole", f"http://127.0.0.1:{server.getsockname()[1]}", timeout=0.5)
+        started = _time.monotonic()
+        with pytest.raises(ProviderError, match="blackhole: eth_chainId"):
+            p.call("eth_chainId", [])
+        assert _time.monotonic() - started < 1.5
+        assert len(held) == 1  # exactly one connection attempt
+    finally:
+        stop.set()
+        for c in held:
+            c.close()
+        server.close()
+
+
+def test_errors_never_carry_the_provider_url():
+    from ballast.sepolia import scrub
+
+    assert scrub("429 Client Error for url: https://x.example/v3/SECRETKEY?token=abc") == \
+        "429 Client Error for url: <url>"
+
+    class Leaky(FakeRpc):
+        def call(self, method, params):
+            raise RuntimeError("boom at https://rpc.example/key/SECRET")
+
+    r = read_reserves(Leaky("k", {}, {}), USDC_ADDR, VAULT)
+    assert "SECRET" not in r.error and "<url>" in r.error
+
+
+def test_token_decimals_requires_contract_code_and_a_uint8():
+    from ballast.sepolia import token_decimals
+
+    class Token(FakeRpc):
+        def __init__(self, code, word):
+            super().__init__("t", {}, {})
+            self.code, self.word = code, word
+
+        def call(self, method, params):
+            return self.code if method == "eth_getCode" else self.word
+
+    assert token_decimals(Token("0x6080", f"0x{6:064x}"), USDC_ADDR) == 6
+    with pytest.raises(ProviderError, match="no contract code"):
+        token_decimals(Token("0x", f"0x{6:064x}"), USDC_ADDR)  # e.g. a precompile
+    with pytest.raises(ProviderError, match="not an ERC-20"):
+        token_decimals(Token("0x6080", "0x" + "ab" * 32), USDC_ADDR)
+
+
+@pytest.mark.parametrize("name", ["a|b", "A", "a,b", "", "-a", "a" * 33])
+def test_provider_names_that_could_break_a_remark_are_refused(name):
+    with pytest.raises(ValueError, match="provider name"):
+        providers_from([f"{name}=http://127.0.0.1:1"] if name else ["=http://127.0.0.1:1"])

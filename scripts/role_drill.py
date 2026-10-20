@@ -33,7 +33,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ballast.chain import connect, dev_keypair, submit  # noqa: E402
+from ballast.chain import connect, submit  # noqa: E402
+from ballast.keys import keypair  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, epoch, forge_build, read_log, source_pin  # noqa: E402
@@ -46,8 +47,8 @@ from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
 from ballast.watchdog import asset_state, parse_remark  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-SUPPORTED = ("standin-upstream",)
-FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)"}
+SUPPORTED = ("standin-upstream", "v3")
+FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)", "v3": "Err(Assets.AssetNotLive)"}
 PEER = "//BallastPeer//roles"
 ANVIL_FINALITY_LAG = 64
 
@@ -82,8 +83,8 @@ def main() -> int:
     substrate = connect(profile, cfg.url)
     rm = dep.role_map()
     frozen_error = FROZEN_TRANSFER_ERRORS[profile.name]
-    keys = {"W1": dev_keypair(profile, "//BallastW1"), "Judge": dev_keypair(profile, JUDGE),
-            "Peer": dev_keypair(profile, PEER)}
+    keys = {"W1": keypair(profile, "//BallastW1"), "Judge": keypair(profile, JUDGE),
+            "Peer": keypair(profile, PEER)}
     judge, peer = keys["Judge"].ss58_address, keys["Peer"].ss58_address
     role_of = {rm.a: "A (operator)", rm.a2: "A2 (cold key)", rm.b: "B (reserve bot)", rm.watchers[0]: "W1 (watcher)",
                rm.watchers[1]: "W2 (watcher)", judge: "Judge", peer: "Peer"}

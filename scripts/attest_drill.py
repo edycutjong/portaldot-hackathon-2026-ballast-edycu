@@ -26,7 +26,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ballast.chain import connect, dev_keypair, submit  # noqa: E402
+from ballast.chain import connect, submit  # noqa: E402
+from ballast.keys import keypair  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, read_log, source_pin  # noqa: E402
@@ -65,7 +66,7 @@ def main() -> int:
     print(ident.banner())
     substrate = connect(profile, cfg.url)
     rm = dep.role_map()
-    judge = dev_keypair(profile, JUDGE)
+    judge = keypair(profile, JUDGE)
     role_of = {rm.a: "A (operator)", rm.b: "B (reserve bot)", judge.ss58_address: "Judge (negative control)"}
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     stem = f"roles-attest-{profile.name}-{stamp}"

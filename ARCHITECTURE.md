@@ -69,7 +69,7 @@ flowchart LR
 
 | Component | Where | What it does |
 |---|---|---|
-| Chain profile | `ballast/chain_profile.py`, `ballast.toml` | identifies the chain by genesis hash and runtime `:code` hash, refuses a mismatch, derives H/K/W/N from the measured block time, labels every output (`v3` is a stub whose unknowns read `UNVERIFIED (V3 day-0)`) |
+| Chain profile | `ballast/chain_profile.py`, `ballast.toml` | identifies the chain by genesis hash and runtime `:code` hash, refuses a mismatch, derives H/K/W/N from the measured block time, labels every output (`v3` is pinned to the live V3 chain since the 2026-10-20 day-0 check) |
 | Multisig helpers | `ballast/multisig.py`, `ballast/multisig_ops.py` | derives multisig accounts the way `pallet-multisig` does; propose / execute / cancel; the `as_multi` call-shape adapter |
 | Dispatch decoding | `ballast/dispatch.py` | turns the inner `DispatchResult` of `MultisigExecuted` into `Pallet.Error` names from the chain's own metadata |
 | Role map | `ballast/roles.py`, `deployments/standin-upstream.json` | who holds which Assets role; `audit_team` compares an on-chain team with the map |
@@ -142,7 +142,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 | Profile | State |
 |---|---|
-| `v3` | stub. Portaldot V3 testnet DNS did not resolve on 2026-10-14 (empty answer, `evidence/v3-probe-2026-10-14-p5.txt`); every V3 value reads `UNVERIFIED (V3 day-0)` |
+| `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152124Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. No V3 transaction yet (the funder is unfunded); the old `feso-apps.xyz` names (empty DNS on 2026-10-14) are retired |
 | `standin-upstream` | the profile everything was measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 

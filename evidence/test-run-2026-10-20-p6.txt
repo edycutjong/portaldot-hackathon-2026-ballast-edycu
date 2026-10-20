@@ -1,0 +1,7 @@
+# P6 test run — 2026-10-20T15:20:45Z — HEAD d705626 — offline unit tests (no chain); V3 profile pinned, no V3 tx yet
+$ pytest -q
+235 passed in 3.83s
+$ forge test
+Suite result: ok. 20 passed; 0 failed; 0 skipped; finished in 21.62ms (39.91ms CPU time)
+$ npx hardhat test
+  15 passing (666ms)

@@ -77,7 +77,7 @@ def test_as_multi_shape_legacy_1002():
     assert p["max_weight"] == 10 and p["store_call"] is True and p["maybe_timepoint"] == {"height": 7, "index": 1}
 
 
-def test_as_multi_shape_unverified_on_v3():
+def test_as_multi_shape_none_is_unverified():
     with pytest.raises(ProfileUnverified):
         as_multi_params(None, threshold=2, other_signatories=[B], maybe_timepoint=None, call="C", max_weight=0)
 

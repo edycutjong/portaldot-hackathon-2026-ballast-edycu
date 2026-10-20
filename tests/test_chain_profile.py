@@ -119,18 +119,33 @@ def test_classify_standin_decimals_and_spec_version_are_checked():
         classify(facts(spec_version=269), "standin-upstream")
 
 
-def test_v3_profile_is_a_stub_with_unverified_values():
+def test_v3_profile_is_pinned_to_the_live_chain():
     v3 = get_profile("v3")
-    # a node that reports spec name portaldotV3 (placeholder version) and no decimals; genesis unknown to Ballast
-    ident = classify(facts(v3, spec_version=1, token_decimals=None, block_time_ms=None, mean_block_time_ms=None), "v3")
+    # values from Ballast's V3 day-0 check (evidence/v3-day0-20261020T131224Z.json)
+    assert v3.genesis_hash == "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
+    assert v3.code_hash == "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2"
+    assert (v3.spec_name, v3.spec_version, v3.decimals) == ("portaldot-v3", 3002, 14)
+    assert v3.default_url == "wss://test-node-v3.portaldot.dev" and not v3.is_standin
+    ident = classify(facts(v3, token_decimals=14, block_time_ms=6000.0, mean_block_time_ms=6000.0), "v3")
     data = ident.as_dict()
-    assert not ident.profile.is_standin
-    assert data["multisig_shape"] == UNVERIFIED and data["block_counts"] == UNVERIFIED
-    assert ident.decimals is None  # never a pinned fallback on V3
-    assert "genesis not pinned" in ident.banner() and UNVERIFIED in ident.banner()
-    assert any(UNVERIFIED in n for n in ident.notes)
-    with pytest.raises(ProfileUnverified):
-        require_multisig_shape(v3)
+    assert data["genesis_pinned"] and data["multisig_shape"] == "weight-v2"
+    assert data["block_counts"]["H"] == 100 and data["block_counts"]["W"] == 14400
+    assert ident.banner().startswith("[v3 | V3]") and UNVERIFIED not in ident.banner()
+    assert require_multisig_shape(v3) == "weight-v2"
+
+
+def test_v3_genesis_running_other_code_is_refused():
+    v3 = get_profile("v3")
+    with pytest.raises(ProfileMismatch, match=":code"):
+        classify(facts(v3, code_hash="0x" + "00" * 32), "v3")
+    with pytest.raises(ProfileMismatch, match="tokenDecimals"):
+        classify(facts(v3, token_decimals=12), "v3")
+
+
+def test_pre_launch_v3_identity_is_no_longer_recognised():
+    # what the retired feso-apps endpoint was documented to report: portaldotV3/3000, unknown genesis
+    with pytest.raises(UnknownChain):
+        classify(facts(get_profile("v3"), genesis_hash="0x" + "ab" * 32, spec_name="portaldotV3", spec_version=3000), "v3")
 
 
 def test_standin_without_a_block_sample_says_not_measured():
@@ -186,3 +201,6 @@ def test_config_explicit_profile_wins_and_url_defaults(tmp_path):
     cfg = load_chain_config(cfg_file, profile="v3", url="wss://example.invalid")
     assert cfg.profile.name == "v3" and cfg.url == "wss://example.invalid"
     assert load_chain_config(tmp_path / "missing.toml", profile="v3").url == get_profile("v3").default_url
+    # the file's localhost URL is the stand-in's; --profile v3 alone goes to the V3 endpoint
+    assert load_chain_config(cfg_file, profile="v3").url == "wss://test-node-v3.portaldot.dev"
+    assert load_chain_config(cfg_file, profile="standin-1002").url == "ws://127.0.0.1:49944"

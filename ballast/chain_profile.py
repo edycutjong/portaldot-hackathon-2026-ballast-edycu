@@ -88,24 +88,21 @@ class Profile:
 
 
 PROFILES: dict[str, Profile] = {
+    # Pinned at Ballast's V3 day-0 check (2026-10-20, evidence/v3-day0-20261020T131224Z.json): chain_getBlockHash(0),
+    # blake2_256(:code), state_getRuntimeVersion, system_properties. The pre-launch guide said
+    # portaldotV3/3000/tPOTv3 at testnetv3-node.feso-apps.xyz (retired); the live chain differs.
     "v3": Profile(
         name="v3",
-        label=f"Portaldot V3 testnet (genesis not pinned: {UNVERIFIED})",
+        label="Portaldot V3 testnet",
         is_standin=False,
-        default_url="wss://testnetv3-node.feso-apps.xyz",
-        genesis_hash=None,
-        code_hash=None,
-        spec_name="portaldotV3",  # how an unpinned V3 node is recognised until its genesis is pinned
-        spec_version=None,
-        decimals=None,
-        multisig_shape=None,
-        notes=(
-            f"genesis hash, :code hash, decimals, block time and as_multi shape: {UNVERIFIED}",
-            "URL and 14 decimals as published in the V3 testnet guide (github.com/ItsCogumellum/"
-            f"portaldot-v3-testnet-guide@d671a32 §1.1), not yet checked by Ballast: {UNVERIFIED}",
-            "spec name portaldotV3 as reported by a third party (github.com/finfreedom/portaldot-ink-toolchain@33983ab "
-            f"README), not yet checked by Ballast: {UNVERIFIED}",
-        ),
+        default_url="wss://test-node-v3.portaldot.dev",
+        genesis_hash="0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+        code_hash="0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+        spec_name="portaldot-v3",
+        spec_version=3002,
+        decimals=14,
+        multisig_shape=SHAPE_WEIGHT_V2,  # as_multi(threshold, other_signatories, maybe_timepoint, call, max_weight: Weight)
+        notes=("PortaldotV3 Test, node 3.0.0-dev-fddd43141f2, token tPOT, ss58 42",),
     ),
     "standin-upstream": Profile(
         name="standin-upstream",

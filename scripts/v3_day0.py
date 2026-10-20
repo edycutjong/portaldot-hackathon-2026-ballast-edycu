@@ -28,7 +28,7 @@ CONSTANTS = {
     "Balances": ("ExistentialDeposit",),
     "Assets": ("AssetDeposit", "AssetAccountDeposit", "MetadataDepositBase", "MetadataDepositPerByte", "StringLimit"),
     "Multisig": ("DepositBase", "DepositFactor", "MaxSignatories"),
-    "Revive": ("DepositPerByte", "DepositPerItem"),
+    "Revive": ("DepositPerByte", "DepositPerItem", "AllowEVMBytecode", "ChainId"),
 }
 
 
@@ -46,6 +46,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--url", default="wss://test-node-v3.portaldot.dev")
     ap.add_argument("--evm", default="https://test-evm-rpc-v3.portaldot.dev")
     ap.add_argument("--account", action="append", default=[], help="public SS58 address to report the free balance of")
+    ap.add_argument("--dry-run-origin", help="any FUNDED public address to size the ReserveOracle deploy from "
+                    "(ReviveApi_instantiate state_call: nothing is signed or sent)")
     ap.add_argument("--out", type=Path, default=ROOT / "evidence")
     args = ap.parse_args(argv)
 
@@ -82,6 +84,20 @@ def main(argv: list[str] | None = None) -> int:
         acct = sub.query("System", "Account", [who]).value
         balances[who] = {"free": acct["data"]["free"], "nonce": acct["nonce"]}
 
+    sudo_key = sub.query("Sudo", "Key").value if pallets.get("Sudo") is not None else None
+    oracle_dry_run = None
+    if args.dry_run_origin:
+        from eth_abi import encode
+
+        from ballast.oracle import initcode
+        from ballast.revive import dry_instantiate
+
+        code = initcode() + encode(["address"], ["0x" + "11" * 20])
+        res = dry_instantiate(sub, args.dry_run_origin, code)
+        oracle_dry_run = {"origin": args.dry_run_origin, "init_code_bytes": len(code), "ok": res.ok,
+                          "reverted": res.reverted, "storage_deposit": res.storage_deposit,
+                          "note": "ReviveApi_instantiate state_call with a placeholder attester; nothing signed or sent"}
+
     out = {
         "written_by": "ballast scripts/v3_day0.py (read-only, sends nothing)",
         "checked_at_utc": started.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -100,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
         "multisig_as_multi_args": as_multi_args,
         "constants": constants,
         "balances": balances,
+        "sudo_key": sudo_key,
+        "reserve_oracle_dry_run": oracle_dry_run,
         "evm": {"url": args.evm, "eth_chainId": evm(args.evm, "eth_chainId"), "eth_blockNumber": evm(args.evm, "eth_blockNumber")},
     }
     args.out.mkdir(parents=True, exist_ok=True)

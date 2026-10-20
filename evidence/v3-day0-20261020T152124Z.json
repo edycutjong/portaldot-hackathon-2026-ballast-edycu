@@ -1,0 +1,188 @@
+{
+  "written_by": "ballast scripts/v3_day0.py (read-only, sends nothing)",
+  "checked_at_utc": "2026-10-20T15:21:24Z",
+  "endpoint": "wss://test-node-v3.portaldot.dev",
+  "system_chain": "PortaldotV3 Test",
+  "system_version": "3.0.0-dev-fddd43141f2",
+  "genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+  "spec_name": "portaldot-v3",
+  "spec_version": 3002,
+  "transaction_version": 2,
+  "system_properties": {
+    "ss58Format": 42,
+    "tokenDecimals": 14,
+    "tokenSymbol": "tPOT"
+  },
+  "head": 118993,
+  "block_time_ms": {
+    "median": 6000.0,
+    "mean": 6000.0,
+    "blocks": 20
+  },
+  "pallets": {
+    "Assets": [
+      "create",
+      "force_create",
+      "start_destroy",
+      "destroy_accounts",
+      "destroy_approvals",
+      "finish_destroy",
+      "mint",
+      "burn",
+      "transfer",
+      "transfer_keep_alive",
+      "force_transfer",
+      "freeze",
+      "thaw",
+      "freeze_asset",
+      "thaw_asset",
+      "transfer_ownership",
+      "set_team",
+      "set_metadata",
+      "clear_metadata",
+      "force_set_metadata",
+      "force_clear_metadata",
+      "force_asset_status",
+      "approve_transfer",
+      "cancel_approval",
+      "force_cancel_approval",
+      "transfer_approved",
+      "touch",
+      "refund",
+      "set_min_balance",
+      "touch_other",
+      "refund_other",
+      "block",
+      "transfer_all",
+      "set_reserves"
+    ],
+    "Multisig": [
+      "as_multi_threshold_1",
+      "as_multi",
+      "approve_as_multi",
+      "cancel_as_multi",
+      "poke_deposit"
+    ],
+    "Utility": [
+      "batch",
+      "as_derivative",
+      "batch_all",
+      "dispatch_as",
+      "force_batch",
+      "with_weight",
+      "if_else",
+      "dispatch_as_fallible"
+    ],
+    "Revive": [
+      "eth_transact",
+      "call",
+      "instantiate",
+      "instantiate_with_code",
+      "eth_instantiate_with_code",
+      "eth_call",
+      "eth_substrate_call",
+      "upload_code",
+      "remove_code",
+      "set_code",
+      "map_account",
+      "batch_map_accounts",
+      "unmap_account",
+      "dispatch_as_fallback_account"
+    ],
+    "Sudo": [
+      "sudo",
+      "sudo_unchecked_weight",
+      "set_key",
+      "sudo_as",
+      "remove_key"
+    ],
+    "Proxy": [
+      "proxy",
+      "add_proxy",
+      "remove_proxy",
+      "remove_proxies",
+      "create_pure",
+      "kill_pure",
+      "announce",
+      "remove_announcement",
+      "reject_announcement",
+      "proxy_announced",
+      "poke_deposit"
+    ],
+    "System": [
+      "remark",
+      "set_heap_pages",
+      "set_code",
+      "set_code_without_checks",
+      "set_storage",
+      "kill_storage",
+      "kill_prefix",
+      "remark_with_event",
+      "authorize_upgrade",
+      "authorize_upgrade_without_checks",
+      "apply_authorized_upgrade"
+    ],
+    "Balances": [
+      "transfer_allow_death",
+      "force_transfer",
+      "transfer_keep_alive",
+      "transfer_all",
+      "force_unreserve",
+      "upgrade_accounts",
+      "force_set_balance",
+      "force_adjust_total_issuance",
+      "burn"
+    ]
+  },
+  "multisig_as_multi_args": {
+    "threshold": "u16",
+    "other_signatories": "Vec<T::AccountId>",
+    "maybe_timepoint": "Option<Timepoint<BlockNumberFor<T>>>",
+    "call": "Box<<T as Config>::RuntimeCall>",
+    "max_weight": "Weight"
+  },
+  "constants": {
+    "Balances": {
+      "ExistentialDeposit": 10000000000000
+    },
+    "Assets": {
+      "AssetDeposit": 100000000000000,
+      "AssetAccountDeposit": 100000000000000,
+      "MetadataDepositBase": 10000000000000,
+      "MetadataDepositPerByte": 6000000000000,
+      "StringLimit": 50
+    },
+    "Multisig": {
+      "DepositBase": 543000000000000,
+      "DepositFactor": 192000000000000,
+      "MaxSignatories": 100
+    },
+    "Revive": {
+      "DepositPerByte": 6000000000000,
+      "DepositPerItem": 15000000000000,
+      "AllowEVMBytecode": true,
+      "ChainId": 420420777
+    }
+  },
+  "balances": {
+    "5Fk6ZzKT5EcWHV3RZkYjgi7EEA1JT3aHaEhkSP2gGyv3DP96": {
+      "free": 0,
+      "nonce": 0
+    }
+  },
+  "sudo_key": "5Ca3hX34TqdyiwDu6kL1TqyQuo4aHvBSXYhWSCbyH8N1Xc5J",
+  "reserve_oracle_dry_run": {
+    "origin": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "init_code_bytes": 1818,
+    "ok": true,
+    "reverted": false,
+    "storage_deposit": 13853400000000000,
+    "note": "ReviveApi_instantiate state_call with a placeholder attester; nothing signed or sent"
+  },
+  "evm": {
+    "url": "https://test-evm-rpc-v3.portaldot.dev",
+    "eth_chainId": "0x190f1ca9",
+    "eth_blockNumber": "0x1d0d3"
+  }
+}

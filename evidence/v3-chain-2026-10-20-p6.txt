@@ -1,0 +1,9 @@
+# `ballast --profile v3 chain` — 2026-10-20T15:22:17Z — HEAD d705626 (read-only)
+[v3 | V3] genesis 0xd4f9acbc… spec portaldot-v3/3002 head #119002
+  label     Portaldot V3 testnet
+  url       wss://test-node-v3.portaldot.dev
+  :code     0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2
+  decimals  14
+  multisig  weight-v2
+  blocks    6000 ms (median 6000, mean 6000) over 20 blocks -> H=100 K=300 W=14400 N=2
+  note      PortaldotV3 Test, node 3.0.0-dev-fddd43141f2, token tPOT, ss58 42

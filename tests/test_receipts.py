@@ -164,3 +164,23 @@ def test_index_labels_chain_and_reserve_per_row():
     row = next(ln for ln in lines if "roles-drill-x.json" in ln)
     assert "stand-in, NOT V3" in row and "local-anvil (not Sepolia)" in row and "PASS" in row
     assert render_index([]) == []
+
+
+def test_proof_md_lists_only_v3_receipts_with_console_links():
+    from ballast.receipts import V3_CONSOLE, render_proof_md
+
+    def v3_receipt(n):
+        return _receipt() | {"profile": "v3", "block_number": 10 + n, "block_hash": "0x" + f"{n:02x}" * 32,
+                             "extrinsic_hash": "0x" + f"{n + 16:02x}" * 32}
+
+    v3 = _run("v3", is_standin=False) | {"_file": "roles-setup-v3.json", "kind": "roles-setup",
+                                          "oracle": {"address": "0x" + "ee" * 20, "attester": "0x" + "ff" * 20}}
+    v3["steps"][0]["receipt"] = v3_receipt(1)
+    v3["steps"][1]["receipt"] = v3_receipt(2)
+    v3["decisions"] = [{"receipt": v3_receipt(3)}, {"receipt": v3_receipt(1)}]  # duplicate hash listed once
+    standin = _run() | {"_file": "a.json", "kind": "spike-assets"}
+    md = render_proof_md([standin, v3])
+    assert "a.json" not in md and "roles-setup-v3.json" in md
+    assert md.count("| v3 |") == 3 and f"{V3_CONSOLE}0x{'01' * 32}" in md
+    assert "local anvil chain, NOT Sepolia" in md and "0x" + "ee" * 20 in md
+    assert "No V3 transaction yet." in render_proof_md([standin])

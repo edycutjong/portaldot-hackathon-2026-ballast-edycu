@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ballast.chain import connect  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
-from ballast.receipts import load_runs, refetch, write_receipts_md  # noqa: E402
+from ballast.receipts import load_runs, refetch, v3_receipts, write_receipts_md  # noqa: E402
 from ballast.rpc import RpcError, node_rpc  # noqa: E402
 
 
@@ -47,15 +47,18 @@ def main() -> int:
     runs = [r for r in load_runs() if r["chain"]["genesis_hash"] == ident.facts.genesis_hash]
     checked = failed = 0
     for run in runs:
-        for step in run["steps"]:
-            problems = refetch(substrate, step["receipt"])
+        # v3: every receipt PROOF.md lists (setup steps + CLI subprocess receipts); stand-ins: the run's steps
+        receipts = ([r for _, r in v3_receipts(run)] if ident.profile.name == "v3"
+                    else [step["receipt"] for step in run["steps"]])
+        for receipt in receipts:
+            problems = refetch(substrate, receipt)
             checked += 1
-            rid = step["receipt"]["extrinsic_id"]
+            rid = receipt["extrinsic_id"]
             if problems:
                 failed += 1
                 print(f"MISMATCH {run['_file']} {rid}: " + "; ".join(problems))
             else:
-                print(f"ok {run['_file']} {rid:>9} {step['receipt']['outcome']['text']}")
+                print(f"ok {run['_file']} {rid:>9} {receipt['outcome']['text']}")
     print(f"[{ident.profile.name}] {checked - failed}/{checked} receipts confirmed from {len(runs)} run(s)")
     evm_checked = evm_failed = 0
     evm_runs = [r for r in runs if r.get("evm_steps")]

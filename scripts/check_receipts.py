@@ -23,7 +23,7 @@ from ballast.chain import connect  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.receipts import load_runs, refetch, write_receipts_md  # noqa: E402
-from ballast.rpc import HttpRpc, RpcError  # noqa: E402
+from ballast.rpc import RpcError, node_rpc  # noqa: E402
 
 
 def main() -> int:
@@ -38,7 +38,7 @@ def main() -> int:
 
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=False)
     except (ProfileError, RpcError, OSError, ValueError) as exc:
         print(f"check_receipts: {exc}", file=sys.stderr)
         return 2

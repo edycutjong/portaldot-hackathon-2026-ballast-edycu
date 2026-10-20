@@ -28,7 +28,7 @@ from ballast.chain_profile import SHAPE_WEIGHT_V2, ProfileError, identify, requi
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.multisig import multi_address, other_signatories, public_key  # noqa: E402
 from ballast.receipts import EVIDENCE, score, summarize, write_receipts_md  # noqa: E402
-from ballast.rpc import HttpRpc  # noqa: E402
+from ballast.rpc import node_rpc  # noqa: E402
 
 SPIKE_ASSET_FROM = 1001  # spike assets use ids >= 1001 so the low ids stay free
 DECIMALS = 6
@@ -73,7 +73,7 @@ def main() -> int:
 
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name)
         shape = require_multisig_shape(ident.profile)
     except (ProfileError, OSError) as exc:
         print(f"spike_assets: {exc}", file=sys.stderr)

@@ -9,7 +9,7 @@ import sys
 from . import __version__
 from .chain_profile import MIN_SAMPLE_BLOCKS, ProfileError, identify
 from .config import load_chain_config
-from .rpc import HttpRpc, RpcError
+from .rpc import RpcError, node_rpc
 
 
 def write_pallets(cfg, ident, path: str) -> None:
@@ -47,7 +47,7 @@ def cmd_chain(args: argparse.Namespace) -> int:
         print(f"ballast: {exc}", file=sys.stderr)
         return 2
     try:
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=not args.no_measure, sample_blocks=args.blocks)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=not args.no_measure, sample_blocks=args.blocks)
     except (ProfileError, RpcError, ValueError) as exc:
         print(f"ballast: [{cfg.profile.name}] {exc}", file=sys.stderr)
         return 2
@@ -178,7 +178,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
             # submitting with wait-for-inclusion needs a websocket: an http URL would arm a watcher that cannot freeze
             raise ValueError(f"node URL {cfg.url!r}: the watcher needs a ws:// or wss:// URL")
         need_counts = args.poll_blocks is None or (args.bot and args.heartbeat_k is None)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=bool(need_counts))
+        ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=bool(need_counts))
         poll_blocks = args.poll_blocks
         if poll_blocks is None:
             if ident.counts is None:
@@ -223,7 +223,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001
             log("not-armed", message=f"node unreachable at {cfg.url}: {type(exc).__name__}: {exc}")
             return 3
-        dog = Watchdog(substrate=substrate, profile=ident.profile, head_rpc=HttpRpc(cfg.url),
+        dog = Watchdog(substrate=substrate, profile=ident.profile, head_rpc=node_rpc(cfg.url),
                        keypair=keypair, providers=providers, cfg=wcfg, log=log)
         try:
             pre = dog.preflight()
@@ -270,7 +270,7 @@ def _deployment_context(args: argparse.Namespace):
     from .roles import Deployment
 
     cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-    ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+    ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=False)
     dep = Deployment.load(ident.profile.name, args.deployment)
     if dep.genesis_hash != ident.facts.genesis_hash:
         raise ProfileError(f"deployment is for genesis {dep.genesis_hash}, the node is {ident.facts.genesis_hash}")

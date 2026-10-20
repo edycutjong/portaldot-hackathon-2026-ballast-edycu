@@ -34,7 +34,7 @@ from ballast.oracle import deploy as deploy_oracle  # noqa: E402
 from ballast.oracle import initcode  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
 from ballast.roles import JUDGE_URI, DEPLOYMENTS, Deployment, RoleMap, audit_team  # noqa: E402
-from ballast.rpc import HttpRpc  # noqa: E402
+from ballast.rpc import node_rpc  # noqa: E402
 from ballast.runlog import Run, now  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
 from ballast.watchdog import reserve_label  # noqa: E402
@@ -58,7 +58,7 @@ def main() -> int:
 
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=False)
     except (ProfileError, OSError, ValueError) as exc:
         print(f"setup_roles: {exc}", file=sys.stderr)
         return 2

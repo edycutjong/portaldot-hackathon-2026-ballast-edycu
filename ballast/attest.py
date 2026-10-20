@@ -181,17 +181,17 @@ class Attester:
 def run_attester(args: Any, *, profile: Any, substrate: Any, dep: Any, keypair: Any, providers: Any, store: Any) -> int:
     """`ballast bot attest`: poll the head every second, act every N blocks."""
     from .chain_profile import identify
-    from .rpc import HttpRpc
+    from .rpc import node_rpc
 
     url = args.url or substrate.url
-    ident = identify(HttpRpc(url), profile.name, measure=args.heartbeat_blocks is None or args.poll_blocks is None)
+    ident = identify(node_rpc(url), profile.name, measure=args.heartbeat_blocks is None or args.poll_blocks is None)
     h = args.heartbeat_blocks or ident.counts.heartbeat_h
     n = args.poll_blocks or ident.counts.poll_n
     log = JsonLog(args.log, profile=profile.name, chain=profile.label, breaker=dep.breaker, role="reserve-bot")
     oracle = None if args.no_oracle else (dep.oracle or {}).get("address")
     att = Attester(substrate=substrate, profile=profile, keypair=keypair, dep=dep, providers=providers, store=store,
                    log=log, oracle=oracle)
-    rpc = HttpRpc(url)
+    rpc = node_rpc(url)
     log("start", heartbeat_blocks=h, poll_blocks=n, oracle=oracle, reserve=dep.reserve["label"],
         message=f"attesting asset {dep.breaker} (+ control {dep.control}) every change + heartbeat every {h} blocks"
                 f" · oracle {oracle or 'off'}")

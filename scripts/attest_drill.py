@@ -32,7 +32,7 @@ from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, read_log, source_pin  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
 from ballast.roles import JUDGE_URI as JUDGE, Deployment  # noqa: E402
-from ballast.rpc import HttpRpc  # noqa: E402
+from ballast.rpc import node_rpc  # noqa: E402
 from ballast.runlog import Run  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
 
@@ -52,7 +52,7 @@ def main() -> int:
 
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name)
         dep = Deployment.load(ident.profile.name)
     except (ProfileError, OSError, ValueError) as exc:
         print(f"attest_drill: {exc}", file=sys.stderr)

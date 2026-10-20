@@ -40,7 +40,7 @@ from ballast.drill import artifact, epoch, forge_build, read_log, source_pin  # 
 from ballast.multisig_ops import pending  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
 from ballast.roles import JUDGE_URI as JUDGE, Deployment, audit_team  # noqa: E402
-from ballast.rpc import HttpRpc  # noqa: E402
+from ballast.rpc import node_rpc  # noqa: E402
 from ballast.runlog import Run  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
 from ballast.watchdog import asset_state, parse_remark  # noqa: E402
@@ -65,7 +65,7 @@ def main() -> int:
 
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=False)
         dep = Deployment.load(ident.profile.name)
     except (ProfileError, OSError, ValueError) as exc:
         print(f"role_drill: {exc}", file=sys.stderr)

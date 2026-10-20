@@ -39,7 +39,7 @@ from .chain_profile import ProfileError, blake2_256, identify
 from .config import load_chain_config
 from .multisig import multi_address, public_key
 from .receipts import EVIDENCE, score, summarize, write_receipts_md
-from .rpc import HttpRpc
+from .rpc import node_rpc
 from .sepolia import ANVIL_CHAIN_ID
 from .watchdog import parse_remark, reserve_label
 
@@ -113,7 +113,7 @@ def run_drill(args: argparse.Namespace) -> int:
 
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name)
     except (ProfileError, OSError, ValueError) as exc:
         print(f"drill: {exc}", file=sys.stderr)
         return 2

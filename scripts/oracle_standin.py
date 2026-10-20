@@ -36,7 +36,7 @@ from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import forge_build, source_pin  # noqa: E402
 from ballast.receipts import EVIDENCE, clean_pass, score, summarize, write_receipts_md  # noqa: E402
 from ballast.revive import dry_call, dry_instantiate, eth_address  # noqa: E402
-from ballast.rpc import HttpRpc  # noqa: E402
+from ballast.rpc import node_rpc  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 ARTIFACT = ROOT / "out" / "ReserveOracle.sol" / "ReserveOracle.json"
@@ -72,7 +72,7 @@ def main() -> int:
     args = ap.parse_args()
     try:
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
-        ident = identify(HttpRpc(cfg.url), cfg.profile.name, measure=False)
+        ident = identify(node_rpc(cfg.url), cfg.profile.name, measure=False)
     except (ProfileError, OSError, ValueError) as exc:
         print(f"oracle_standin: {exc}", file=sys.stderr)
         return 2

@@ -132,25 +132,26 @@ def cmd_reserves(args: argparse.Namespace) -> int:
 
 
 def _watcher_key(profile, uri: str | None):
-    """Stand-in: a //Dev URI. Anything else: the secret URI in $BALLAST_WATCHER_SURI (never logged)."""
+    """Stand-in: a //Dev URI. Real chain: a role URI resolves to its seed file (ballast.keys), else the secret URI in
+    $BALLAST_WATCHER_SURI (never logged), else W1's seed file."""
     import os
 
     from substrateinterface import Keypair
 
-    from .chain import dev_keypair
+    from .keys import keypair
 
     if profile.is_standin:
-        return dev_keypair(profile, uri or "//BallastW1")
+        return keypair(profile, uri or "//BallastW1")
+    if uri:
+        return keypair(profile, uri)
     suri = os.environ.get("BALLAST_WATCHER_SURI")
-    if not suri:
-        raise ProfileError(f"profile {profile.name}: set BALLAST_WATCHER_SURI (dev URIs are stand-in only)")
-    return Keypair.create_from_uri(suri)
+    return Keypair.create_from_uri(suri) if suri else keypair(profile, "//BallastW1")
 
 
 def _addresses(profile, items: list[str]) -> list[str]:
-    from .chain import dev_keypair
+    from .keys import keypair
 
-    return [dev_keypair(profile, i).ss58_address if i.startswith("//") else i for i in items]
+    return [keypair(profile, i).ss58_address if i.startswith("//") else i for i in items]
 
 
 def cmd_watch(args: argparse.Namespace) -> int:
@@ -247,21 +248,20 @@ def cmd_watch(args: argparse.Namespace) -> int:
 
 
 def _key(profile, uri: str | None, env: str, default: str):
-    """Stand-in: a //Dev URI (default `default`). Anything else: the secret URI in $<env> (never logged)."""
+    """Stand-in: a //Dev URI (default `default`). Real chain: a role URI resolves to its seed file (ballast.keys),
+    else the secret URI in $<env> (never logged), else the seed file of `default`."""
     import os
 
     from substrateinterface import Keypair
 
-    from .chain import dev_keypair
+    from .keys import keypair
 
     if profile.is_standin:
-        return dev_keypair(profile, uri or default)
+        return keypair(profile, uri or default)
     if uri:
-        raise ProfileError(f"profile {profile.name}: dev URIs are stand-in only; set {env}")
+        return keypair(profile, uri)
     suri = os.environ.get(env)
-    if not suri:
-        raise ProfileError(f"profile {profile.name}: set {env}")
-    return Keypair.create_from_uri(suri)
+    return Keypair.create_from_uri(suri) if suri else keypair(profile, default)
 
 
 def _deployment_context(args: argparse.Namespace):

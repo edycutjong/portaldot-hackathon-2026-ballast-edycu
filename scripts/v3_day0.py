@@ -45,7 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--url", default="wss://test-node-v3.portaldot.dev")
     ap.add_argument("--evm", default="https://test-evm-rpc-v3.portaldot.dev")
-    ap.add_argument("--account", action="append", default=[], help="public SS58 address to report the free balance of")
+    ap.add_argument("--account", action="append", default=[],
+                    help="[label=]<public SS58 address> to report the free balance of (e.g. funder=5F…)")
     ap.add_argument("--dry-run-origin", help="any FUNDED public address to size the ReserveOracle deploy from "
                     "(ReviveApi_instantiate state_call: nothing is signed or sent)")
     ap.add_argument("--out", type=Path, default=ROOT / "evidence")
@@ -80,9 +81,10 @@ def main(argv: list[str] | None = None) -> int:
                 constants.setdefault(pallet, {})[n] = f"unavailable: {type(exc).__name__}"
 
     balances = {}
-    for who in args.account:
+    for item in args.account:
+        label, _, who = item.rpartition("=")
         acct = sub.query("System", "Account", [who]).value
-        balances[who] = {"free": acct["data"]["free"], "nonce": acct["nonce"]}
+        balances[who] = {"label": label or None, "free": acct["data"]["free"], "nonce": acct["nonce"]}
 
     sudo_account = sub.query("Sudo", "Key").value if pallets.get("Sudo") is not None else None
     oracle_dry_run = None

@@ -50,7 +50,7 @@ def deploy(substrate: Any, profile: Any, keypair: Any, *, step: str = "deploy_or
         raise RuntimeError(f"ReserveOracle deploy dry-run failed: ok={dry.ok} reverted={dry.reverted}")
     r = submit(substrate, profile, keypair, "Revive", "instantiate_with_code",
                {"value": 0, "weight_limit": _limit(dry.weight_required),
-                "storage_deposit_limit": 2 * dry.storage_deposit, "code": "0x" + code.hex(), "data": "0x",
+                "storage_deposit_limit": dry.storage_deposit + dry.storage_deposit // 5, "code": "0x" + code.hex(), "data": "0x",
                 "salt": None}, step=step, call_label="Revive.instantiate_with_code(ReserveOracle)")
     inst = [e for e in r.events if (e["module_id"], e["event_id"]) == ("Revive", "Instantiated")]
     return r, (inst[0]["attributes"]["contract"] if inst else None), attester

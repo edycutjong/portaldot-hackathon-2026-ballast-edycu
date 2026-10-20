@@ -3,7 +3,7 @@
 
   python scripts/setup_roles.py [--profile standin-upstream] [--url ws://127.0.0.1:49944] [--evm-url URL]
 
-Portaldot (stand-in profiles only — dev keys):
+Portaldot (standin-upstream with public dev keys, or v3 with the role seed files from scripts/v3_keys.py):
   fund A, A2, B, W1, W2, judge, peer, and M_mint / M_admin / M_watch / the control asset's keyless owner (>= ED,
   `transfer_ownership` to an account below ED fails) -> A creates asset 1 (pUSDC-test) and asset 2 (pUSDC-ctl, 6
   decimals) -> A mints S2 = 50.00 of asset 2 to the peer (its one and only mint) -> asset 1:
@@ -13,6 +13,10 @@ Portaldot (stand-in profiles only — dev keys):
 Reserve (local anvil, labelled "local-anvil (not Sepolia)"; the Sepolia vault needs >= 100 test USDC): MockUSDC +
   ReserveVault, the custodian deposits S1 + S2 = 100.00 with a plain ERC-20 transfer.
 Asset 1 is NOT minted here: its S1 = 50.00 is minted through M_mint, gated by the reserve bot (scripts/role_drill.py).
+On v3 assets 1/2 belong to others: the breaker/control ids default to 4401/4402 (--breaker/--control), every
+  account is funded with a lean, deposit-derived amount from the human-funded funder seed, and the funder's balance is
+  checked first (exit 2 with the amount it needs). --no-oracle skips the ReserveOracle (its storage deposit is the
+  largest single cost on v3: 138.53 tPOT measured by dry-run on 2026-10-20).
 Writes deployments/<profile>.json (public addresses only) and evidence/roles-setup-<profile>.json.
 """
 
@@ -26,12 +30,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ballast.chain import connect, dev_keypair, submit  # noqa: E402
+from ballast.chain import connect, submit  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, forge_build, source_pin  # noqa: E402
+from ballast.keys import keypair  # noqa: E402
 from ballast.oracle import deploy as deploy_oracle  # noqa: E402
 from ballast.oracle import initcode  # noqa: E402
+from ballast.revive import dry_instantiate  # noqa: E402
+from eth_abi import encode  # noqa: E402
 from ballast.receipts import write_receipts_md  # noqa: E402
 from ballast.roles import JUDGE_URI, DEPLOYMENTS, Deployment, RoleMap, audit_team  # noqa: E402
 from ballast.rpc import node_rpc  # noqa: E402
@@ -39,10 +46,10 @@ from ballast.runlog import Run, now  # noqa: E402
 from ballast.sepolia import ANVIL_CHAIN_ID  # noqa: E402
 from ballast.watchdog import reserve_label  # noqa: E402
 
-BREAKER, CONTROL = 1, 2
+ASSET_IDS = {"standin-upstream": (1, 2), "v3": (4401, 4402)}  # (breaker, control); 1 and 2 are taken on v3
 DECIMALS = 6
 S1 = S2 = 50_000_000  # 50.00 each, 6 decimals like USDC
-SUPPORTED = ("standin-upstream",)
+SUPPORTED = ("standin-upstream", "v3")
 KEYS = {"A": "//BallastA", "A2": "//BallastA2", "B": "//BallastB", "W1": "//BallastW1", "W2": "//BallastW2",
         "Judge": JUDGE_URI, "Peer": "//BallastPeer//roles"}
 
@@ -53,6 +60,9 @@ def main() -> int:
     ap.add_argument("--profile")
     ap.add_argument("--url")
     ap.add_argument("--evm-url", default="http://127.0.0.1:49545", help="local anvil (chain id 31337)")
+    ap.add_argument("--breaker", type=int, help="breaker asset id (default: 1 on the stand-in, 4401 on v3)")
+    ap.add_argument("--control", type=int, help="control asset id (default: 2 on the stand-in, 4402 on v3)")
+    ap.add_argument("--no-oracle", action="store_true", help="skip the ReserveOracle deploy (and its storage deposit)")
     args = ap.parse_args()
     from web3 import HTTPProvider, Web3
 
@@ -69,6 +79,8 @@ def main() -> int:
     if (DEPLOYMENTS / f"{profile.name}.json").exists():
         print(f"setup_roles: deployments/{profile.name}.json exists — the role split runs once per chain", file=sys.stderr)
         return 2
+    breaker = args.breaker or ASSET_IDS[profile.name][0]
+    control = args.control or ASSET_IDS[profile.name][1]
     w3 = Web3(HTTPProvider(args.evm_url, request_kwargs={"timeout": 10}))
     try:
         evm_chain = w3.eth.chain_id
@@ -82,22 +94,58 @@ def main() -> int:
         return 2
     print(ident.banner())
     substrate = connect(profile, cfg.url)
-    for asset_id in (BREAKER, CONTROL):
+    for asset_id in (breaker, control):
         if substrate.query("Assets", "Asset", [asset_id]).value is not None:
             print(f"setup_roles: asset {asset_id} already exists on this chain", file=sys.stderr)
             return 2
     fmt = substrate.ss58_format or 42
-    alice = dev_keypair(profile, "//Alice")
-    keys = {role: dev_keypair(profile, uri) for role, uri in KEYS.items()}
+    alice = keypair(profile, "//Alice")  # stand-in: //Alice; v3: the human-funded funder seed
+    keys = {role: keypair(profile, uri) for role, uri in KEYS.items()}
     addr = {role: kp.ss58_address for role, kp in keys.items()}
     rm = RoleMap(a=addr["A"], a2=addr["A2"], b=addr["B"], watchers=(addr["W1"], addr["W2"]), ss58_format=fmt)
-    role_of = {kp.ss58_address: role for role, kp in keys.items()} | {alice.ss58_address: "Alice, stand-in funder"}
+    role_of = {kp.ss58_address: role for role, kp in keys.items()} | {alice.ss58_address: "Alice, stand-in funder" if profile.is_standin else "funder (human-funded)"}
+    # Portaldot: size the funding first, so an under-funded funder stops before anything is sent.
+    const = lambda pallet, name: substrate.get_constant(pallet, name).value  # noqa: E731
+    ed = const("Balances", "ExistentialDeposit")
+    per_asset = (const("Assets", "AssetDeposit") + const("Assets", "MetadataDepositBase")
+                 + 2 * len("pUSDC-test") * const("Assets", "MetadataDepositPerByte"))
+    msig = const("Multisig", "DepositBase") + 3 * const("Multisig", "DepositFactor")
+    oracle_deposit = 0
+    if profile.is_standin:
+        fund = [(addr["A"], 2 * per_asset + 20 * msig + 100 * ed), (addr["A2"], 10 * msig + 100 * ed),
+                (addr["B"], 20 * msig + 10 * per_asset + 1000 * ed), (addr["W1"], 100 * ed), (addr["W2"], 100 * ed),
+                (addr["Judge"], 100 * ed), (addr["Peer"], 100 * ed), (rm.m_mint, 10 * ed), (rm.m_admin, 10 * ed),
+                (rm.m_watch, 10 * ed), (rm.control["owner"], 10 * ed)]
+    else:
+        # Real tokens: deposits from the chain's constants, two pending multisig ops per proposer, fee headroom.
+        fee = 50 * ed
+        if not args.no_oracle:  # dry-run from the funder: an unfunded origin cannot be sized
+            dry = dry_instantiate(substrate, alice.ss58_address,
+                                  initcode() + encode(["address"], [_h160(substrate, addr["B"])]))
+            if not dry.ok or dry.reverted or not dry.storage_deposit:
+                print("setup_roles: cannot size the ReserveOracle storage deposit (funder too low for the dry-run?); "
+                      "fund the funder or pass --no-oracle", file=sys.stderr)
+                return 2
+            oracle_deposit = dry.storage_deposit
+        fund = [(addr["A"], 2 * per_asset + 2 * msig + fee), (addr["A2"], msig + fee),
+                (addr["B"], 2 * msig + oracle_deposit + oracle_deposit // 5 + fee), (addr["W1"], fee),
+                (addr["W2"], fee), (addr["Judge"], fee), (addr["Peer"], 2 * ed), (rm.m_mint, 2 * ed),
+                (rm.m_admin, 2 * ed), (rm.m_watch, 2 * ed), (rm.control["owner"], 2 * ed)]
+    need = sum(v for _, v in fund) + 10 * ed
+    have = substrate.query("System", "Account", [alice.ss58_address]).value["data"]["free"]
+    dec = ident.decimals or 0
+    funding = {"funder": alice.ss58_address, "funder_free": have, "needed": need, "decimals": dec,
+               "oracle_deposit_dry_run": oracle_deposit or None}
+    if have < need:
+        print(f"setup_roles: funder {alice.ss58_address} holds {have / 10**dec:.4f}, needs {need / 10**dec:.4f} "
+              "(fund it, or --no-oracle); nothing was sent", file=sys.stderr)
+        return 2
     custodian = w3.eth.accounts[0]
-    run = Run("roles-setup", {**ident.as_dict(), "url": cfg.url}, role_of, asset_id=BREAKER,
-              assets={"breaker": BREAKER, "control": CONTROL, "S1": S1, "S2": S2, "decimals": DECIMALS},
+    run = Run("roles-setup", {**ident.as_dict(), "url": cfg.url}, role_of, asset_id=breaker,
+              assets={"breaker": breaker, "control": control, "S1": S1, "S2": S2, "decimals": DECIMALS},
               accounts={**addr, "M_mint": rm.m_mint, "M_admin": rm.m_admin, "M_watch": rm.m_watch,
                         "funder": alice.ss58_address},
-              roles=rm.as_dict(), dev_key_uris=KEYS,
+              roles=rm.as_dict(), **({"dev_key_uris": KEYS} if profile.is_standin else {"key_roles": list(KEYS)}),
               reserve={"label": reserve_label(evm_chain), "evm_chain_id": evm_chain, "evm_url": args.evm_url,
                        "custodian": custodian})
 
@@ -115,6 +163,7 @@ def main() -> int:
                              "block_hash": rcpt["blockHash"].to_0x_hex(), "status": rcpt["status"],
                              "from": rcpt["from"], "to": rcpt["to"], "contract": rcpt["contractAddress"]})
 
+    run["funding"] = funding
     deployment = None
     try:
         # Reserve: vault on the local anvil chain, deposit S1 + S2 as a plain ERC-20 transfer.
@@ -140,22 +189,13 @@ def main() -> int:
         run.check("vault reserves() after the deposit", vault.functions.reserves().call(), S1 + S2, "evm latest")
 
         # Portaldot: fund every account that signs or holds a role.
-        const = lambda pallet, name: substrate.get_constant(pallet, name).value  # noqa: E731
-        ed = const("Balances", "ExistentialDeposit")
-        per_asset = (const("Assets", "AssetDeposit") + const("Assets", "MetadataDepositBase")
-                     + 2 * len("pUSDC-test") * const("Assets", "MetadataDepositPerByte"))
-        msig = const("Multisig", "DepositBase") + 3 * const("Multisig", "DepositFactor")
-        fund = [(addr["A"], 2 * per_asset + 20 * msig + 100 * ed), (addr["A2"], 10 * msig + 100 * ed),
-                (addr["B"], 20 * msig + 10 * per_asset + 1000 * ed), (addr["W1"], 100 * ed), (addr["W2"], 100 * ed),
-                (addr["Judge"], 100 * ed), (addr["Peer"], 100 * ed), (rm.m_mint, 10 * ed), (rm.m_admin, 10 * ed),
-                (rm.m_watch, 10 * ed), (rm.control["owner"], 10 * ed)]
         r = submit(substrate, profile, alice, "Utility", "batch_all",
                    {"calls": [call("Balances", "transfer_keep_alive", {"dest": who, "value": v}) for who, v in fund]},
                    step="fund", call_label=f"Utility.batch_all[{len(fund)} x Balances.transfer_keep_alive]")
         run.step("fund A, A2, B, W1, W2, judge, peer, M_mint, M_admin, M_watch, asset-2 keyless owner (>= ED)", "Ok",
                  r, r.outcome.ok)
 
-        for asset_id, symbol in ((BREAKER, "pUSDC-test"), (CONTROL, "pUSDC-ctl")):
+        for asset_id, symbol in ((breaker, "pUSDC-test"), (control, "pUSDC-ctl")):
             r = submit(substrate, profile, keys["A"], "Assets", "create",
                        {"id": asset_id, "admin": addr["A"], "min_balance": 1}, step=f"create_{asset_id}")
             run.step(f"A creates asset {asset_id}", "Ok + Assets.Created", r, r.outcome.ok and has(r, "Assets.Created"),
@@ -167,62 +207,64 @@ def main() -> int:
                      r.outcome.ok and has(r, "Assets.MetadataSet"), ("Assets.MetadataSet",))
 
         r = submit(substrate, profile, keys["A"], "Assets", "mint",
-                   {"id": CONTROL, "beneficiary": addr["Peer"], "amount": S2}, step="mint_s2")
-        run.step("A mints S2 = 50.00 of control asset 2 to the peer (its only mint)", "Ok + Assets.Issued", r,
+                   {"id": control, "beneficiary": addr["Peer"], "amount": S2}, step="mint_s2")
+        run.step(f"A mints S2 = 50.00 of control asset {control} to the peer (its only mint)", "Ok + Assets.Issued", r,
                  r.outcome.ok and has(r, "Assets.Issued"), ("Assets.Issued",))
 
         team = rm.breaker_team()
         r = submit(substrate, profile, keys["A"], "Assets", "set_team",
-                   {"id": BREAKER, "issuer": team["issuer"], "admin": team["admin"], "freezer": team["freezer"]},
+                   {"id": breaker, "issuer": team["issuer"], "admin": team["admin"], "freezer": team["freezer"]},
                    step="set_team_1")
-        run.step("asset 1 set_team(issuer=M_mint, admin=M_admin, freezer=M_watch)", "Ok + Assets.TeamChanged", r,
+        run.step(f"asset {breaker} set_team(issuer=M_mint, admin=M_admin, freezer=M_watch)", "Ok + Assets.TeamChanged", r,
                  r.outcome.ok and has(r, "Assets.TeamChanged"), ("Assets.TeamChanged",))
-        r = submit(substrate, profile, keys["A"], "Assets", "transfer_ownership", {"id": BREAKER, "owner": rm.m_mint},
+        r = submit(substrate, profile, keys["A"], "Assets", "transfer_ownership", {"id": breaker, "owner": rm.m_mint},
                    step="transfer_ownership_1")
-        run.step("asset 1 transfer_ownership(M_mint 2-of-2 {A, B})", "Ok + Assets.OwnerChanged", r,
+        run.step(f"asset {breaker} transfer_ownership(M_mint 2-of-2 {A, B})", "Ok + Assets.OwnerChanged", r,
                  r.outcome.ok and has(r, "Assets.OwnerChanged"), ("Assets.OwnerChanged",))
-        details1 = substrate.query("Assets", "Asset", [BREAKER], block_hash=r.block_hash).value
-        run.check("asset 1 team == role map (owner/issuer = M_mint, admin = M_admin, freezer = M_watch)",
+        details1 = substrate.query("Assets", "Asset", [breaker], block_hash=r.block_hash).value
+        run.check(f"asset {breaker} team == role map (owner/issuer = M_mint, admin = M_admin, freezer = M_watch)",
                   audit_team(details1, team), [], r.block_hash)
 
         ctl = rm.control_team()
         r = submit(substrate, profile, keys["A"], "Assets", "set_team",
-                   {"id": CONTROL, "issuer": ctl["issuer"], "admin": ctl["admin"], "freezer": ctl["freezer"]},
+                   {"id": control, "issuer": ctl["issuer"], "admin": ctl["admin"], "freezer": ctl["freezer"]},
                    step="set_team_2")
-        run.step("asset 2 set_team(keyless issuer, admin, freezer)", "Ok + Assets.TeamChanged", r,
+        run.step(f"asset {control} set_team(keyless issuer, admin, freezer)", "Ok + Assets.TeamChanged", r,
                  r.outcome.ok and has(r, "Assets.TeamChanged"), ("Assets.TeamChanged",))
-        r = submit(substrate, profile, keys["A"], "Assets", "transfer_ownership", {"id": CONTROL, "owner": ctl["owner"]},
+        r = submit(substrate, profile, keys["A"], "Assets", "transfer_ownership", {"id": control, "owner": ctl["owner"]},
                    step="transfer_ownership_2")
-        run.step("asset 2 transfer_ownership(keyless owner)", "Ok + Assets.OwnerChanged", r,
+        run.step(f"asset {control} transfer_ownership(keyless owner)", "Ok + Assets.OwnerChanged", r,
                  r.outcome.ok and has(r, "Assets.OwnerChanged"), ("Assets.OwnerChanged",))
-        details2 = substrate.query("Assets", "Asset", [CONTROL], block_hash=r.block_hash).value
-        run.check("asset 2 team == keyless accounts (S2 can never change)", audit_team(details2, ctl), [], r.block_hash)
-        run.check("supply S1 (asset 1) before the gated mint", details1["supply"], 0, r.block_hash)
-        run.check("supply S2 (asset 2)", details2["supply"], S2, r.block_hash)
+        details2 = substrate.query("Assets", "Asset", [control], block_hash=r.block_hash).value
+        run.check(f"asset {control} team == keyless accounts (S2 can never change)", audit_team(details2, ctl), [], r.block_hash)
+        run.check(f"supply S1 (asset {breaker}) before the gated mint", details1["supply"], 0, r.block_hash)
+        run.check(f"supply S2 (asset {control})", details2["supply"], S2, r.block_hash)
 
         # A cannot act alone any more: a direct mint by A is refused by the pallet.
         r = submit(substrate, profile, keys["A"], "Assets", "mint",
-                   {"id": BREAKER, "beneficiary": addr["A"], "amount": 1}, step="a_alone_mint")
-        run.step("A alone tries to mint asset 1 (issuer is M_mint)", "Err(Assets.NoPermission)", r,
+                   {"id": breaker, "beneficiary": addr["A"], "amount": 1}, step="a_alone_mint")
+        run.step(f"A alone tries to mint asset {breaker} (issuer is M_mint)", "Err(Assets.NoPermission)", r,
                  str(r.outcome) == "Err(Assets.NoPermission)")
 
-        # ReserveOracle mirror on Revive (stand-in: Revive accepts EVM bytecode; V3 deploy at gate G4).
-        if not substrate.query("Revive", "OriginalAccount", [_h160(substrate, addr["B"])]).value:
-            r = submit(substrate, profile, keys["B"], "Revive", "map_account", {}, step="map_b")
-            run.step("B maps its account in Revive", "Ok", r, r.outcome.ok)
-        r, contract, attester = deploy_oracle(substrate, profile, keys["B"])
-        run.step(f"B deploys ReserveOracle(attester = {attester})", "Ok + Revive.Instantiated", r,
-                 r.outcome.ok and contract is not None, ("Revive.Instantiated",))
-        if not contract:
-            raise RuntimeError("no Revive.Instantiated event")
-        run["oracle"] = {"address": contract, "attester": attester, "deploy_extrinsic": r.extrinsic_id}
+        contract = attester = None
+        if not args.no_oracle:
+            # ReserveOracle mirror on Revive (Revive.AllowEVMBytecode = true on the stand-in and on v3, day-0 2026-10-20).
+            if not substrate.query("Revive", "OriginalAccount", [_h160(substrate, addr["B"])]).value:
+                r = submit(substrate, profile, keys["B"], "Revive", "map_account", {}, step="map_b")
+                run.step("B maps its account in Revive", "Ok", r, r.outcome.ok)
+            r, contract, attester = deploy_oracle(substrate, profile, keys["B"])
+            run.step(f"B deploys ReserveOracle(attester = {attester})", "Ok + Revive.Instantiated", r,
+                     r.outcome.ok and contract is not None, ("Revive.Instantiated",))
+            if not contract:
+                raise RuntimeError("no Revive.Instantiated event")
+            run["oracle"] = {"address": contract, "attester": attester, "deploy_extrinsic": r.extrinsic_id}
 
         deployment = Deployment(
-            profile=profile.name, genesis_hash=ident.facts.genesis_hash, breaker=BREAKER, control=CONTROL,
+            profile=profile.name, genesis_hash=ident.facts.genesis_hash, breaker=breaker, control=control,
             decimals=DECIMALS, s2=S2, roles=rm.as_dict(),
             reserve={"label": run["reserve"]["label"], "evm_chain_id": evm_chain, "vault": vault_addr,
                      "erc20": usdc_addr, "custodian": custodian, "providers": [f"anvil={args.evm_url}"]},
-            oracle={"address": contract, "attester": attester, "chain": profile.label},
+            oracle={"address": contract, "attester": attester, "chain": profile.label} if contract else None,
             created_at=now(), setup_evidence=f"roles-setup-{profile.name}.json")
     except Exception as exc:  # noqa: BLE001 — keep every receipt that landed
         run["error"] = f"{type(exc).__name__}: {exc}"

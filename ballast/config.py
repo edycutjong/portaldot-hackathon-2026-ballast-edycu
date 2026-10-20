@@ -17,7 +17,9 @@ class ChainConfig:
 
 
 def load_chain_config(path: str | os.PathLike | None = None, *, profile: str | None = None, url: str | None = None) -> ChainConfig:
-    """Explicit arguments win, then `ballast.toml` ([chain] profile/url), then the profile's default URL."""
+    """Explicit arguments win, then `ballast.toml` ([chain] profile/url), then the profile's default URL.
+
+    The file's url is used only for the file's own profile (or when the file names none)."""
     data: dict = {}
     cfg_path = Path(path or os.environ.get("BALLAST_CONFIG", "ballast.toml"))
     if cfg_path.exists():
@@ -30,4 +32,6 @@ def load_chain_config(path: str | os.PathLike | None = None, *, profile: str | N
     if not name:
         raise ProfileError(f"no chain profile: pass --profile or set [chain] profile in {cfg_path}")
     prof = get_profile(name)
-    return ChainConfig(profile=prof, url=url or data.get("url") or prof.default_url)
+    # ballast.toml's url belongs to ballast.toml's profile: `--profile v3` must not inherit a stand-in's localhost URL.
+    file_url = data.get("url") if data.get("profile") in (None, name) else None
+    return ChainConfig(profile=prof, url=url or file_url or prof.default_url)

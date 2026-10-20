@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         acct = sub.query("System", "Account", [who]).value
         balances[who] = {"free": acct["data"]["free"], "nonce": acct["nonce"]}
 
-    sudo_key = sub.query("Sudo", "Key").value if pallets.get("Sudo") is not None else None
+    sudo_account = sub.query("Sudo", "Key").value if pallets.get("Sudo") is not None else None
     oracle_dry_run = None
     if args.dry_run_origin:
         from eth_abi import encode
@@ -116,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         "multisig_as_multi_args": as_multi_args,
         "constants": constants,
         "balances": balances,
-        "sudo_key": sudo_key,
+        "sudo_account": sudo_account,
         "reserve_oracle_dry_run": oracle_dry_run,
         "evm": {"url": args.evm, "eth_chainId": evm(args.evm, "eth_chainId"), "eth_blockNumber": evm(args.evm, "eth_blockNumber")},
     }

@@ -3,3 +3,5 @@
 # Public local-anvil MockUSDC contract address under a JSON key named "token" (not a secret); the key is "erc20" now.
 39890a1149ecac67cedeb61ae70c275b569bb5b8:deployments/standin-upstream.json:generic-api-key:65
 dc0338c421a325a631ac0cb36eb56fa5f6df8eca:evidence/roles-drill-standin-upstream-20261014T124759Z.json:generic-api-key:86
+# public SS58 address of the V3 Sudo account (System state, not a secret) under the field name sudo_key — renamed sudo_account afterwards
+4a317c0406ebb5449672d53d8a363439fad179a3:evidence/v3-day0-20261020T152124Z.json:generic-api-key:174

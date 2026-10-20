@@ -30,10 +30,10 @@ The Sepolia `ReserveVault` deploy, its 100.00 USDC deposit and the real-Sepolia 
 
 ## Stand-in receipts — standin-upstream (not V3)
 
-Measured on a **local** stand-in chain while the Portaldot V3 testnet is unreachable. Nothing in this
+Measured on a **local** stand-in chain (before the Portaldot V3 testnet was reachable). Nothing in this
 section is a V3 measurement. The chain is a local `--dev` node: `scripts/check_receipts.py` re-fetches
 these rows from that node only, there is no public explorer for it, and a fresh node + spike run
-produces new hashes (same steps, same outcomes). Re-running them on V3 is planned for when V3 is reachable.
+produces new hashes (same steps, same outcomes). V3 runs, once funded, are listed in `docs/PROOF.md`.
 
 Latest V3 reachability probe: [`evidence/v3-probe-2026-10-14-p5.txt`](../evidence/v3-probe-2026-10-14-p5.txt) (V3 reachability probe — 2026-10-14T14:59:52Z (P5)).
 

@@ -1,7 +1,7 @@
 """Chain profiles: which chain Ballast is talking to, and what that chain's numbers are.
 
-Ballast targets the Portaldot V3 testnet. While V3 is unreachable it runs on a labelled stand-in,
-and nothing measured on a stand-in is presented as V3. A chain is identified by its genesis hash
+Ballast targets the Portaldot V3 testnet (profile `v3`, pinned at the 2026-10-20 day-0 check). The drills also run
+on labelled stand-ins, and nothing measured on a stand-in is presented as V3. A chain is identified by its genesis hash
 and the blake2-256 hash of its `:code`; a mismatch with the configured profile fails loudly.
 
 Block counts are derived from the block time measured on the chain in use:

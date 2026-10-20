@@ -2,7 +2,8 @@
 
 > Generated from the code on 2026-10-14 (`ballast/` unchanged since `a4bdcfa`). Only components that exist in this repository are drawn; what is not built is listed
 > at the end. **Everything measured so far ran on a labelled local stand-in chain (`standin-upstream`, NOT Portaldot V3) against a local
-> anvil reserve chain (NOT Sepolia).** Nothing here is a V3 or Sepolia-vault measurement.
+> anvil reserve chain (NOT Sepolia).** Every drill and receipt ran on the stand-in; the only V3 data is the read-only day-0 check
+> of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`). Nothing here is a Sepolia-vault measurement.
 
 ## What it is
 
@@ -142,7 +143,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 | Profile | State |
 |---|---|
-| `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152124Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. No V3 transaction yet (the funder is unfunded); the old `feso-apps.xyz` names (empty DNS on 2026-10-14) are retired |
+| `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. No V3 transaction yet (the funder `5Fk6Zz…DP96` held 0 tPOT); the old `feso-apps.xyz` names returned empty DNS on 2026-10-14 and are not used |
 | `standin-upstream` | the profile everything was measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 

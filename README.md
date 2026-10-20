@@ -11,9 +11,9 @@
 ![Reserve: local anvil, not Sepolia](https://img.shields.io/badge/reserve-local%20anvil%2C%20not%20Sepolia-orange)
 
 *Portaldot Hacker House 2026 · check-in build. The Portaldot V3 testnet's old DNS names did not resolve on 2026-10-14
-([`evidence/v3-probe-2026-10-14-p5.txt`](evidence/v3-probe-2026-10-14-p5.txt)); it is back at `wss://test-node-v3.portaldot.dev`, and Ballast's
-read-only day-0 check on 2026-10-20 pinned its genesis, runtime `:code` hash and spec `portaldot-v3`/3002 ([`evidence/v3-day0-20261020T152124Z.json`](evidence/v3-day0-20261020T152124Z.json)).
-The V3 transactions wait for test tokens (Ballast's V3 funder held 0 tPOT on 2026-10-20), so the breaker is still demonstrated on a labelled
+([`evidence/v3-probe-2026-10-14-p5.txt`](evidence/v3-probe-2026-10-14-p5.txt)); a V3 testnet is reachable at `wss://test-node-v3.portaldot.dev`, and Ballast's
+read-only day-0 check on 2026-10-20 pinned its genesis, runtime `:code` hash and spec `portaldot-v3`/3002 ([`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)).
+The V3 transactions wait for test tokens (Ballast's V3 funder `5Fk6Zz…DP96` held 0 tPOT on 2026-10-20), so the breaker is still demonstrated on a labelled
 local stand-in chain against a local anvil reserve chain. No Sepolia vault is deployed yet. Every receipt says which chain it came from.*
 
 ![Ballast architecture](docs/architecture.png)
@@ -56,7 +56,7 @@ transfer fails, reserves come back, finality passes, the admin multisig thaws wi
 **Trust model, stated plainly:** Ballast is **not a trustless bridge**. Custody is trusted: whoever owns the vault can move the reserves.
 Ballast does not prevent that; it makes it visible and stops the shortfall from being minted over or spreading. In this build one person holds
 every operator key (A, A2, B and both watchers), so the separation is enforced by the runtime, not by independent humans. Everything is also
-subject to the chain's Root origin (`force_asset_status`); on the V3 testnet a `Sudo` key is set (`5Ca3hX…Xc5J`, [`evidence/v3-day0-20261020T152124Z.json`](evidence/v3-day0-20261020T152124Z.json)), and who controls it is not known to us.
+subject to the chain's Root origin (`force_asset_status`); on the V3 testnet a `Sudo` key is set (`5Ca3hX…Xc5J`, [`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)), and who controls it is not known to us.
 
 ### Blockchain Relevance
 
@@ -64,7 +64,7 @@ The breaker is assembled from pallet-native modules (Assets roles, Multisig, Sys
 and it freezes at the asset level, so every transfer is refused rather than one pool's. The one contract that targets Portaldot's EVM layer,
 `ReserveOracle`, is a read-only mirror so EVM dApps can ask `isBacked(maxAge)`; it cannot freeze or thaw anything. It has only been deployed
 on the stand-in's `Revive` pallet. V3's `Revive` reports `AllowEVMBytecode = true` and a dry-run of the same deployment succeeds there
-(storage deposit 138.53 tPOT, [`evidence/v3-day0-20261020T152124Z.json`](evidence/v3-day0-20261020T152124Z.json)); it is not deployed on V3 yet.
+(placeholder attester; storage deposit 138.53 tPOT, [`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)); it is not deployed on V3 yet.
 
 ## Technical Architecture
 
@@ -173,7 +173,7 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
 cp ballast.toml.example ballast.toml        # profile = standin-upstream, ws://127.0.0.1:49944
 
-pytest -q                                   # 224 tests, offline (metadata fixtures are sha256-pinned)
+pytest -q                                   # 235 tests, offline (metadata fixtures are sha256-pinned)
 forge test                                  # 20 ReserveVault tests
 npm ci && npx hardhat test                  # 15 ReserveOracle tests
 
@@ -202,7 +202,8 @@ Tested on the author's one stand-in chain: the unit tests, forge and Hardhat sui
 new chain has not been set up from scratch.
 
 The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
-non-stand-in profile; on `v3` each role key is a mode-600 seed file outside the repo (`scripts/v3_keys.py`). `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
+non-stand-in profile; on `v3` each role key is a mode-600 seed file outside the repo (default `~/.config/ballast`,
+`$BALLAST_KEY_DIR`; `scripts/v3_keys.py`). `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
 `SEPOLIA_*` variables from a file outside the tree (names in `.env.example`). On `v3`, `scripts/setup_roles.py --profile v3` sizes its funding from
 the chain's deposit constants, refuses to start if the funder is short, and deploys the oracle through `Revive.instantiate_with_code`; it has not
 run on V3 yet. There is no frontend to launch.
@@ -233,7 +234,7 @@ run on V3 yet. There is no frontend to launch.
 
 **Next phase**
 - [ ] Deploy `ReserveVault` on Sepolia with 100.00 test USDC and run the drill against it, including the finality wait (needs faucet claims)
-- [ ] Re-run everything on the Portaldot V3 testnet once it is funded. Read-only day-0 checks done on 2026-10-20 ([`evidence/v3-day0-20261020T152124Z.json`](evidence/v3-day0-20261020T152124Z.json)): Multisig
+- [ ] Re-run everything on the Portaldot V3 testnet once it is funded. Read-only day-0 checks done on 2026-10-20 ([`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)): Multisig
   present, Revive accepts EVM bytecode, 6000 ms blocks. Still to show by transaction: freezer-cannot-thaw on V3
 - [ ] A watcher on separate infrastructure (today both watchers run on one machine)
 - [ ] Community-watcher mode, watcher-set rotation, `M_admin` rotation, wind-down branch, `ReserveOracle.trip()`

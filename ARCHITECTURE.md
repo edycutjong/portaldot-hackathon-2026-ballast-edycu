@@ -1,6 +1,7 @@
 # Ballast — Architecture
 
-> Generated from the code on 2026-10-14 (`ballast/` unchanged since `a4bdcfa`). Only components that exist in this repository are drawn; what is not built is listed
+> Generated from the code on 2026-10-14 (`a4bdcfa`, the code the stand-in drills ran on); updated 2026-10-20 for the V3 profile, seed-file keys,
+> WebSocket RPC and `docs/PROOF.md`, which change no recorded stand-in result. Only components that exist in this repository are drawn; what is not built is listed
 > at the end. **Everything measured so far ran on a labelled local stand-in chain (`standin-upstream`, NOT Portaldot V3) against a local
 > anvil reserve chain (NOT Sepolia).** Every drill and receipt ran on the stand-in; the only V3 data is the read-only day-0 check
 > of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`). Nothing here is a Sepolia-vault measurement.

@@ -35,7 +35,8 @@ section is a V3 measurement. The chain is a local `--dev` node: `scripts/check_r
 these rows from that node only, there is no public explorer for it, and a fresh node + spike run
 produces new hashes (same steps, same outcomes). V3 runs, once funded, are listed in `docs/PROOF.md`.
 
-Latest V3 reachability probe: [`evidence/v3-probe-2026-10-14-p5.txt`](../evidence/v3-probe-2026-10-14-p5.txt) (V3 reachability probe — 2026-10-14T14:59:52Z (P5)).
+Earlier V3 reachability probe (the old DNS names): [`evidence/v3-probe-2026-10-14-p5.txt`](../evidence/v3-probe-2026-10-14-p5.txt) (V3 reachability probe — 2026-10-14T14:59:52Z (P5)).
+Current V3 identity (read-only day-0 check): [`evidence/v3-day0-20261020T152616Z.json`](../evidence/v3-day0-20261020T152616Z.json).
 
 ### Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw — 2026-10-14T15:02:11Z
 

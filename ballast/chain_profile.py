@@ -88,7 +88,8 @@ class Profile:
 
 
 PROFILES: dict[str, Profile] = {
-    # Pinned at Ballast's V3 day-0 check (2026-10-20, evidence/v3-day0-20261020T131224Z.json): chain_getBlockHash(0),
+    # Pinned at Ballast's V3 day-0 check (2026-10-20, evidence/v3-day0-20261020T131224Z.json, re-checked in
+    # evidence/v3-day0-20261020T152616Z.json): chain_getBlockHash(0),
     # blake2_256(:code), state_getRuntimeVersion, system_properties. The pre-launch guide said
     # portaldotV3/3000/tPOTv3 at testnetv3-node.feso-apps.xyz (retired); the live chain differs.
     "v3": Profile(

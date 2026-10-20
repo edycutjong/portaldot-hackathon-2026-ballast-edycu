@@ -267,7 +267,11 @@ def v3_probe_line() -> list[str]:
         return []
     latest = probes[-1]
     first = latest.read_text().splitlines()[0].lstrip("# ").strip()
-    return [f"Latest V3 reachability probe: [`evidence/{latest.name}`](../evidence/{latest.name}) ({first}).", ""]
+    lines = [f"Earlier V3 reachability probe (the old DNS names): [`evidence/{latest.name}`](../evidence/{latest.name}) ({first})."]
+    day0 = sorted(EVIDENCE.glob("v3-day0-*.json"))
+    if day0:
+        lines.append(f"Current V3 identity (read-only day-0 check): [`evidence/{day0[-1].name}`](../evidence/{day0[-1].name}).")
+    return lines + [""]
 
 
 STANDIN_NOTE = [

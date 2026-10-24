@@ -73,10 +73,12 @@ def main() -> int:
             else:
                 print(f"ok {run['_file']} {rid:>9} {receipt['outcome']['text']}")
     print(f"[{ident.profile.name}] {checked - failed}/{checked} receipts confirmed from {len(runs)} run(s)")
-    if v3:
+    if v3 and args.regen:  # a plain check never rewrites committed evidence
         FINALITY.write_text(json.dumps({"checked_at": now(), "finalized_head": finalized, "receipts": finality},
                                        indent=2) + "\n")
-        print(f"[v3] all confirmed rows at or below the finalized head #{finalized} -> evidence/{FINALITY.name}")
+        print(f"[v3] finality map -> evidence/{FINALITY.name}")
+    if v3:
+        print(f"[v3] all confirmed rows at or below the finalized head #{finalized}")
     evm_checked = evm_failed = 0
     evm_runs = [r for r in runs if r.get("evm_steps")]
     if evm_runs:

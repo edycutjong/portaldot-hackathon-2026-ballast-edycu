@@ -28,6 +28,69 @@ The Sepolia `ReserveVault` deploy, its 100.00 USDC deposit and the real-Sepolia 
 - [`evidence/sepolia-crosscheck-2026-10-14-p5.json`](../evidence/sepolia-crosscheck-2026-10-14-p5.json) — read at 2026-10-14T14:59:47.420Z: finalized block #11913933 via 2 providers — AGREE (publicnode: `0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda` reserves 20000000, drpc: `0x38042e59670bff3aeda838faba65592f918e0f75a96bde863fa410b582fc4bda` reserves 20000000). Note: holder = Ballast's Sepolia testnet deployer wallet, NOT a vault: no ReserveVault is deployed on Sepolia (wallet below 100.00 USDC). P5 evidence refresh.
 - [`evidence/sepolia-crosscheck-2026-10-14.json`](../evidence/sepolia-crosscheck-2026-10-14.json) — read at 2026-10-14T11:41:44.199Z: finalized block #11912942 via 2 providers — AGREE (publicnode: `0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b` reserves 20000000, drpc: `0x3737ad092fc1a966eed28a5af84b1cf9e3e46ebabe2a36044ee050f209f39e7b` reserves 20000000). Note: holder = Ballast's Sepolia testnet deployer wallet, NOT a vault: no ReserveVault is deployed on Sepolia yet; this file shows the two-provider reader agreeing on one finalized block
 
+## V3 receipts — v3
+
+Chain label: Portaldot V3 testnet
+
+### Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle — 2026-10-24T04:41:31Z
+
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-setup-v3.json`](../evidence/roles-setup-v3.json) · result: **PASS** (16/16 steps as expected, 6/6 state checks) · source: `775e97c` (UNCOMMITTED CHANGES)
+
+Role map: `M_mint` 5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb (2-of-2 A, B) · `M_admin` 5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg (2-of-3 A, A2, B) · `M_watch` 5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c (1-of-2 watchers).
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `None`):
+
+| # | Step | Block | Tx hash | Observed |
+|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 1217 | `0xcdef806dd63f8366afaf0576375093f6299df8aac2d740ccf3654edac098cdb7` | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc) — owner = custodian | 1218 | `0x286bb9ad4e337c2d68d29fc6a5fc83508ef63f86c21a1cc879f81874a823d1c7` | ✅ status 1 |
+| 3 | custodian receives 100.00 test tokens | 1219 | `0xe9627e59bcf7e5538d47024bafab02ab2d873045493abd973859e6f0f99a2d53` | ✅ status 1 |
+| 4 | deposit S1 + S2 = 100.00 — plain ERC-20 transfer into the vault | 1220 | `0x1457a7d9311d1136f9f82ebe6de5eb16afa1cd266ba7d1dc23edef933b0619a4` | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund A, A2, B, W1, W2, judge, peer, M_mint, M_admin, M_watch, asset-2 keyless owner (>= ED) | `Utility.batch_all[11 x Balances.transfer_keep_alive]` (funder (human-funded)) | `169920-1` | Ok | ✅ Ok |
+| 2 | A creates asset 4401 | `Assets.create` (A) | `169921-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-test (6 decimals) | `Assets.set_metadata` (A) | `169922-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | A creates asset 4402 | `Assets.create` (A) | `169923-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 5 | set_metadata pUSDC-ctl (6 decimals) | `Assets.set_metadata` (A) | `169924-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 6 | A mints S2 = 50.00 of control asset 4402 to the peer (its only mint) | `Assets.mint` (A) | `169925-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 7 | asset 4401 set_team(issuer=M_mint, admin=M_admin, freezer=M_watch) | `Assets.set_team` (A) | `169926-1` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 8 | asset 4401 transfer_ownership(M_mint 2-of-2 {A, B}) | `Assets.transfer_ownership` (A) | `169927-1` | Ok + Assets.OwnerChanged | ✅ Ok · Assets.OwnerChanged |
+| 9 | asset 4402 set_team(keyless issuer, admin, freezer) | `Assets.set_team` (A) | `169957-1` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 10 | asset 4402 transfer_ownership(keyless owner) | `Assets.transfer_ownership` (A) | `169958-1` | Ok + Assets.OwnerChanged | ✅ Ok · Assets.OwnerChanged |
+| 11 | A alone tries to mint asset 4401 (issuer is M_mint) | `Assets.mint` (A) | `169959-1` | Err(Assets.NoPermission) | ✅ Err(Assets.NoPermission) |
+| 12 | B deploys ReserveOracle(attester = 0xc81ab822279e828b16a2be9a55520e475fa98678) | `Revive.instantiate_with_code(ReserveOracle)` (B) | `169960-1` | Ok + Revive.Instantiated | ✅ Ok · Revive.Instantiated |
+
+Block and transaction hashes (full):
+
+```
+ 1  169920-1 block 0xea492def23d67d425450ee027f28afa8edefb39cdf8a6f0593bfd9729c1b207a  tx 0x570c3ba215c66071a8b5022c0997365bb2dd23bfe420d428d92761c8a8daa843
+ 2  169921-1 block 0xb133784fdabeb45d87876758c037968dab8546a8861ef08ea64cf5c8ec73d687  tx 0x24dc146315456dfa14072e86df72bf041344fd9c5f7f408baf455f2718fbf996
+ 3  169922-1 block 0xeb348b8e9ffc6dc28d351b8bf7f4a8d3bf8933fbfe004fb0909e91d738bb8b52  tx 0xb82458706e543a051ee0b51090df052fba28d52c94497959d9927af3fb51bc5d
+ 4  169923-1 block 0xbb856146bc8e4ff9efbe4a98f03eb34fab13539d42ee3c03bf03e63519d8bb9d  tx 0xe638b768f30432387b6691707b3c4c4ffdfc4e8ca7b5e635027d8e3d913d92a4
+ 5  169924-1 block 0x71c5d6740f3440157f4b412193d24e2f6156a9f1fff06a9ed2652239cd3ccbed  tx 0x36e7a73d522a15f17f2c582e1013b6124841a4124612141167ff19de0488d659
+ 6  169925-1 block 0x15bb692aaed874918cd048e82155490e326780b565cdf27dadfc183158df44d8  tx 0x60ee01d6bd5a7da766393bc3b529ddb77a7103197bdf11a147b507352b947472
+ 7  169926-1 block 0x19957ce710fd64082c8c454aad7479d40a0e98d9442e2fa657a2d1db4302f95a  tx 0x1e9dc3660f13efb29b28223cd2e88852a565dc48947b94464b9ea640065cf206
+ 8  169927-1 block 0xa4f52bc314c19f34bb0ee49dcf9f7a7cd1f9a56dc5402a060aedfcd3bf31b11f  tx 0x068aebe8fb136523fb6ab19f09e6073b7c5869982eaf08dd6bb7329cc573b5e7
+ 9  169957-1 block 0x10a90c345e560952ee6baa65993de08c5c4bc348e28916b8ad953cd7b25ed8ab  tx 0xe57be6e7ec3166ee92ab1ba20503d250e7e4f653722a4eb646ebc2edb1563a26
+10  169958-1 block 0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3  tx 0xe0c32994b778fc51ddcc6d8d038177ef05bb81f879e6554ceff8d24ff174c952
+11  169959-1 block 0x078f168764203e0c076de640e1ab233236b4fbf8ac5c1a0bd16a38b7e0d90e9f  tx 0x158e4d7b115230664149d6318f23bb1fe85f89ea87640e24a9f0b5c877775427
+12  169960-1 block 0xe94805cffe1a16d9351b858dcb4f227d65da58f1054212e3e3c21da218096d9b  tx 0x625a2b66602be315de99809a64a73e6db88f1cbb698b935e80728ad4a1478e97
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ vault reserves() after the deposit: expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ vault reserves() on resume (same local anvil vault): expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ asset 4401 team == role map (owner/issuer = M_mint, admin = M_admin, freezer = M_watch): expected `[]`, observed `[]` at block `0xa4f52bc314c19f34bb0ee49dcf9f7a7cd1f9a56dc5402a060aedfcd3bf31b11f`
+- ✅ asset 4402 team == keyless accounts (S2 can never change): expected `[]`, observed `[]` at block `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3`
+- ✅ supply S1 (asset 4401) before the gated mint: expected `0`, observed `0` at block `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3`
+- ✅ supply S2 (asset 4402): expected `50000000`, observed `50000000` at block `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3`
+
+
 ## Stand-in receipts — standin-upstream (not V3)
 
 Measured on a **local** stand-in chain (before the Portaldot V3 testnet was reachable). Nothing in this

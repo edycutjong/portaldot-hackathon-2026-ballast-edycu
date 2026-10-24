@@ -156,3 +156,12 @@ def find_receipt(
                 events=[{k: e[k] for k in ("module_id", "event_id", "attributes")} for e in events],
             )
     return None
+
+
+def ensure_connected(substrate: SubstrateInterface) -> None:
+    """Reopen the websocket if the node dropped it. Public nodes close idle sockets — e.g. while a drill waits on a
+    subprocess — and the next query then fails on an empty frame."""
+    try:
+        substrate.rpc_request("system_health", [])
+    except Exception:  # noqa: BLE001 — any transport failure: reconnect once, let the real call raise if it persists
+        substrate.connect_websocket()

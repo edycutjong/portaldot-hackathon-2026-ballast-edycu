@@ -33,7 +33,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ballast.chain import connect, submit  # noqa: E402
+from ballast.chain import connect, ensure_connected, submit  # noqa: E402
 from ballast.keys import keypair  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
@@ -122,6 +122,7 @@ def main() -> int:
         return rc, out
 
     def state(block_hash: str | None = None) -> dict:
+        ensure_connected(substrate)
         q = lambda i: substrate.query("Assets", "Asset", [i], block_hash=block_hash).value  # noqa: E731
         d1, d2 = q(dep.breaker), q(dep.control)
         return {"s1": d1["supply"], "s2": d2["supply"], "frozen": asset_state(dep.breaker, d1).frozen,
@@ -145,6 +146,7 @@ def main() -> int:
         print(f"     finality (anvil): finalized #{before} -> #{after} ({why})")
 
     def transfer(name: str, expected: str, step: str):
+        ensure_connected(substrate)
         r = submit(substrate, profile, keys["Judge"], "Assets", "transfer",
                    {"id": dep.breaker, "target": peer, "amount": 1_000_000}, step=step)
         run.step(name, expected, r, str(r.outcome) == expected)

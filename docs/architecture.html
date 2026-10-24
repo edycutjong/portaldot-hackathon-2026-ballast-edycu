@@ -44,7 +44,7 @@
 </head>
 <body>
 <div class="diagram-container">
-<svg viewBox="0 0 1280 1250" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
+<svg viewBox="0 0 1280 1273" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
 <title id="architecture-title">Ballast architecture: the reserve breaker</title>
 <desc id="architecture-desc">A drain of the ReserveVault on a local anvil chain is read by the ballast watchdog, whose watcher key freezes asset 4401 through the M_watch multisig on the Portaldot V3 testnet, so a holder's transfer is refused; a mint needs the reserve bot's co-signature through the 2-of-2 M_mint, the thaw runs through the 2-of-3 M_admin, and the attester and ballast verify tie both chains together.</desc>
 <defs>
@@ -52,8 +52,8 @@
   <marker id="m-call" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="9" refX="0" refY="4.5" orient="auto"><path d="M0,0 L11,4.5 L0,9 Z" fill="#6F92A6"/></marker>
   <marker id="m-read" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="9" refX="0" refY="4.5" orient="auto"><path d="M0,0 L11,4.5 L0,9 Z" fill="#9AB0BE"/></marker>
 </defs>
-<rect width="1280" height="1250" fill="#0C2536"/>
-<rect x="1" y="1" width="1278" height="1248" fill="none" stroke="#2B4F66" stroke-width="2"/>
+<rect width="1280" height="1273" fill="#0C2536"/>
+<rect x="1" y="1" width="1278" height="1271" fill="none" stroke="#2B4F66" stroke-width="2"/>
 <text x="24" y="44" class="t-eyebrow">BALLAST · SYSTEM ARCHITECTURE</text>
 <text x="24" y="86" class="t-title">A reserve shortfall freezes pUSDC-test on Portaldot</text>
 <text x="24" y="116" class="t-lede">White path 1–5 = the breaker in the role drill of 2026-10-24: drain and read on local anvil (1–2), freeze and refused transfer on the Portaldot V3 testnet (3–5).</text>
@@ -173,7 +173,7 @@
 <rect data-box="remark" x="932" y="668" width="278" height="88" rx="4" fill="#123349" stroke="#4D6E82" stroke-width="1.25"/>
 <text x="946" y="698" class="t-name-code">System.remark_with_event</text>
 <text x="946" y="720" class="t-code">BALLAST/1 remarks</text>
-<text x="946" y="741" class="t-sub">attest · heartbeat · freeze</text>
+<text x="946" y="741" class="t-sub">attest, heartbeat (B) · freeze (watcher)</text>
 </g>
 <g data-node="oracle">
 <rect data-box="oracle" x="932" y="788" width="278" height="88" rx="4" fill="#123349" stroke="#4D6E82" stroke-width="1.25"/>
@@ -187,18 +187,19 @@
 <text x="962" y="486" class="t-code-ink">Assets.AssetFrozen</text>
 <text x="962" y="508" class="t-code">V3 170112-1 · by W2</text>
 <text x="962" y="536" class="t-gauge">S1 + S2 = 104.00</text>
-<line x1="962" y1="546" x2="1115" y2="546" stroke="#F4F1E6" stroke-width="3"/>
-<line x1="1115" y1="546" x2="1180" y2="546" stroke="#3A5568" stroke-width="3"/>
-<rect x="962" y="568" width="150" height="26" fill="#3FD9B5"/>
-<line x1="962" y1="568" x2="1112" y2="568" stroke="#B8FFEC" stroke-width="2"/>
-<rect x="1118" y="568.75" width="61.25" height="24.5" fill="none" stroke="#3A5568" stroke-width="1.5"/>
-<rect x="1112" y="532" width="6" height="62" fill="#FF5B2E"/>
+<line x1="962" y1="546" x2="1180" y2="546" stroke="#F4F1E6" stroke-width="3"/>
+<rect x="962" y="568" width="153" height="26" fill="#3FD9B5"/>
+<line x1="962" y1="568" x2="1115" y2="568" stroke="#B8FFEC" stroke-width="2"/>
+<rect x="1115.75" y="568.75" width="57.5" height="24.5" fill="none" stroke="#3A5568" stroke-width="1.5"/>
+<rect x="1174" y="532" width="6" height="62" fill="#FF5B2E"/>
 <text x="970" y="586" class="t-gauge-water">reserves 72.80</text>
-<text x="1125" y="536" class="t-gate">gate</text>
+<text x="1144" y="586" class="t-gate" text-anchor="middle">−31.20</text>
+<text x="1168" y="536" class="t-gate" text-anchor="end">gate</text>
 </g>
 <text x="676" y="286" class="t-tag">MULTISIG PALLET</text>
 <line x1="676" y1="295" x2="872" y2="295" stroke="#355A70" stroke-width="1.5"/>
 <text x="774" y="700" class="t-label" text-anchor="middle">attest · heartbeat</text>
+<text x="226" y="414" class="t-label" text-anchor="end"><tspan class="code">balanceOf(vault)</tspan></text>
 <text x="774" y="533" class="t-label" text-anchor="middle">A/A2 propose · B co-signs</text>
 <text x="892" y="784" class="t-label" text-anchor="end"><tspan class="code">post()</tspan> after inclusion</text>
 <text x="1028" y="289" class="t-refused">refused: <tspan class="code">AssetNotLive</tspan></text>
@@ -239,27 +240,28 @@
 <text x="1058" y="1030" class="t-step-code">AssetNotLive 170114-1</text>
 <text x="1058" y="1051" class="t-step-sub">until a gated thaw</text>
 </g>
-<text x="24" y="1096" class="t-note">Recovery is gated: W1's thaw through M_watch is refused (<tspan class="code">NoPermission 170115-1</tspan>). The thaw ran through the 2-of-3 M_admin with the bot's final approval,</text>
-<text x="24" y="1119" class="t-note">given only once finalized reserves cover supply (<tspan class="code">170133-1</tspan>; anvil finality emulated by mining 65 blocks). A + A2 could thaw without the bot,</text>
-<text x="24" y="1142" class="t-note">which <tspan class="code">ballast verify</tspan> flags unless an override remark precedes it. One person holds every key in this build. Timing: wall clock, one machine.</text>
-<line x1="24" y1="1183" x2="54" y2="1183" stroke="#F4F1E6" stroke-width="3" marker-end="url(#m-core)"/>
-<text x="78" y="1188" class="t-legend">breaker path 1–5 (step 2 is a read)</text>
-<line x1="356" y1="1183" x2="389" y2="1183" stroke="#6F92A6" stroke-width="1.75" marker-end="url(#m-call)"/>
-<text x="410" y="1188" class="t-legend">signed call / dispatch</text>
-<line x1="599" y1="1183" x2="632" y2="1183" stroke="#9AB0BE" stroke-width="2.5" stroke-dasharray="0.1 6.5" stroke-linecap="round" marker-end="url(#m-read)"/>
-<text x="653" y="1188" class="t-legend">read (arrow at the reader)</text>
-<line x1="869" y1="1183" x2="897" y2="1183" stroke="#6F92A6" stroke-width="1.75"/><line x1="883" y1="1183" x2="883" y2="1195" stroke="#6F92A6" stroke-width="1.75"/><circle cx="883" cy="1183" r="4.5" fill="#6F92A6"/>
-<text x="907" y="1188" class="t-legend">shared trunk</text>
-<rect x="24" y="1206" width="28" height="18" rx="3" fill="#123349" stroke="#F4F1E6" stroke-width="1.5"/>
-<text x="62" y="1220" class="t-legend">on the breaker path</text>
-<rect x="231" y="1206" width="28" height="18" rx="3" fill="#123349" stroke="#4D6E82" stroke-width="1.5"/>
-<text x="269" y="1220" class="t-legend">off the path</text>
-<rect x="390" y="1206" width="20" height="18" rx="3" fill="#3FD9B5" stroke="#3FD9B5" stroke-width="1.5"/>
-<text x="420" y="1220" class="t-legend">reserves</text>
-<rect x="514" y="1206" width="20" height="18" rx="3" fill="#FF5B2E" stroke="#FF5B2E" stroke-width="1.5"/>
-<text x="544" y="1220" class="t-legend">frozen state</text>
-<rect x="665" y="1206" width="28" height="18" rx="3" fill="#122B3C" stroke="#9AB0BE" stroke-width="1.5" stroke-dasharray="5 4"/>
-<text x="703" y="1220" class="t-legend">planned, not built</text>
+<text x="24" y="1096" class="t-note">Trust model: the reserve gates are bot code; the runtime enforces the roles and multisig thresholds. Not a trustless bridge: the vault owner can still move reserves.</text>
+<text x="24" y="1119" class="t-note">Recovery is gated: W1's thaw through M_watch is refused (<tspan class="code">NoPermission 170115-1</tspan>). The thaw ran through the 2-of-3 M_admin with the bot's final approval,</text>
+<text x="24" y="1142" class="t-note">given only once finalized reserves cover supply (<tspan class="code">170133-1</tspan>; anvil finality emulated by mining 65 blocks). A + A2 could thaw without the bot,</text>
+<text x="24" y="1165" class="t-note">which <tspan class="code">ballast verify</tspan> flags unless an override remark precedes it. One person holds every key in this build. Timing: wall clock, one machine.</text>
+<line x1="24" y1="1206" x2="54" y2="1206" stroke="#F4F1E6" stroke-width="3" marker-end="url(#m-core)"/>
+<text x="78" y="1211" class="t-legend">breaker path 1–5 (step 2 is a read)</text>
+<line x1="356" y1="1206" x2="389" y2="1206" stroke="#6F92A6" stroke-width="1.75" marker-end="url(#m-call)"/>
+<text x="410" y="1211" class="t-legend">signed call / dispatch</text>
+<line x1="599" y1="1206" x2="632" y2="1206" stroke="#9AB0BE" stroke-width="2.5" stroke-dasharray="0.1 6.5" stroke-linecap="round" marker-end="url(#m-read)"/>
+<text x="653" y="1211" class="t-legend">read (arrow at the reader)</text>
+<line x1="869" y1="1206" x2="897" y2="1206" stroke="#6F92A6" stroke-width="1.75"/><line x1="883" y1="1206" x2="883" y2="1218" stroke="#6F92A6" stroke-width="1.75"/><circle cx="883" cy="1206" r="4.5" fill="#6F92A6"/>
+<text x="907" y="1211" class="t-legend">shared trunk</text>
+<rect x="24" y="1229" width="28" height="18" rx="3" fill="#123349" stroke="#F4F1E6" stroke-width="1.5"/>
+<text x="62" y="1243" class="t-legend">on the breaker path</text>
+<rect x="231" y="1229" width="28" height="18" rx="3" fill="#123349" stroke="#4D6E82" stroke-width="1.5"/>
+<text x="269" y="1243" class="t-legend">off the path</text>
+<rect x="390" y="1229" width="20" height="18" rx="3" fill="#3FD9B5" stroke="#3FD9B5" stroke-width="1.5"/>
+<text x="420" y="1243" class="t-legend">reserves</text>
+<rect x="514" y="1229" width="20" height="18" rx="3" fill="#FF5B2E" stroke="#FF5B2E" stroke-width="1.5"/>
+<text x="544" y="1243" class="t-legend">frozen state</text>
+<rect x="665" y="1229" width="28" height="18" rx="3" fill="#122B3C" stroke="#9AB0BE" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="703" y="1243" class="t-legend">planned, not built</text>
 </svg>
 </div>
 </body>

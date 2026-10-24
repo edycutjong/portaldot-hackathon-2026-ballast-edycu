@@ -217,7 +217,7 @@ the chain's deposit constants, refuses to start if the funder is short, and depl
 
 ## Demo
 
-- **Video:** coming at check-in (≤ 3 min; chain and reserve labelled on screen: V3 testnet or stand-in, local anvil NOT Sepolia).
+- **Video:** demo: https://youtu.be/jV5dCy1o3O8
 - **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, printed from [`deck/index.html`](deck/index.html); figures pinned to build `0071879`).
 - **Live demo:** no hosted UI. The V3 runs are public: every extrinsic in [`docs/PROOF.md`](docs/PROOF.md) opens on https://node-console.portaldot.dev/.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),

@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ballast architecture</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Archivo:wght@400;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,29 +15,31 @@
   .t-title { font: 400 32px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #F4F1E6; letter-spacing: 0.01em; }
   .t-lede { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
   .t-zone { font: 400 17px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #F4F1E6; letter-spacing: 0.06em; }
-  .t-zonesub { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-zonesub { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
   .t-zonesub tspan.flag { fill: #F4F1E6; font-weight: 600; }
   .t-name { font: 600 18px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
   .t-name-code { font: 600 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
-  .t-sub { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
-  .t-code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; }
-  .t-code-ink { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
+  .t-sub { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-code { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; }
+  .t-code-ink { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
   .t-tag { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; letter-spacing: 0.14em; }
   .t-badge { font: 400 16px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #0C2536; }
   .t-label { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
   .t-label tspan.code { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
-  .t-refused { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
-  .t-refused tspan.code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
+  .t-refused { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
+  .t-refused tspan.code { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
   .t-frozen { font: 400 26px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #FF5B2E; letter-spacing: 0.08em; }
   .t-gauge { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
+  .t-gate { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #FF5B2E; }
   .t-gauge-water { font: 600 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #0C2536; }
   .t-strip-head { font: 400 17px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #F4F1E6; letter-spacing: 0.06em; }
   .t-step { font: 600 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
   .t-step-code { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; }
-  .t-step-sub { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-step-sub { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
   .t-note { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
   .t-note tspan.code { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
-  .t-legend { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-legend { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-legend tspan.code { font: 500 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
 </style>
 </head>
 <body>
@@ -62,7 +62,7 @@
 <text x="40" y="194" class="t-zonesub"><tspan class="flag">local anvil, NOT Sepolia</tspan></text>
 <rect x="332" y="144" width="284" height="784" rx="6" fill="#122B3C" stroke="#1E3D52" stroke-width="1.5"/>
 <text x="348" y="172" class="t-zone">OFF-CHAIN · BALLAST CLI</text>
-<text x="348" y="194" class="t-zonesub">separate processes, own keys</text>
+<text x="348" y="194" class="t-zonesub">separate processes, role keys</text>
 <rect x="656" y="144" width="600" height="784" rx="6" fill="#122B3C" stroke="#1E3D52" stroke-width="1.5"/>
 <text x="672" y="172" class="t-zone">PORTALDOT V3 TESTNET</text>
 <text x="672" y="194" class="t-zonesub">portaldot-v3/3002 · <tspan class="flag">wss://test-node-v3.portaldot.dev</tspan></text>
@@ -81,9 +81,9 @@
 <path d="M596,712 L921,712" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="att-remark" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
 <path d="M904,712 L904,832 L921,832" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="att-oracle" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
 <path d="M60,392 L60,912 L474,912" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-vault" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
-<path d="M1204,468 L1240,468 L1240,912 L474,912" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-portaldot" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
-<path d="M1204,712 L1240,712" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-remark" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
-<path d="M1204,832 L1240,832" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-oracle" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
+<path d="M1210,468 L1240,468 L1240,912 L474,912" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-portaldot" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
+<path d="M1210,712 L1240,712" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-remark" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
+<path d="M1210,832 L1240,832" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-oracle" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5"/>
 <path d="M474,912 L474,887" fill="none" stroke="#9AB0BE" stroke-width="2.5" stroke-linejoin="miter" data-edge="v-in" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6.5" marker-end="url(#m-read)"/>
 <circle cx="312" cy="588" r="4.5" fill="#9AB0BE"/>
 <circle cx="636" cy="468" r="4.5" fill="#6F92A6"/>
@@ -158,46 +158,48 @@
 <text x="690" y="617" class="t-code">→ thaw_asset</text>
 </g>
 <g data-node="holder">
-<rect data-box="holder" x="932" y="208" width="272" height="56" rx="4" fill="#0C2536" stroke="#F4F1E6" stroke-width="1.5"/>
+<rect data-box="holder" x="932" y="208" width="278" height="56" rx="4" fill="#0C2536" stroke="#F4F1E6" stroke-width="1.5"/>
 <text x="946" y="232" class="t-name">holder (judge key)</text>
 <text x="946" y="254" class="t-code">scripts/role_drill.py</text>
 </g>
 <g data-node="assets">
-<rect data-box="assets" x="932" y="304" width="272" height="328" rx="4" fill="#123349" stroke="#F4F1E6" stroke-width="2.5"/>
+<rect data-box="assets" x="932" y="304" width="278" height="328" rx="4" fill="#123349" stroke="#F4F1E6" stroke-width="2.5"/>
 <text x="946" y="334" class="t-name">Assets pallet</text>
 <text x="946" y="356" class="t-code-ink">asset 4401 · pUSDC-test · S1</text>
 <text x="946" y="378" class="t-code">asset 4402 · pUSDC-ctl · S2</text>
 <text x="946" y="399" class="t-sub">control, keyless roles</text>
 </g>
 <g data-node="remark">
-<rect data-box="remark" x="932" y="668" width="272" height="88" rx="4" fill="#123349" stroke="#4D6E82" stroke-width="1.25"/>
+<rect data-box="remark" x="932" y="668" width="278" height="88" rx="4" fill="#123349" stroke="#4D6E82" stroke-width="1.25"/>
 <text x="946" y="698" class="t-name-code">System.remark_with_event</text>
 <text x="946" y="720" class="t-code">BALLAST/1 remarks</text>
 <text x="946" y="741" class="t-sub">attest · heartbeat · freeze</text>
 </g>
 <g data-node="oracle">
-<rect data-box="oracle" x="932" y="788" width="272" height="88" rx="4" fill="#123349" stroke="#4D6E82" stroke-width="1.25"/>
+<rect data-box="oracle" x="932" y="788" width="278" height="88" rx="4" fill="#123349" stroke="#4D6E82" stroke-width="1.25"/>
 <text x="946" y="818" class="t-name">ReserveOracle.sol</text>
 <text x="946" y="840" class="t-code">Revive · 0x4832…155e</text>
 <text x="946" y="861" class="t-sub">post() by attester · isBacked()</text>
 </g>
 <g data-plate="frozen">
-<rect x="948" y="424" width="240" height="184" rx="3" fill="#2A2B33" stroke="#FF5B2E" stroke-width="2"/>
+<rect x="948" y="424" width="246" height="184" rx="3" fill="#2A2B33" stroke="#FF5B2E" stroke-width="2"/>
 <text x="962" y="458" class="t-frozen">FROZEN</text>
 <text x="962" y="486" class="t-code-ink">Assets.AssetFrozen</text>
 <text x="962" y="508" class="t-code">V3 170112-1 · by W2</text>
 <text x="962" y="536" class="t-gauge">S1 + S2 = 104.00</text>
-<line x1="962" y1="546" x2="1110" y2="546" stroke="#F4F1E6" stroke-width="3"/>
-<line x1="1110" y1="546" x2="1174" y2="546" stroke="#3A5568" stroke-width="3"/>
-<rect x="962" y="568" width="145" height="26" fill="#3FD9B5"/>
-<line x1="962" y1="568" x2="1107" y2="568" stroke="#B8FFEC" stroke-width="2"/>
-<rect x="1113" y="568.75" width="60.25" height="24.5" fill="none" stroke="#3A5568" stroke-width="1.5"/>
-<rect x="1107" y="532" width="6" height="62" fill="#FF5B2E"/>
+<line x1="962" y1="546" x2="1115" y2="546" stroke="#F4F1E6" stroke-width="3"/>
+<line x1="1115" y1="546" x2="1180" y2="546" stroke="#3A5568" stroke-width="3"/>
+<rect x="962" y="568" width="150" height="26" fill="#3FD9B5"/>
+<line x1="962" y1="568" x2="1112" y2="568" stroke="#B8FFEC" stroke-width="2"/>
+<rect x="1118" y="568.75" width="61.25" height="24.5" fill="none" stroke="#3A5568" stroke-width="1.5"/>
+<rect x="1112" y="532" width="6" height="62" fill="#FF5B2E"/>
 <text x="970" y="586" class="t-gauge-water">reserves 72.80</text>
+<text x="1125" y="536" class="t-gate">gate</text>
 </g>
 <text x="676" y="286" class="t-tag">MULTISIG PALLET</text>
 <line x1="676" y1="295" x2="872" y2="295" stroke="#355A70" stroke-width="1.5"/>
 <text x="774" y="700" class="t-label" text-anchor="middle">attest · heartbeat</text>
+<text x="774" y="533" class="t-label" text-anchor="middle">A/A2 propose · B co-signs</text>
 <text x="892" y="784" class="t-label" text-anchor="end"><tspan class="code">post()</tspan> after inclusion</text>
 <text x="1028" y="289" class="t-refused">refused: <tspan class="code">AssetNotLive</tspan></text>
 <g data-badge="1"><circle cx="182" cy="284" r="13" fill="#F4F1E6"/><text x="182" y="290" class="t-badge" text-anchor="middle">1</text></g>
@@ -206,7 +208,7 @@
 <g data-badge="4"><circle cx="902" cy="322" r="13" fill="#F4F1E6"/><text x="902" y="328" class="t-badge" text-anchor="middle">4</text></g>
 <g data-badge="5"><circle cx="1004" cy="284" r="13" fill="#F4F1E6"/><text x="1004" y="290" class="t-badge" text-anchor="middle">5</text></g>
 <text x="24" y="968" class="t-strip-head">THE BREAKER · V3 ROLE DRILL, 2026-10-24</text>
-<text x="1256" y="968" class="t-legend" text-anchor="end">The 2026-10-14 drills ran on a local stand-in chain, not V3.</text>
+<text x="1256" y="968" class="t-legend" text-anchor="end">Every V3 id: <tspan class="code">docs/PROOF.md</tspan> · the 2026-10-14 drills ran on a local stand-in chain, not V3.</text>
 <g data-step="1">
 <g data-badge="1"><circle cx="37" cy="1002" r="13" fill="#F4F1E6"/><text x="37" y="1008" class="t-badge" text-anchor="middle">1</text></g>
 <text x="58" y="1007" class="t-step">drain the vault</text>
@@ -238,16 +240,16 @@
 <text x="1058" y="1051" class="t-step-sub">until a gated thaw</text>
 </g>
 <text x="24" y="1096" class="t-note">Recovery is gated: W1's thaw through M_watch is refused (<tspan class="code">NoPermission 170115-1</tspan>). The thaw ran through the 2-of-3 M_admin with the bot's final approval,</text>
-<text x="24" y="1119" class="t-note">given only once finalized reserves cover supply (<tspan class="code">170133-1</tspan>; anvil finality emulated by mining 65 blocks). A + A2 could thaw without the bot;</text>
-<text x="24" y="1142" class="t-note"><tspan class="code">ballast verify</tspan> flags that. One person holds every key in this build. Timing: wall clock, one machine. Every V3 id is in <tspan class="code">docs/PROOF.md</tspan>.</text>
+<text x="24" y="1119" class="t-note">given only once finalized reserves cover supply (<tspan class="code">170133-1</tspan>; anvil finality emulated by mining 65 blocks). A + A2 could thaw without the bot,</text>
+<text x="24" y="1142" class="t-note">which <tspan class="code">ballast verify</tspan> flags unless an override remark precedes it. One person holds every key in this build. Timing: wall clock, one machine.</text>
 <line x1="24" y1="1183" x2="54" y2="1183" stroke="#F4F1E6" stroke-width="3" marker-end="url(#m-core)"/>
-<text x="78" y="1188" class="t-legend">breaker path 1–5</text>
-<line x1="226" y1="1183" x2="259" y2="1183" stroke="#6F92A6" stroke-width="1.75" marker-end="url(#m-call)"/>
-<text x="280" y="1188" class="t-legend">signed call / dispatch</text>
-<line x1="469" y1="1183" x2="502" y2="1183" stroke="#9AB0BE" stroke-width="2.5" stroke-dasharray="0.1 6.5" stroke-linecap="round" marker-end="url(#m-read)"/>
-<text x="523" y="1188" class="t-legend">read (arrow at the reader)</text>
-<line x1="739" y1="1183" x2="767" y2="1183" stroke="#6F92A6" stroke-width="1.75"/><line x1="753" y1="1183" x2="753" y2="1195" stroke="#6F92A6" stroke-width="1.75"/><circle cx="753" cy="1183" r="4.5" fill="#6F92A6"/>
-<text x="777" y="1188" class="t-legend">shared trunk</text>
+<text x="78" y="1188" class="t-legend">breaker path 1–5 (step 2 is a read)</text>
+<line x1="356" y1="1183" x2="389" y2="1183" stroke="#6F92A6" stroke-width="1.75" marker-end="url(#m-call)"/>
+<text x="410" y="1188" class="t-legend">signed call / dispatch</text>
+<line x1="599" y1="1183" x2="632" y2="1183" stroke="#9AB0BE" stroke-width="2.5" stroke-dasharray="0.1 6.5" stroke-linecap="round" marker-end="url(#m-read)"/>
+<text x="653" y="1188" class="t-legend">read (arrow at the reader)</text>
+<line x1="869" y1="1183" x2="897" y2="1183" stroke="#6F92A6" stroke-width="1.75"/><line x1="883" y1="1183" x2="883" y2="1195" stroke="#6F92A6" stroke-width="1.75"/><circle cx="883" cy="1183" r="4.5" fill="#6F92A6"/>
+<text x="907" y="1188" class="t-legend">shared trunk</text>
 <rect x="24" y="1206" width="28" height="18" rx="3" fill="#123349" stroke="#F4F1E6" stroke-width="1.5"/>
 <text x="62" y="1220" class="t-legend">on the breaker path</text>
 <rect x="231" y="1206" width="28" height="18" rx="3" fill="#123349" stroke="#4D6E82" stroke-width="1.5"/>

@@ -27,6 +27,10 @@ case "${1:-status}" in
     for _ in $(seq 1 30); do
       if curl -sf -m 2 -H 'Content-Type: application/json' \
         -d '{"id":1,"jsonrpc":"2.0","method":"eth_chainId","params":[]}' "http://127.0.0.1:$PORT" >/dev/null; then
+        # A reloaded state keeps its old block clock: every reserve reading would look hours stale and the bot (rightly)
+        # refuses it. Re-anchor the clock to now with one empty block.
+        rpc() { curl -sf -m 5 -H 'Content-Type: application/json' -d "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"$1\",\"params\":$2}" "http://127.0.0.1:$PORT" >/dev/null; }
+        rpc evm_setNextBlockTimestamp "[$(date +%s)]" && rpc evm_mine "[]" || echo "warning: could not re-anchor the anvil clock" >&2
         echo "local anvil up: pid $(cat "$PIDFILE"), http://127.0.0.1:$PORT (chain id 31337)"; exit 0
       fi
       sleep 1

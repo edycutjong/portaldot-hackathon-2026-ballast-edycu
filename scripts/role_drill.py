@@ -279,7 +279,7 @@ def main() -> int:
         else:
             what = "no freeze-related record after the drain"
         run.note("other watcher", f"W{3 - who} {what}")
-        run.note("drain -> freeze included (wall clock, one machine; local anvil + stand-in)",
+        run.note(f"drain -> freeze included (wall clock, one machine; local anvil + {profile.name})",
                  f"{freeze['included_at'] - drained_at:.2f} s")
         run.check("freeze remark eb == the drain's reserve-chain block", remark.get("eb"), str(row["block_number"]),
                   fr["block_hash"])

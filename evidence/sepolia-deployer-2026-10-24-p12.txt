@@ -1,0 +1,7 @@
+# P12 2026-10-24T05:21:26Z — Sepolia deployer test-USDC balance (read-only, keyless providers)
+$ ballast reserves 0xDEf7Cd11f524C2246571654110b43476C2BD9300
+token 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 · holder 0xDEf7Cd11f524C2246571654110b43476C2BD9300 · chain ids {'publicnode': 11155111, 'drpc': 11155111}
+  latest    publicnode   #11981693 0x07313eb7d84335d9cfcbe8842a73f49a0322506ddf2356af016b063cefe830ee  80000000
+  latest    drpc         #11981693 0x07313eb7d84335d9cfcbe8842a73f49a0322506ddf2356af016b063cefe830ee  80000000
+  finalized publicnode   #11981602 0x57632a8d7f19f92f4d3591e56ae0dff5d900def0e1ffb58ed61d963897ea5cd0  80000000
+  finalized drpc         #11981602 0x57632a8d7f19f92f4d3591e56ae0dff5d900def0e1ffb58ed61d963897ea5cd0  80000000

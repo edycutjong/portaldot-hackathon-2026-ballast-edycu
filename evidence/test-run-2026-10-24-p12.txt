@@ -1,0 +1,7 @@
+# P12 test run — 2026-10-24T05:19:03Z — HEAD aeeca1b — offline unit tests (no chain); V3 txs recorded separately in docs/PROOF.md
+$ pytest -q
+239 passed in 3.49s
+$ forge test
+Suite result: ok. 20 passed; 0 failed; 0 skipped; finished in 17.96ms (30.28ms CPU time)
+$ npx hardhat test
+  15 passing (607ms)

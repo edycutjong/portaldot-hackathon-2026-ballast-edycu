@@ -6,13 +6,17 @@ every drill reserve-chain tx from the local anvil. An index comes first, then th
 
 ## At a glance
 
-Three places, each labelled on every row: the Portaldot **stand-in** chain (not V3), the **local-anvil**
-reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its section).
+Four places, each labelled on every row: the **Portaldot V3 testnet** (profile v3, real tPOT — every V3
+extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** chain (not V3), the
+**local-anvil** reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its section).
 
-| Run | Portaldot chain | Reserve chain | Newest clean result | Evidence |
+| Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |
 |---|---|---|---|---|
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | v3 | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-v3-20261024T045513Z.json`](../evidence/roles-drill-v3-20261024T045513Z.json) |
+| Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-standin-upstream-20261014T150211Z.json`](../evidence/roles-drill-standin-upstream-20261014T150211Z.json) |
+| Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | v3 | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-v3-20261024T050653Z.json`](../evidence/roles-attest-v3-20261024T050653Z.json) |
 | Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-standin-upstream-20261014T150338Z.json`](../evidence/roles-attest-standin-upstream-20261014T150338Z.json) |
+| Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless | v3 | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 6/6 state checks) · ran from uncommitted changes | [`roles-setup-v3.json`](../evidence/roles-setup-v3.json) |
 | Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 5/5 state checks) | [`roles-setup-standin-upstream.json`](../evidence/roles-setup-standin-upstream.json) |
 | Breaker drill, scratch asset: drain -> freeze | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (14/14 steps as expected, 11/11 state checks) | [`drill-drain-standin-upstream-asset2039.json`](../evidence/drill-drain-standin-upstream-asset2039.json) |
 | Breaker drill, scratch asset: every provider down -> fail-closed freeze (I6) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 8/8 state checks) | [`drill-outage-standin-upstream-asset2041.json`](../evidence/drill-outage-standin-upstream-asset2041.json) |
@@ -125,9 +129,11 @@ Other runs, newest first, any verdict (full tables in the JSON):
 - asset 4401 — 2026-10-24T04:45:14Z — ERROR (5/5 steps as expected, 3/4 state checks) — source: `586d6ef` (UNCOMMITTED CHANGES) — [`evidence/roles-drill-v3-20261024T044514Z.json`](../evidence/roles-drill-v3-20261024T044514Z.json) — AttributeError: 'NoneType' object has no attribute 'approvals' — failed: bot refuses the over-mint (exit 1, no signature)
 - asset 4401 — 2026-10-24T04:42:42Z — ERROR (3/3 steps as expected, 2/2 state checks) — source: `586d6ef` (clean) — [`evidence/roles-drill-v3-20261024T044242Z.json`](../evidence/roles-drill-v3-20261024T044242Z.json) — RuntimeError: bot did not co-sign the covered mint: reserves unreadable: finalized: no provider answered a finalized reading; latest: no provider answered a lat
 
-### Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control — 2026-10-24T05:01:57Z
+### Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control — 2026-10-24T05:06:53Z
 
-Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-attest-v3-20261024T050157Z.json`](../evidence/roles-attest-v3-20261024T050157Z.json) · result: **ERROR** (13/13 steps as expected, 1/1 state checks) · source: `8ee7557` (clean)
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-attest-v3-20261024T050653Z.json`](../evidence/roles-attest-v3-20261024T050653Z.json) · result: **PASS** (15/15 steps as expected, 6/6 state checks) · source: `6eceb6e` (clean)
+
+`ballast verify` blocks #170208..#170253 ([`evidence/verify-v3-20261024T050653Z.json`](../evidence/verify-v3-20261024T050653Z.json)): **PASS** — 4/4 B attestations PASS on both chains, 1 REJECTED (not counted), 0 FAIL/FLAGGED.
 
 Heartbeat H = 20 blocks (drill override; production H = 100, K = 300 on this profile).
 
@@ -137,47 +143,57 @@ Reserve-chain transactions (local-anvil (not Sepolia); vault `0x22753E4264FDDc61
 
 | # | Step | Block | Tx hash | Observed |
 |---|---|---|---|---|
-| 1 | custodian receives 1.00 test token | 1689 | `0x6558c40dd8295000ae3071a1b51e90d3731cd81b2ee8433d16a101328568ee7c` | ✅ status 1 |
-| 2 | custodian deposits 1.00 into the vault | 1690 | `0x09cd78187c9960cd82ac234e816c2dec8d602d659f22c983ce91c7d6a9e7911b` | ✅ status 1 |
+| 1 | custodian receives 1.00 test token | 1756 | `0x3931541bf6beeaa9df046c0d6d2e4ee137d0744444ef9294264736542e5dadd6` | ✅ status 1 |
+| 2 | custodian deposits 1.00 into the vault | 1757 | `0xec30f111a44ea7f1a2625feeeae406a372dfbb7395a54f0c8d1ca373f0a379b1` | ✅ status 1 |
 
 Portaldot extrinsics:
 
-Run stopped with an error: `JSONDecodeError: Expecting value: line 1 column 1 (char 0)`
-
 | # | Step | Call (signer) | Extrinsic id | Expected | Observed |
 |---|---|---|---|---|---|
-| 1 | bot announces watchers (BALLAST/1|watchers|t=1|m=5DG4akHnFL58yotBXtZ1tiqXeWASRh5em1i…) | `System.remark_with_event(BALLAST/1|watchers)` (B (reserve bot)) | `170164-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 2 | bot announces evm-attester (BALLAST/1|evm-attester|h160=0xc81ab822279e828b16a2be9a55520e…) | `System.remark_with_event(BALLAST/1|evm-attester)` (B (reserve bot)) | `170165-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 3 | bot posts attest (pb 170162) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `170166-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 4 | bot mirrors 170166-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170167-1` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 5 | bot posts attest (pb 170164) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `170168-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 6 | bot mirrors 170168-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170169-1` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 7 | A proposes mint 1.00 through M_mint | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `170170-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
-| 8 | bot B co-signs (finalized reserves cover it) | `Multisig.as_multi(Assets.mint) — final approval` (B (reserve bot)) | `170173-1` | Ok + inner Ok + Assets.Issued | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Issued |
-| 9 | bot posts attest (pb 170174) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `170177-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
-| 10 | bot mirrors 170177-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170178-1` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
-| 11 | bot posts heartbeat (pb 170198) | `System.remark_with_event(BALLAST/1|heartbeat)` (B (reserve bot)) | `170201-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 1 | bot announces watchers (BALLAST/1|watchers|t=1|m=5DG4akHnFL58yotBXtZ1tiqXeWASRh5em1i…) | `System.remark_with_event(BALLAST/1|watchers)` (B (reserve bot)) | `170214-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 2 | bot announces evm-attester (BALLAST/1|evm-attester|h160=0xc81ab822279e828b16a2be9a55520e…) | `System.remark_with_event(BALLAST/1|evm-attester)` (B (reserve bot)) | `170215-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 3 | bot posts attest (pb 170212) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `170216-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 4 | bot mirrors 170216-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170217-1` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 5 | bot posts attest (pb 170215) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `170218-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 6 | bot mirrors 170218-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170219-1` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 7 | A proposes mint 1.00 through M_mint | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `170221-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 8 | bot B co-signs (finalized reserves cover it) | `Multisig.as_multi(Assets.mint) — final approval` (B (reserve bot)) | `170224-1` | Ok + inner Ok + Assets.Issued | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Issued |
+| 9 | bot posts attest (pb 170225) | `System.remark_with_event(BALLAST/1|attest)` (B (reserve bot)) | `170228-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 10 | bot mirrors 170228-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170229-1` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
+| 11 | bot posts heartbeat (pb 170249) | `System.remark_with_event(BALLAST/1|heartbeat)` (B (reserve bot)) | `170252-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 12 | negative control: the judge key posts a copy of the bot's attestation | `System.remark_with_event(BALLAST/1|attest) — forged by a non-bot key` (Judge (negative control)) | `170253-1` | Ok + System.Remarked (included — verify must REJECT it) | ✅ Ok · System.Remarked |
+| 13 | bot mirrors 170252-1 to ReserveOracle (after inclusion, I10) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `170253-2` | Ok + Revive.ContractEmitted(Posted) | ✅ Ok · Revive.ContractEmitted |
 
 Block and transaction hashes (full):
 
 ```
- 1  170164-1 block 0x91e5c489eff335899e18d9071fade48fecfc1afb7d64a657cc3b56ad01749807  tx 0xe8ffe4258595839b1643159caf714cfdda5df465aab3e7be5dc404b22b02a8a5
- 2  170165-1 block 0xe4e3203962b0fae2d53a69a91c09776f829da5797239ec8aedb3036996aa6dab  tx 0xd9e12507008641213cf1557b9680b60b449172213f434b2f4d76deb3f4d08be8
- 3  170166-1 block 0x91679cd254e18268926a32890a4d4c44598d579bf2da56f54d41b98d54ff83ac  tx 0xe96dea0436a8404f7174787a7dda80741f1719f2eb23a7c32d8c339e453cbad3
- 4  170167-1 block 0x66b01dcead46dd930d046824b1755e7ea1f676df05a934a77a1b2cc9a998f0ab  tx 0x44f0e81dc621406ce6348a803f8a5ead6c11cfdf0e24099ddd26dab85a6e4d6f
- 5  170168-1 block 0x4f187cc6146db3a49b0cff20e5b1fc310a6db8a14514e2b1d632ef01b4e19816  tx 0xe38b0f16f92c247af4ee3a75b8cb953d375ebb0dad65370a59c0c7f943991472
- 6  170169-1 block 0xe9d559b05fc7ac8bea7241050d42c43505ffdd76eabe312943e61d43c934071b  tx 0xd1d48a805c774e7c8f38fc9a7570af53c2706f931f3ddea35ffb8125b100213d
- 7  170170-1 block 0xac881b41ce705128e2937727df9a4fe482fc316ab9bf5a96dc83e8283ac3c0e7  tx 0xebb843f0c49e437ac01e4cb20e3d05433a83260411cf35c915e78cd0b74a9413
- 8  170173-1 block 0x7dec54d6530360cbdee4cc0114d140e0cf7ff83cc1cf096366ec6cdfc5789281  tx 0xa82be025e1a07fff1ca2452648ecf08bdfdbb3298b195ffa467a9bef9c6d2542
- 9  170177-1 block 0x34e0954d397b82b41acd782f43f1d6eff1a5c035b1e991ecb6bec80834a325c0  tx 0x9a211272b00b39bbbfcfd54effbb98623de15c147d9b6d9bf7b788c05c9e907b
-10  170178-1 block 0xc9a7def824c5b82dc1fba4d6caf036da44385b1715a308eb9232312aa7d95f1a  tx 0x6a9963cdc1ec76999889ac4021814d2b61c18741d82f0d2cabf91927bb14350e
-11  170201-1 block 0x3955d75de4dbccf930f06540d1cce0131d643b707d2a4d8f6aebc4d6ef4b2d5a  tx 0x0ee3e47326376415399d88d8edce3a77ffe3a38112419dde568fd289687a76f2
+ 1  170214-1 block 0x0d4b761d645cb956f512dae0b97ef1fb72ffb44c24f3d6ab165657f5493180c6  tx 0x4c3562e9c701a4edd830af7420176596967eff5ea7bfa1150553a7f73d8746e2
+ 2  170215-1 block 0x96991d27f8a61aceb62e40fb10a2dc03827449cb6955e2b4b1d463bd2f99c4be  tx 0x1414a8921508ffff6c51c0f120c520338dcb93f11447bfac38b21a0018aad941
+ 3  170216-1 block 0x4b0ef2aa7787bed5365b5ab8b9dad840a9864a4178e8fd7cb65908f4227a760d  tx 0x625dcab0755317249606b5da8fe6b9315d83ff5703381d0a499bc653ce0beac4
+ 4  170217-1 block 0x40d35c389ba40456b65d27b4e5fc8921b403260a941ef8adca73df0cf8854d3f  tx 0xcb7095e3e87e53ef696407f8f7408b66597bc0dfe38146df8b75e105c09a3bac
+ 5  170218-1 block 0x010714a3243c38051bdaacc19d32c09f5e1755fb394836c626561891a8a1e7c9  tx 0xd882062f40fe5e83717f5b1fc7bb9ff6ef2e83f8f59cce0b48fbc95a65f2e70e
+ 6  170219-1 block 0x054f7d0af02aa4f4c19c868a79782da0a778d0a85e88bf3073bfa6427df7accf  tx 0xc8c8fd0d94d952fbae91f265e5895f1093e6f421f39f2d8ddeb1f58f9d24f565
+ 7  170221-1 block 0xe41b1aa65e5470deca1a2fc70c7f4e9cdbe66f50f7c566cede4ee273329749a5  tx 0xa1b93e2dd5d209c6e97d4a4dd1602675ba1b9f88a98dea755a445bcead3b93c7
+ 8  170224-1 block 0x7e53c4a58a901a96ad7317aaf74eab431d331a9e4da0a4ddf5bc1a18435c9ad9  tx 0xcb397679122a845819ea39d870c1fc996e720955cada011965dee97e74c308c9
+ 9  170228-1 block 0x28f7c2e671a2fff6e2b83aff45270d0afc304b3a24e71ffaae80a228701970b7  tx 0xe6365fdf3cb3b1e3a90377deb14e63b067a7467cdff6bdfc53e0e16a90dc94d9
+10  170229-1 block 0x7fff3f07e4559f35e26d94733599aaccd29819f267ae0f9f0d675f38a3adec3c  tx 0xa6b855491413d8c650ad0cc22197dbabb23fffa6a05de8e7770d88765af49798
+11  170252-1 block 0x34517cc1bda8ce103f045715a68a3c12b3f74f764ee9584657071e8a684a8908  tx 0xb35393c9def9e5c4a9530363fa7dccd5755dfe1f4d88b029da7dc8c485945aca
+12  170253-1 block 0x515f1c6dcf46d0b648cd49e2b2f76261b577f8b0c1d14b1e9afd5ecfecab5fca  tx 0x6d4fa93541f1b25e83f0829ff02f2e32ecd5c3bbe8995e97bb34e69c8831ae21
+13  170253-2 block 0x515f1c6dcf46d0b648cd49e2b2f76261b577f8b0c1d14b1e9afd5ecfecab5fca  tx 0x35c3b47ca3b75457eca093bec34be339a366a1db7affbb911249b05de5438e3b
 ```
 
 State checks (storage/events read at the step's block):
 
-- ✅ the post after H quiet blocks is a heartbeat: expected `heartbeat`, observed `heartbeat` at block `0x3955d75de4dbccf930f06540d1cce0131d643b707d2a4d8f6aebc4d6ef4b2d5a`
+- ✅ the post after H quiet blocks is a heartbeat: expected `heartbeat`, observed `heartbeat` at block `0x34517cc1bda8ce103f045715a68a3c12b3f74f764ee9584657071e8a684a8908`
+- ✅ verify exit 0 and verdict PASS: expected `[0, 'PASS']`, observed `[0, 'PASS']` at block `verify`
+- ✅ every bot attestation/heartbeat PASSes on both chains: expected `4`, observed `4` at block `verify`
+- ✅ every oracle post matches a PASSing remark (I10): expected `4`, observed `4` at block `verify`
+- ✅ the forged remark is listed REJECTED (not counted): expected `['170253-1']`, observed `['170253-1']` at block `verify`
+- ✅ watcher-set and evm-attester announcements PASS: expected `[1, 1]`, observed `[1, 1]` at block `verify`
 
+Other runs, newest first, any verdict (full tables in the JSON):
+
+- asset 4401 — 2026-10-24T05:01:57Z — ERROR (13/13 steps as expected, 1/1 state checks) — source: `8ee7557` (clean) — [`evidence/roles-attest-v3-20261024T050157Z.json`](../evidence/roles-attest-v3-20261024T050157Z.json) — JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 
 ### Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle — 2026-10-24T04:41:31Z
 

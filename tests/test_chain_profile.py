@@ -9,7 +9,6 @@ from ballast.chain_profile import (
     ChainFacts,
     ProfileError,
     ProfileMismatch,
-    ProfileUnverified,
     UnknownChain,
     UnknownProfile,
     blake2_256,

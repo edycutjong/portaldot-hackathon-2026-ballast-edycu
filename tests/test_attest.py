@@ -46,9 +46,9 @@ class Rx:
     def __init__(self, ok, xid, events):
         self.ok, self.extrinsic_id, self.block_number, self._events = ok, xid, int(xid.split("-")[0]), events
 
-        class O:
+        class Outcome:
             pass
-        self.outcome = O()
+        self.outcome = Outcome()
         self.outcome.ok = ok
 
     def event_names(self):

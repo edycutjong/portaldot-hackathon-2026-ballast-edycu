@@ -270,7 +270,7 @@ def run_drill(args: argparse.Namespace) -> int:
         step(f"mint S2 = 50.00 of control asset {control} to the peer", "Ok + Assets.Issued", r,
              r.outcome.ok and has(r, "Assets.Issued"), ("Assets.Issued",))
         level_hash = r.block_hash
-        check(f"supply S1 + S2 == vault reserves (level)",
+        check("supply S1 + S2 == vault reserves (level)",
               details(breaker, level_hash)["supply"] + details(control, level_hash)["supply"],
               vault.functions.reserves().call(), level_hash)
 

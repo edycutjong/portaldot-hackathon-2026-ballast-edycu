@@ -1,0 +1,124 @@
+{
+  "kind": "roles-operator",
+  "chain": {
+    "profile": "v3",
+    "label": "Portaldot V3 testnet",
+    "is_standin": false,
+    "genesis_pinned": true,
+    "genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+    "spec_name": "portaldot-v3",
+    "spec_version": 3002,
+    "token_decimals": 14,
+    "decimals_source": "system_properties",
+    "head": 169966,
+    "multisig_shape": "weight-v2",
+    "block_counts": "UNVERIFIED (V3 day-0)",
+    "notes": [
+      "PortaldotV3 Test, node 3.0.0-dev-fddd43141f2, token tPOT, ss58 42"
+    ],
+    "url": "wss://test-node-v3.portaldot.dev"
+  },
+  "started_at": "2026-10-24T05:15:13Z",
+  "asset_id": 4401,
+  "note": "manual operator step between drill runs: `ballast mint 1.00 <judge> --cancel` withdrew the mint the ERROR run 044242Z left pending (deposit returned); receipt rebuilt from the chain with chain.find_receipt",
+  "steps": [
+    {
+      "name": "A cancels the pending 1.00 mint left by role-drill 044242Z (deposit returned)",
+      "expected": "Ok + Multisig.MultisigCancelled",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Multisig.MultisigCancelled"
+      ],
+      "receipt": {
+        "profile": "v3",
+        "step": "operator_cancel_mint",
+        "call": "Multisig.cancel_as_multi",
+        "signer": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+        "extrinsic_id": "169989-1",
+        "block_number": 169989,
+        "block_hash": "0xd4f135f5283787e2f48a1221effdbe0b8603b45c6fe713cd96bec5cb4eb9d334",
+        "extrinsic_index": 1,
+        "extrinsic_hash": "0x529ed7b29a402cc5a7ff0b8e37d4dd15106cd528df530663830d1152b14083e0",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "amount": 1830530546417
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Unreserved",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigCancelled",
+            "attributes": {
+              "cancelling": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "timepoint": {
+                "height": 169970,
+                "index": 1
+              },
+              "multisig": "5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb",
+              "call_hash": "0x919cc4d36c94234cd31d7658be27c1b0432ce67ab15f15efac8b6ebbd146dce3"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1830530546417
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "actual_fee": 1830530546417,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 754211917,
+                  "proof_size": 15486
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "evm_steps": [],
+  "state_checks": [],
+  "finished_at": "2026-10-24T05:15:13Z",
+  "passed": 1,
+  "counted_steps": 1,
+  "observation_steps": 0,
+  "verdict": "PASS"
+}

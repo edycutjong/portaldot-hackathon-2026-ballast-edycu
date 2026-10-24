@@ -206,7 +206,8 @@ scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 
 The unit tests, forge and Hardhat suites also ran from a fresh clone. `setup_roles.py` has set up two chains: the author's stand-in and the V3
 testnet (2026-10-24; that run crashed on a message-formatting bug after 8 extrinsics were on chain, 7 of them recorded, and was finished with
-`--resume`, which keeps the recorded receipts, recovers the unrecorded one (`169927-1`) from the chain and skips every step already on chain).
+`--resume`, which keeps the recorded receipts, recovers the unrecorded one (`169927-1`) from the chain and skips every step already on chain;
+the crashed run's own record is [`evidence/crashed-roles-setup-v3-20261024T043731Z.json`](evidence/crashed-roles-setup-v3-20261024T043731Z.json)).
 
 The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
 non-stand-in profile; on `v3` each role key is a mode-600 seed file outside the repo (default `~/.config/ballast`,
@@ -240,7 +241,7 @@ the chain's deposit constants, refuses to start if the funder is short, and depl
 - [x] Multisig role split (`M_mint` 2-of-2, `M_admin` 2-of-3, `M_watch` 1-of-2), reserve bot with mint / thaw / set_team gates, SQLite decision log
 - [x] `BALLAST/1` attestations, oracle mirror after inclusion, `ballast verify` with per-type signers and a forged-remark negative control
 - [x] Portaldot V3 testnet: role split + `ReserveOracle` on Revive (PASS 16/16 + 6/6), role drill PASS 22/22 + 20/20, attestation drill PASS 15/15 + 6/6,
-  79/79 V3 extrinsics re-queried and final ([`docs/PROOF.md`](docs/PROOF.md))
+  79/79 V3 extrinsics re-queried and final ([`docs/PROOF.md`](docs/PROOF.md); reserve: local anvil, NOT Sepolia)
 - [x] 274 automated tests (239 pytest + 20 forge + 15 Hardhat, [`evidence/test-run-2026-10-24-p12.txt`](evidence/test-run-2026-10-24-p12.txt))
 
 **Next phase**

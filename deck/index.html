@@ -130,7 +130,7 @@ code, .mono { font-family: var(--font-data); font-weight: 500; }
 /* ---------- 5 the drill, gate by gate ---------- */
 .s5 .term { position: absolute; left: 200px; top: 336px; width: 1080px; border: 2px solid var(--hull); background: var(--bg); }
 .s5 .term .bar { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 2px solid var(--hull); background: var(--rule);
-  font: 500 16px/1 var(--font-data); color: var(--muted); }
+  font: 500 15px/1 var(--font-data); color: var(--muted); }
 .s5 .term .bar i { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--hull); display: inline-block; }
 .s5 .term .bar span { margin-left: 10px; }
 .s5 .term .log { padding: 16px 22px 18px; font: 400 17px/1.5 var(--font-data); color: var(--ink); }
@@ -333,7 +333,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     </tbody>
   </table>
   <p class="note small">Roles are set with <code>Assets.set_team</code>; the reserve check itself runs off chain, in the bot and the watchers.</p>
-  <aside class="speaker-notes">Three multisigs hold the asset's three roles. Watchers can only freeze. Minting needs the reserve bot's signature, and the bot checks finalized reserves first. Thawing needs the bot too, and only after finality has passed the drain. The bot also writes a public record.</aside>
+  <aside class="speaker-notes">Three multisigs hold the asset's three roles. Watchers hold only the freezer role, and their thaw attempt fails. Minting needs the reserve bot's signature, and the bot checks finalized reserves first. The bot co-signs a thaw only after finality has passed the drain, though A and A2 together could still thaw without it. The bot also writes a public record.</aside>
 </section>
 
 <!-- 4 · THE FREEZE ON V3: the frozen slide -->
@@ -368,7 +368,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
 <section class="slide s5" data-title="Gate by gate">
   <div class="hd"><span class="eb">Live proof · the full role drill on V3</span><h2>Every gate, signed or refused</h2></div>
   <div class="term">
-    <div class="bar"><i></i><i></i><i></i><span>evidence/roles-drill-v3-20261024T045513Z.json · reserve bot B decisions (excerpt; … marks a cut) · reserve: local anvil, NOT Sepolia</span></div>
+    <div class="bar"><i></i><i></i><i></i><span>evidence/roles-drill-v3-20261024T045513Z.json · bot B decisions (… = cut) · reserve: local anvil, NOT Sepolia</span></div>
 <div class="log">
 <div class="c"><span class="cmd">$ ballast bot cosign-mint 1.00 …</span>  <span class="ok">signed</span></div>
 <div class="r">finalized reserves 104000000 (latest 104000000) &gt;= S1 53000000 + S2 50000000 + amount 1000000 = 104000000</div>
@@ -408,7 +408,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
   <div class="hd"><span class="eb">Architecture</span><h2>The runtime enforces the roles</h2></div>
   <div class="band" style="top: 330px; height: 290px">
     <span class="eb">Portaldot V3 runtime · enforcement</span>
-    <span class="legend">solid: Portaldot V3 runtime · dashed: off-chain processes, one key each · bottom: the reserve chain</span>
+    <span class="legend">solid: Portaldot V3 runtime · dashed: off-chain processes, one role each · bottom: the reserve chain</span>
     <div class="box asset" style="left: 0; top: 30px; width: 880px; height: 84px"><b>Assets · asset 4401 pUSDC-test (+ control asset 4402, keyless roles)</b><span>owner = issuer = <code>M_mint</code> · admin = <code>M_admin</code> · freezer = <code>M_watch</code></span></div>
     <div class="box" style="left: 910px; top: 30px; width: 390px; height: 84px"><b>System remarks</b><span><code>BALLAST/1</code> attest · heartbeat · freeze</span></div>
     <div class="box" style="left: 1330px; top: 30px; width: 290px; height: 190px"><b>Revive · ReserveOracle</b><span><code>post()</code> attester only · <code>status()</code> · <code>isBacked(maxAge)</code> for EVM dApps</span><span><code>0x4832…155e</code></span></div>
@@ -435,7 +435,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <div class="wire" style="left: 150px; top: -82px; height: 82px"><em>balanceOf @ latest, each provider</em></div>
     <div class="wire" style="left: 810px; top: -82px; height: 82px"><em>@ finalized and latest</em></div>
     <div class="wire" style="left: 1155px; top: -82px; height: 82px"><em>@ finalized</em></div>
-    <div class="wire dash" style="left: 1475px; top: -82px; height: 82px"><em>by block hash</em></div>
+    <div class="wire dash" style="left: 1475px; top: -82px; height: 82px"><em>@ block hash</em></div>
     <div class="box" style="left: 0; top: 0; width: 1620px; height: 84px"><b>Reserve chain · ReserveVault.sol + ERC-20 reserve token</b><span><code>reserves()</code> · <code>release()</code> owner-only · in these drills: a local anvil chain, NOT Sepolia · target: Sepolia with Circle test USDC</span></div>
   </div>
   <aside class="speaker-notes">The Portaldot runtime enforces the asset's roles and the multisig thresholds; remarks and a read-only oracle on Revive carry the record. The reserve checks run in off-chain processes that each hold one key. The reserve vault sits on an EVM chain; in these drills that is a local anvil chain, with Sepolia as the target.</aside>
@@ -445,7 +445,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
 <section class="slide s7" data-title="Why it's new">
   <div class="hd"><span class="eb">Why it's new</span><h2>The stop lives in the asset</h2></div>
   <table>
-    <thead><tr><th>Question</th><th>A reserve number on its own</th><th>Ballast, measured on V3</th></tr></thead>
+    <thead><tr><th>Question</th><th>A reserve number alone (framing, not measured)</th><th>Ballast, measured on V3</th></tr></thead>
     <tbody>
       <tr><td>Who stops transfers?</td><td>each dApp that chose to read it</td><td>the runtime refuses <code>Assets.transfer</code> → <code class="trip">AssetNotLive</code> (<a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe6ca737bce559f4a85450656e1d6ef9e315526bb3258202fd7d28c9107f21bb2">170114-1</a>; other transfer paths not drilled)</td></tr>
       <tr><td>Can the stopper restart it?</td><td>the number carries no role on the asset</td><td>no: a watcher's thaw → <code>NoPermission</code> (<a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">170115-1</a>)</td></tr>
@@ -476,7 +476,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
       <dt>Open source</dt><dd>MIT · one CLI, <code>ballast</code> · 274 tests (239 pytest, 20 Foundry, 15 Hardhat)</dd>
     </dl>
   </div>
-  <aside class="speaker-notes">Every safety property comes from a Portaldot module: Assets roles, Multisig thresholds, batched remarks, and Revive for the EVM-readable oracle. The chain profile is pinned to V3's genesis and runtime, so the tools refuse to run against the wrong chain.</aside>
+  <aside class="speaker-notes">The role split and the thresholds come from Portaldot modules: Assets roles, Multisig, batched remarks, and Revive for the EVM-readable oracle; the reserve checks run in the off-chain bot and watchers. The chain profile is pinned to V3's genesis and runtime, so the tools refuse to run against the wrong chain.</aside>
 </section>
 
 <!-- 9 · USERS AND MODEL -->
@@ -493,7 +493,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <div class="st" style="left: 560px"><span class="n">2</span><b>Sepolia reserve</b><span class="t"><code>ReserveVault</code> with 100.00 test USDC; a watcher on separate infrastructure.</span></div>
     <div class="st" style="left: 1120px"><span class="n">3</span><b>A real issuer</b><span class="t">watcher and attester keys held by parties other than the issuer; community-watcher mode.</span></div>
   </div>
-  <p class="honest"><b>Funding (plan):</b> an ecosystem grant to reach a Sepolia-backed deployment with outside watchers; after that, the dollar's issuer runs Ballast as the safety layer the ecosystem asks of it. <b>Today:</b> no external users and no revenue.</p>
+  <p class="honest"><b>Funding (plan):</b> an ecosystem grant to reach a Sepolia-backed deployment with outside watchers; after that, the dollar's issuer runs Ballast as the safety layer the ecosystem could ask of it. <b>Today:</b> no external users and no revenue.</p>
   <aside class="speaker-notes">The user is whoever issues the first dollar on Portaldot, and the builders who would accept it. Today this is a testnet build with one operator. The next steps are a real Sepolia reserve and watchers run by other people, funded by a grant. We have no users or revenue yet, and we say so.</aside>
 </section>
 
@@ -508,7 +508,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
         <li>Role drill on V3: PASS <span class="mono">22/22 + 20/20</span></li>
         <li>Attestation drill on V3: PASS <span class="mono">15/15 + 6/6</span></li>
         <li><span class="mono">79/79</span> V3 extrinsics (8 runs) final, re-queried by <code>check_receipts.py --profile v3</code></li>
-        <li><span class="mono">274</span> tests · <span class="mono">130</span> commits since 2026-10-14</li>
+        <li><span class="mono">274</span> tests · <span class="mono">130</span> commits from 2026-10-14 to build <span class="mono">0071879</span></li>
       </ul>
     </div>
     <div class="open">
@@ -527,7 +527,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <div class="qr"><svg viewBox="0 0 37 37" role="img" aria-label="QR code: the Ballast GitHub repository"><path stroke="#0C2536" d="M0 0.5h7m2 0h3m1 0h1m3 0h3m1 0h1m3 0h2m3 0h7m-37 1h1m5 0h1m1 0h1m1 0h1m3 0h2m3 0h1m2 0h1m2 0h1m4 0h1m5 0h1m-37 1h1m1 0h3m1 0h1m1 0h2m2 0h2m4 0h4m1 0h2m1 0h3m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m1 0h6m1 0h1m1 0h1m1 0h1m3 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m3 0h2m3 0h2m1 0h4m1 0h1m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-37 1h1m5 0h1m2 0h1m3 0h1m1 0h2m1 0h1m3 0h1m3 0h1m3 0h1m5 0h1m-37 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-29 1h2m2 0h2m1 0h2m2 0h1m2 0h1m4 0h2m-29 1h1m5 0h1m1 0h2m2 0h4m2 0h1m1 0h2m2 0h3m2 0h2m2 0h3m-36 1h2m2 0h2m1 0h2m1 0h1m3 0h1m5 0h4m1 0h3m1 0h1m2 0h1m1 0h2m-36 1h5m1 0h2m1 0h2m1 0h1m1 0h1m3 0h1m1 0h1m4 0h6m1 0h1m2 0h2m-37 1h4m3 0h3m1 0h2m2 0h2m7 0h1m1 0h1m2 0h1m3 0h1m2 0h1m-37 1h1m1 0h1m3 0h1m2 0h1m2 0h2m2 0h1m2 0h1m7 0h2m1 0h2m4 0h1m-37 1h3m1 0h2m2 0h3m1 0h1m1 0h7m2 0h1m3 0h1m3 0h1m1 0h1m-34 1h1m2 0h1m1 0h2m1 0h2m2 0h2m1 0h1m1 0h1m2 0h2m5 0h1m2 0h4m1 0h2m-36 1h1m3 0h1m1 0h2m2 0h1m2 0h1m1 0h4m2 0h3m2 0h2m1 0h2m1 0h3m-36 1h1m2 0h1m1 0h2m4 0h1m4 0h1m2 0h1m1 0h1m3 0h3m2 0h3m1 0h1m-32 1h3m4 0h2m1 0h1m3 0h2m1 0h2m1 0h1m1 0h5m3 0h1m1 0h1m-35 1h1m1 0h2m1 0h3m1 0h2m2 0h2m1 0h1m2 0h1m2 0h3m1 0h3m2 0h3m1 0h1m-37 1h1m1 0h1m1 0h1m2 0h1m1 0h2m2 0h2m3 0h3m1 0h1m3 0h2m1 0h5m2 0h1m-37 1h1m1 0h2m1 0h2m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m2 0h1m1 0h2m1 0h1m1 0h2m1 0h3m-35 1h1m4 0h1m2 0h1m4 0h3m2 0h2m1 0h3m2 0h2m1 0h1m2 0h1m1 0h1m-34 1h1m1 0h2m1 0h1m2 0h1m1 0h1m3 0h2m1 0h1m3 0h1m2 0h1m1 0h2m1 0h4m1 0h2m-37 1h1m1 0h1m1 0h1m3 0h4m1 0h1m2 0h1m4 0h1m2 0h1m1 0h1m1 0h1m2 0h3m1 0h1m-35 1h1m4 0h1m1 0h2m1 0h1m1 0h2m1 0h4m1 0h1m2 0h1m2 0h5m3 0h2m-37 1h1m3 0h1m2 0h2m2 0h1m1 0h1m2 0h1m4 0h1m1 0h1m1 0h5m4 0h1m-35 1h1m1 0h13m5 0h1m1 0h1m2 0h6m1 0h2m1 0h2m-37 1h1m1 0h1m2 0h1m7 0h1m1 0h1m2 0h1m1 0h1m1 0h1m7 0h2m1 0h2m1 0h1m-37 1h1m1 0h1m1 0h4m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m1 0h1m2 0h2m1 0h9m-29 1h1m1 0h2m1 0h3m1 0h4m2 0h1m3 0h2m3 0h1m-33 1h7m2 0h1m1 0h3m1 0h2m2 0h1m1 0h5m2 0h1m1 0h1m1 0h1m3 0h1m-37 1h1m5 0h1m2 0h3m4 0h5m1 0h1m4 0h2m3 0h1m2 0h2m-37 1h1m1 0h3m1 0h1m2 0h1m2 0h1m2 0h2m2 0h1m1 0h1m2 0h2m1 0h6m1 0h1m1 0h1m-37 1h1m1 0h3m1 0h1m2 0h2m1 0h3m1 0h3m4 0h1m2 0h1m1 0h3m2 0h1m2 0h1m-37 1h1m1 0h3m1 0h1m3 0h8m1 0h1m2 0h1m3 0h3m5 0h3m-37 1h1m5 0h1m2 0h1m1 0h2m1 0h1m4 0h2m1 0h1m3 0h1m1 0h3m1 0h2m2 0h1m-37 1h7m1 0h5m1 0h2m4 0h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h1m2 0h1"/></svg></div>
     <p class="small">Scan for the repository.</p>
     <ul>
-      <li><b>Repository</b><a class="mono" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu">github.com/edycutjong/<wbr>portaldot-hackathon-<wbr>2026-ballast-edycu</a></li>
+      <li><b>Repository</b><a class="mono" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu">github.com/edycutjong/<wbr><span style="white-space: nowrap">portaldot-hackathon-2026-ballast-edycu</span></a></li>
       <li><b>V3 proof tables</b><a class="mono" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md">docs/PROOF.md</a></li>
       <li><b>The freeze, in the node console</b><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">block #170,112</a></li>
     </ul>

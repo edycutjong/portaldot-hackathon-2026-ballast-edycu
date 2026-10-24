@@ -1,0 +1,8 @@
+title = "ballast gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public chain data, not secrets (see .gitleaksignore for per-finding notes)"
+paths = ['''evidence/''', '''docs/PROOF\.md''', '''docs/RECEIPTS\.md''']

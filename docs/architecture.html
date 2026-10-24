@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ballast architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Archivo:wght@400;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #0C2536; }
+  body { display: flex; justify-content: center; padding: 32px 16px; }
+  .diagram-container { width: 100%; max-width: 1280px; overflow-x: auto; }
+  svg { display: block; width: 1280px; min-width: 1280px; height: auto; }
+  .t-eyebrow { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; letter-spacing: 0.16em; }
+  .t-title { font: 400 32px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #F4F1E6; letter-spacing: 0.01em; }
+  .t-lede { font: 400 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-zone { font: 400 17px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #F4F1E6; letter-spacing: 0.06em; }
+  .t-zonesub { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-zonesub tspan.flag { fill: #F4F1E6; font-weight: 600; }
+  .t-name { font: 600 18px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
+  .t-name-code { font: 600 15px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
+  .t-sub { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; }
+  .t-code-ink { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
+  .t-tag { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; letter-spacing: 0.14em; }
+  .t-badge { font: 400 16px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #0C2536; }
+  .t-label { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-label tspan.code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
+  .t-refused { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
+  .t-refused tspan.code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
+  .t-frozen { font: 400 26px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #FF5B2E; letter-spacing: 0.08em; }
+  .t-gauge { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
+  .t-gauge-water { font: 600 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #0C2536; }
+  .t-strip-head { font: 400 17px 'Saira Stencil One', 'Big Shoulders Stencil Display', Impact, sans-serif; fill: #F4F1E6; letter-spacing: 0.06em; }
+  .t-step { font: 600 15px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #F4F1E6; }
+  .t-step-code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #9AB0BE; }
+  .t-step-sub { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-note { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+  .t-note tspan.code { font: 500 14px 'IBM Plex Mono', ui-monospace, Menlo, monospace; fill: #F4F1E6; }
+  .t-legend { font: 400 14px Archivo, 'Helvetica Neue', Arial, sans-serif; fill: #9AB0BE; }
+</style>
+</head>
+<body>
+<div class="diagram-container">
+<svg viewBox="0 0 1280 1194" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
+<title id="architecture-title">Ballast architecture: the reserve breaker</title>
+<desc id="architecture-desc">A drain of the ReserveVault on a local anvil chain is read by the ballast watchdog, whose watcher key freezes asset 4401 through the M_watch multisig on the Portaldot V3 testnet, so a holder's transfer is refused; mint and thaw need the reserve bot's co-signature through M_mint and M_admin, and the attester and ballast verify tie both chains together.</desc>
+<defs>
+  <marker id="m-core" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="12" refX="0" refY="6" orient="auto"><path d="M0,0 L14,6 L0,12 Z" fill="#F4F1E6"/></marker>
+  <marker id="m-call" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="9" refX="0" refY="4.5" orient="auto"><path d="M0,0 L11,4.5 L0,9 Z" fill="#6F92A6"/></marker>
+  <marker id="m-read" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="9" refX="0" refY="4.5" orient="auto"><path d="M0,0 L11,4.5 L0,9 Z" fill="#9AB0BE"/></marker>
+</defs>
+<rect width="1280" height="1194" fill="#0C2536"/>
+<rect x="1" y="1" width="1278" height="1192" fill="none" stroke="#2B4F66" stroke-width="2"/>
+<text x="24" y="44" class="t-eyebrow">BALLAST · SYSTEM ARCHITECTURE</text>
+<text x="24" y="86" class="t-title">A reserve shortfall freezes pUSDC-test on Portaldot</text>
+<text x="24" y="116" class="t-lede">Solid boxes exist in this repository or on chain; dashed is planned. The white path 1–5 is the breaker as it ran on the Portaldot V3 testnet on 2026-10-24.</text>
+<rect x="24" y="144" width="268" height="784" rx="6" fill="#122B3C" stroke="#1E3D52" stroke-width="1.5"/>
+<text x="40" y="172" class="t-zone">RESERVE CHAIN</text>
+<text x="40" y="194" class="t-zonesub"><tspan class="flag">local anvil, NOT Sepolia</tspan></text>
+<rect x="332" y="144" width="284" height="784" rx="6" fill="#122B3C" stroke="#1E3D52" stroke-width="1.5"/>
+<text x="348" y="172" class="t-zone">OFF-CHAIN · BALLAST CLI</text>
+<text x="348" y="194" class="t-zonesub">separate processes, own keys</text>
+<rect x="656" y="144" width="600" height="784" rx="6" fill="#122B3C" stroke="#1E3D52" stroke-width="1.5"/>
+<text x="672" y="172" class="t-zone">PORTALDOT V3 TESTNET</text>
+<text x="672" y="194" class="t-zonesub">portaldot-v3/3002 · <tspan class="flag">wss://test-node-v3.portaldot.dev</tspan></text>
+<path d="M158,264 L158,290" fill="none" stroke="#F4F1E6" stroke-width="3" stroke-linejoin="miter" data-edge="c1" data-style="core" stroke-linecap="butt" marker-end="url(#m-core)"/>
+<path d="M272,348 L338,348" fill="none" stroke="#F4F1E6" stroke-width="3" stroke-linejoin="miter" data-edge="c2" data-style="core" stroke-linecap="butt" marker-end="url(#m-core)"/>
+<path d="M596,348 L662,348" fill="none" stroke="#F4F1E6" stroke-width="3" stroke-linejoin="miter" data-edge="c3" data-style="core" stroke-linecap="butt" marker-end="url(#m-core)"/>
+<path d="M872,348 L918,348" fill="none" stroke="#F4F1E6" stroke-width="3" stroke-linejoin="miter" data-edge="c4" data-style="core" stroke-linecap="butt" marker-end="url(#m-core)"/>
+<path d="M980,264 L980,290" fill="none" stroke="#F4F1E6" stroke-width="3" stroke-linejoin="miter" data-edge="c5" data-style="core" stroke-linecap="butt" marker-end="url(#m-core)"/>
+<path d="M272,376 L312,376 L312,712 L341,712" fill="none" stroke="#9AB0BE" stroke-width="2" stroke-linejoin="miter" data-edge="r-vault-attester" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6" marker-end="url(#m-read)"/>
+<path d="M312,588 L341,588" fill="none" stroke="#9AB0BE" stroke-width="2" stroke-linejoin="miter" data-edge="r-vault-bot" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6" marker-end="url(#m-read)"/>
+<path d="M596,468 L665,468" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="a-op" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
+<path d="M596,588 L665,588" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="a-bot" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
+<path d="M636,468 L636,588" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="a-bus" data-style="call" stroke-linecap="butt"/>
+<path d="M872,468 L921,468" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="d-mint" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
+<path d="M872,588 L921,588" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="d-admin" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
+<path d="M596,696 L921,696" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="att-remark" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
+<path d="M596,724 L904,724 L904,832 L921,832" fill="none" stroke="#6F92A6" stroke-width="1.75" stroke-linejoin="miter" data-edge="att-oracle" data-style="call" stroke-linecap="butt" marker-end="url(#m-call)"/>
+<path d="M352,832 L60,832 L60,403" fill="none" stroke="#9AB0BE" stroke-width="2" stroke-linejoin="miter" data-edge="v-vault" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6" marker-end="url(#m-read)"/>
+<path d="M474,876 L474,904 L1236,904 L1236,468 L1223,468" fill="none" stroke="#9AB0BE" stroke-width="2" stroke-linejoin="miter" data-edge="v-assets" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6" marker-end="url(#m-read)"/>
+<path d="M1236,712 L1223,712" fill="none" stroke="#9AB0BE" stroke-width="2" stroke-linejoin="miter" data-edge="v-remark" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6" marker-end="url(#m-read)"/>
+<path d="M1236,832 L1223,832" fill="none" stroke="#9AB0BE" stroke-width="2" stroke-linejoin="miter" data-edge="v-oracle" data-style="read" stroke-linecap="round" stroke-dasharray="0.1 6" marker-end="url(#m-read)"/>
+<circle cx="312" cy="588" r="4.5" fill="#9AB0BE"/>
+<circle cx="636" cy="468" r="4.5" fill="#6F92A6"/>
+<circle cx="636" cy="588" r="4.5" fill="#6F92A6"/>
+<circle cx="1236" cy="712" r="4.5" fill="#9AB0BE"/>
+<circle cx="1236" cy="832" r="4.5" fill="#9AB0BE"/>
+<g data-node="custodian">
+<rect data-box="custodian" x="44" y="208" width="228" height="56" rx="4" fill="#0C2536" stroke="#9AB0BE" stroke-width="1.25"/>
+<text x="58" y="232" class="t-name">custodian key</text>
+<text x="58" y="254" class="t-code">scripts/role_drill.py</text>
+</g>
+<g data-node="vault">
+<rect data-box="vault" x="44" y="304" width="228" height="88" rx="4" fill="#123B45" stroke="#3FD9B5" stroke-width="2"/>
+<text x="58" y="334" class="t-name">ReserveVault.sol</text>
+<text x="58" y="356" class="t-code">reserves() · release()</text>
+<text x="58" y="377" class="t-sub">holds MockUSDC (ERC-20)</text>
+</g>
+<g data-node="planned">
+<rect data-box="planned" x="84" y="548" width="188" height="112" rx="4" fill="#122B3C" stroke="#9AB0BE" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="98" y="574" class="t-tag">PLANNED</text>
+<text x="98" y="598" class="t-name">Sepolia vault</text>
+<text x="98" y="619" class="t-sub">Circle test USDC</text>
+<text x="98" y="640" class="t-sub">not deployed yet</text>
+</g>
+<g data-node="watchdog">
+<rect data-box="watchdog" x="352" y="304" width="244" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="366" y="334" class="t-name">watchdog</text>
+<text x="366" y="356" class="t-code">ballast/watchdog.py</text>
+<text x="366" y="377" class="t-sub">keys W1, W2 · freeze only</text>
+</g>
+<g data-node="operator">
+<rect data-box="operator" x="352" y="424" width="244" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="366" y="454" class="t-name">operator</text>
+<text x="366" y="476" class="t-code">ballast/multisig_ops.py</text>
+<text x="366" y="497" class="t-sub">keys A, A2 · proposes</text>
+</g>
+<g data-node="bot">
+<rect data-box="bot" x="352" y="544" width="244" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="366" y="574" class="t-name">reserve bot</text>
+<text x="366" y="596" class="t-code">ballast/bot.py</text>
+<text x="366" y="617" class="t-sub">key B · co-signs only if backed</text>
+</g>
+<g data-node="attester">
+<rect data-box="attester" x="352" y="668" width="244" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="366" y="698" class="t-name">attester</text>
+<text x="366" y="720" class="t-code">ballast/attest.py</text>
+<text x="366" y="741" class="t-sub">key B · remark, then oracle</text>
+</g>
+<g data-node="verify">
+<rect data-box="verify" x="352" y="788" width="244" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="366" y="818" class="t-name">ballast verify</text>
+<text x="366" y="840" class="t-code">ballast/verify.py</text>
+<text x="366" y="861" class="t-sub">re-reads both chains by hash</text>
+</g>
+<g data-node="m_watch">
+<rect data-box="m_watch" x="676" y="304" width="196" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="690" y="334" class="t-name">M_watch · 1-of-2</text>
+<text x="690" y="355" class="t-sub">{W1, W2} · freezer</text>
+<text x="690" y="377" class="t-code">→ freeze_asset</text>
+</g>
+<g data-node="m_mint">
+<rect data-box="m_mint" x="676" y="424" width="196" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="690" y="454" class="t-name">M_mint · 2-of-2</text>
+<text x="690" y="475" class="t-sub">{A, B} · owner, issuer</text>
+<text x="690" y="497" class="t-code">→ mint · set_team</text>
+</g>
+<g data-node="m_admin">
+<rect data-box="m_admin" x="676" y="544" width="196" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="690" y="574" class="t-name">M_admin · 2-of-3</text>
+<text x="690" y="595" class="t-sub">{A, A2, B} · admin</text>
+<text x="690" y="617" class="t-code">→ thaw_asset</text>
+</g>
+<g data-node="holder">
+<rect data-box="holder" x="932" y="208" width="280" height="56" rx="4" fill="#0C2536" stroke="#9AB0BE" stroke-width="1.25"/>
+<text x="946" y="232" class="t-name">holder (judge key)</text>
+<text x="946" y="254" class="t-code">scripts/role_drill.py</text>
+</g>
+<g data-node="assets">
+<rect data-box="assets" x="932" y="304" width="280" height="328" rx="4" fill="#123349" stroke="#F4F1E6" stroke-width="2"/>
+<text x="946" y="334" class="t-name">Assets pallet</text>
+<text x="946" y="356" class="t-code-ink">asset 4401 · pUSDC-test</text>
+<text x="946" y="378" class="t-code">asset 4402 · pUSDC-ctl</text>
+<text x="946" y="399" class="t-sub">control, keyless roles</text>
+</g>
+<g data-node="remark">
+<rect data-box="remark" x="932" y="668" width="280" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="946" y="698" class="t-name-code">System.remark_with_event</text>
+<text x="946" y="720" class="t-code">BALLAST/1 remarks</text>
+<text x="946" y="741" class="t-sub">attest · heartbeat · freeze</text>
+</g>
+<g data-node="oracle">
+<rect data-box="oracle" x="932" y="788" width="280" height="88" rx="4" fill="#123349" stroke="#6F92A6" stroke-width="1.5"/>
+<text x="946" y="818" class="t-name">ReserveOracle.sol</text>
+<text x="946" y="840" class="t-code">Revive · 0x4832…155e</text>
+<text x="946" y="861" class="t-sub">post() by attester · isBacked()</text>
+</g>
+<g data-plate="frozen">
+<rect x="948" y="424" width="248" height="184" rx="3" fill="#2A2B33" stroke="#FF5B2E" stroke-width="2"/>
+<text x="962" y="458" class="t-frozen">FROZEN</text>
+<text x="962" y="486" class="t-code-ink">Assets.AssetFrozen</text>
+<text x="962" y="508" class="t-code">V3 170112-1 · by W2</text>
+<text x="962" y="536" class="t-gauge">supply 104.00</text>
+<line x1="962" y1="546" x2="1116" y2="546" stroke="#F4F1E6" stroke-width="3"/>
+<line x1="1116" y1="546" x2="1182" y2="546" stroke="#3A5568" stroke-width="3"/>
+<rect x="1113" y="530" width="6" height="32" fill="#FF5B2E"/>
+<rect x="962" y="568" width="220" height="26" fill="#3FD9B5"/>
+<line x1="962" y1="568" x2="1182" y2="568" stroke="#B8FFEC" stroke-width="2"/>
+<text x="970" y="586" class="t-gauge-water">reserves 72.80</text>
+</g>
+<text x="676" y="290" class="t-tag">MULTISIG PALLET</text>
+<text x="774" y="684" class="t-label" text-anchor="middle">attest · heartbeat</text>
+<text x="892" y="784" class="t-label" text-anchor="end"><tspan class="code">post()</tspan> after inclusion</text>
+<text x="996" y="289" class="t-refused">refused: <tspan class="code">AssetNotLive</tspan></text>
+<g data-badge="1"><circle cx="182" cy="284" r="13" fill="#F4F1E6"/><text x="182" y="290" class="t-badge" text-anchor="middle">1</text></g>
+<g data-badge="2"><circle cx="312" cy="322" r="13" fill="#F4F1E6"/><text x="312" y="328" class="t-badge" text-anchor="middle">2</text></g>
+<g data-badge="3"><circle cx="636" cy="322" r="13" fill="#F4F1E6"/><text x="636" y="328" class="t-badge" text-anchor="middle">3</text></g>
+<g data-badge="4"><circle cx="902" cy="322" r="13" fill="#F4F1E6"/><text x="902" y="328" class="t-badge" text-anchor="middle">4</text></g>
+<g data-badge="5"><circle cx="956" cy="284" r="13" fill="#F4F1E6"/><text x="956" y="290" class="t-badge" text-anchor="middle">5</text></g>
+<text x="24" y="968" class="t-strip-head">THE BREAKER ON PORTALDOT V3 · ROLE DRILL, 2026-10-24</text>
+<g data-step="1">
+<g data-badge="1"><circle cx="37" cy="1002" r="13" fill="#F4F1E6"/><text x="37" y="1008" class="t-badge" text-anchor="middle">1</text></g>
+<text x="58" y="1007" class="t-step">drain the vault</text>
+<text x="58" y="1030" class="t-step-code">release() 31.20</text>
+<text x="58" y="1051" class="t-step-sub">30% of supply 104.00</text>
+</g>
+<g data-step="2">
+<g data-badge="2"><circle cx="287" cy="1002" r="13" fill="#F4F1E6"/><text x="287" y="1008" class="t-badge" text-anchor="middle">2</text></g>
+<text x="308" y="1007" class="t-step">watchdog sees a deficit</text>
+<text x="308" y="1030" class="t-step-code">r 72.80 &lt; s 104.00</text>
+<text x="308" y="1051" class="t-step-sub">balanceOf(vault) on anvil</text>
+</g>
+<g data-step="3">
+<g data-badge="3"><circle cx="537" cy="1002" r="13" fill="#F4F1E6"/><text x="537" y="1008" class="t-badge" text-anchor="middle">3</text></g>
+<text x="558" y="1007" class="t-step">W2 signs one batch_all</text>
+<text x="558" y="1030" class="t-step-code">remark_with_event +</text>
+<text x="558" y="1051" class="t-step-code">as_multi_threshold_1</text>
+</g>
+<g data-step="4">
+<g data-badge="4"><circle cx="787" cy="1002" r="13" fill="#F4F1E6"/><text x="787" y="1008" class="t-badge" text-anchor="middle">4</text></g>
+<text x="808" y="1007" class="t-step">M_watch freezes the asset</text>
+<text x="808" y="1030" class="t-step-code">AssetFrozen 170112-1</text>
+<text x="808" y="1051" class="t-step-sub">12.22 s after the drain</text>
+</g>
+<g data-step="5">
+<g data-badge="5"><circle cx="1037" cy="1002" r="13" fill="#F4F1E6"/><text x="1037" y="1008" class="t-badge" text-anchor="middle">5</text></g>
+<text x="1058" y="1007" class="t-step">the holder&#x27;s transfer fails</text>
+<text x="1058" y="1030" class="t-step-code">AssetNotLive 170114-1</text>
+<text x="1058" y="1051" class="t-step-sub">until a gated thaw</text>
+</g>
+<text x="24" y="1096" class="t-note">Recovery is gated: W1's own thaw through M_watch is refused (<tspan class="code">NoPermission 170115-1</tspan>); the thaw runs through M_admin and executes only with the bot's final approval,</text>
+<text x="24" y="1118" class="t-note">once finalized reserves cover supply again (<tspan class="code">170133-1</tspan>). Every V3 id here is listed with its block in <tspan class="code">docs/PROOF.md</tspan>.</text>
+<line x1="24" y1="1159" x2="54" y2="1159" stroke="#F4F1E6" stroke-width="3" marker-end="url(#m-core)"/>
+<text x="78" y="1164" class="t-legend">breaker path 1–5</text>
+<line x1="226" y1="1159" x2="259" y2="1159" stroke="#6F92A6" stroke-width="1.75" marker-end="url(#m-call)"/>
+<text x="280" y="1164" class="t-legend">signed call / dispatch</text>
+<line x1="469" y1="1159" x2="502" y2="1159" stroke="#9AB0BE" stroke-width="2" stroke-dasharray="0.1 6" stroke-linecap="round" marker-end="url(#m-read)"/>
+<text x="523" y="1164" class="t-legend">read (RPC, eth_call)</text>
+<rect x="699" y="1150" width="28" height="18" rx="3" fill="#122B3C" stroke="#9AB0BE" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="737" y="1164" class="t-legend">planned, not built</text>
+<text x="1256" y="1164" class="t-legend" text-anchor="end">Earlier drills ran on a local stand-in chain, not V3.</text>
+</svg>
+</div>
+</body>
+</html>

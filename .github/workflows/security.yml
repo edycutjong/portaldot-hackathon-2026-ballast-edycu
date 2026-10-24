@@ -30,4 +30,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pip-audit -e .
-      - run: pip-audit --skip-editable
+      # ecdsa (transitive via substrate-interface): PYSEC-2026-1325 has no fixed release and concerns timing side channels, not reachable here (testnet keys only)
+      - run: pip-audit --skip-editable --ignore-vuln PYSEC-2026-1325

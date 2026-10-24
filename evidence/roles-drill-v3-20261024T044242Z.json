@@ -1,0 +1,276 @@
+{
+  "kind": "roles-drill",
+  "chain": {
+    "profile": "v3",
+    "label": "Portaldot V3 testnet",
+    "is_standin": false,
+    "genesis_pinned": true,
+    "genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+    "spec_name": "portaldot-v3",
+    "spec_version": 3002,
+    "token_decimals": 14,
+    "decimals_source": "system_properties",
+    "head": 169966,
+    "multisig_shape": "weight-v2",
+    "block_counts": "UNVERIFIED (V3 day-0)",
+    "notes": [
+      "PortaldotV3 Test, node 3.0.0-dev-fddd43141f2, token tPOT, ss58 42"
+    ],
+    "url": "wss://test-node-v3.portaldot.dev"
+  },
+  "started_at": "2026-10-24T04:42:42Z",
+  "asset_id": 4401,
+  "assets": {
+    "breaker": 4401,
+    "control": 4402,
+    "decimals": 6
+  },
+  "roles": {
+    "A": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+    "A2": "5FRBEpK4dqqaRquHta3jB1aJHpgi7Y3nhjKRqJDdwhih8e7z",
+    "B": "5DLftfqommHyxsuNaH5wpA9imFJ6AoB9MXFrFu5BRLiNRv2R",
+    "watchers": [
+      "5DG4akHnFL58yotBXtZ1tiqXeWASRh5em1iJSS3qQa6ssgU6",
+      "5HmYD3NyvhBGBGcjhfDPS4bCW2mFYP54KY874jSgHPE2Sf39"
+    ],
+    "ss58_format": 42,
+    "M_mint": {
+      "address": "5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "B"
+      ]
+    },
+    "M_admin": {
+      "address": "5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "A2",
+        "B"
+      ]
+    },
+    "M_watch": {
+      "address": "5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c",
+      "threshold": 1,
+      "signatories": [
+        "W1",
+        "W2"
+      ]
+    },
+    "control_keyless": {
+      "owner": {
+        "address": "5Hd3Ex8NE9DN1YKfL7GT596izJPzzFCDbqzdNYTmKTzyhC35",
+        "derivation": "blake2_256(\"ballast:a2-owner:v1\")"
+      },
+      "issuer": {
+        "address": "5CFqicciCJqSLxpruCpZCFSav78UQqE1zaoQ3YT3VRz6Sd63",
+        "derivation": "blake2_256(\"ballast:a2-issuer:v1\")"
+      },
+      "admin": {
+        "address": "5HWsvYp1arXWVsVoEMpCcKCNfivhkoQtYTTfpN9Hh7YxQFNS",
+        "derivation": "blake2_256(\"ballast:a2-admin:v1\")"
+      },
+      "freezer": {
+        "address": "5C86CJba7bqEntLPbWYXMVasmKDodYs5ueMaCBrLiHgdWqDw",
+        "derivation": "blake2_256(\"ballast:a2-freezer:v1\")"
+      }
+    }
+  },
+  "reserve": {
+    "label": "local-anvil (not Sepolia)",
+    "evm_chain_id": 31337,
+    "vault": "0x22753E4264FDDc6181dc7cce468904A80a363E44",
+    "erc20": "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+    "custodian": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "providers": [
+      "anvil=http://127.0.0.1:49545"
+    ],
+    "evm_url": "http://127.0.0.1:49545"
+  },
+  "deployment": "deployments/v3.json",
+  "decisions": [
+    {
+      "command": "ballast bot cosign-mint 1.00 //BallastJudge//roles",
+      "decision": "refused",
+      "reason": "reserves unreadable: finalized: no provider answered a finalized reading; latest: no provider answered a latest reading",
+      "exit": 1,
+      "finalized_block": null,
+      "finalized_reserves": null,
+      "state": {
+        "s1": 0,
+        "s2": 50000000,
+        "frozen": false,
+        "status": "Live",
+        "team_problems": []
+      },
+      "freeze": null,
+      "call_hash": "0x919cc4d36c94234cd31d7658be27c1b0432ce67ab15f15efac8b6ebbd146dce3",
+      "executed": null
+    }
+  ],
+  "source": {
+    "git_head": "586d6ef89779a02ccb625147d404e1befc280596",
+    "dirty": false
+  },
+  "watchers_note": "W1 and W2 run as two processes on ONE machine (a watcher on separate infrastructure is still to be recruited)",
+  "steps": [
+    {
+      "name": "A proposes mint 1.00 to the judge through M_mint (first approval)",
+      "expected": "Ok + Multisig.NewMultisig",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Multisig.NewMultisig"
+      ],
+      "receipt": {
+        "profile": "v3",
+        "step": "operator_propose_mint",
+        "call": "Multisig.as_multi(Assets.mint) \u2014 first approval",
+        "signer": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+        "extrinsic_id": "169970-1",
+        "block_number": 169970,
+        "block_hash": "0xd529e2be20f6ec2400874a55b036cfaf70da290a161e7f56065b713a47c4242f",
+        "extrinsic_index": 1,
+        "extrinsic_hash": "0x3ed0666bb95a3bef8bc394c81e95131584450764ab862bce8009e266aa48c722",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "amount": 1870649082222
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "NewMultisig",
+            "attributes": {
+              "approving": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "multisig": "5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb",
+              "call_hash": "0x919cc4d36c94234cd31d7658be27c1b0432ce67ab15f15efac8b6ebbd146dce3"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "amount": 117576379
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1870531505843
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+              "actual_fee": 1870531505843,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 755648661,
+                  "proof_size": 15486
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "evm_steps": [
+    {
+      "name": "custodian receives 1.00 test token",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0x41fe2cfbb1efcddf0d18ce41d9ced7b2fc80292f38d492ed10bee4357b82eb30",
+      "block_number": 1221,
+      "block_hash": "0x35c23d00ec4ff9043e17cec37a66bbe84f35324f39ede17d5cb8faafb1e5549c",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+      "contract": null
+    },
+    {
+      "name": "custodian deposits 1.00 into the vault",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0x6139d43012fbd18957cb760350ab02aa3f83a225c4e2d26d7ea5a19381492dca",
+      "block_number": 1222,
+      "block_hash": "0xf879767b938ebb60bbea7001686fff93ecfe1e8c11bf68a0fa37dec198c90239",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+      "contract": null
+    }
+  ],
+  "state_checks": [
+    {
+      "what": "asset 1 team == role map before the drill (ARMED)",
+      "expected": [],
+      "observed": [],
+      "ok": true,
+      "block_hash": "head"
+    },
+    {
+      "what": "level before the drill: vault reserves == S1 + S2",
+      "expected": 50000000,
+      "observed": 100000000,
+      "ok": true,
+      "block_hash": "head"
+    }
+  ],
+  "finality_emulation": [
+    {
+      "why": "the 1.00 deposit",
+      "mined_blocks": 65,
+      "finalized_before": 1158,
+      "finalized_after": 1223,
+      "basis": "anvil finalized = latest - 64; local stand-in for Sepolia finality"
+    }
+  ],
+  "error": "RuntimeError: bot did not co-sign the covered mint: reserves unreadable: finalized: no provider answered a finalized reading; latest: no provider answered a latest reading",
+  "finished_at": "2026-10-24T04:43:17Z",
+  "passed": 3,
+  "counted_steps": 3,
+  "observation_steps": 0,
+  "verdict": "ERROR"
+}

@@ -24,3 +24,21 @@ ReserveOracle on V3 Revive: `0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e` (attest
 | asset 4402 transfer_ownership(keyless owner) | Assets.transfer_ownership | Ok | [#169958](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3) `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3` | 169958-1 | `0xe0c32994b778fc51ddcc6d8d038177ef05bb81f879e6554ceff8d24ff174c952` | v3 |
 | A alone tries to mint asset 4401 (issuer is M_mint) | Assets.mint | Err(Assets.NoPermission) | [#169959](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x078f168764203e0c076de640e1ab233236b4fbf8ac5c1a0bd16a38b7e0d90e9f) `0x078f168764203e0c076de640e1ab233236b4fbf8ac5c1a0bd16a38b7e0d90e9f` | 169959-1 | `0x158e4d7b115230664149d6318f23bb1fe85f89ea87640e24a9f0b5c877775427` | v3 |
 | B deploys ReserveOracle(attester = 0xc81ab822279e828b16a2be9a55520e475fa98678) | Revive.instantiate_with_code(ReserveOracle) | Ok | [#169960](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe94805cffe1a16d9351b858dcb4f227d65da58f1054212e3e3c21da218096d9b) `0xe94805cffe1a16d9351b858dcb4f227d65da58f1054212e3e3c21da218096d9b` | 169960-1 | `0x625a2b66602be315de99809a64a73e6db88f1cbb698b935e80728ad4a1478e97` | v3 |
+
+## roles-drill — roles-drill-v3-20261024T044242Z.json — ERROR (3/3 steps as expected, 2/2 state checks)
+
+Started 2026-10-24T04:42:42Z · source: `586d6ef` (clean)
+
+| step | call | outcome | block | extrinsic | extrinsic hash | profile |
+|---|---|---|---|---|---|---|
+| A proposes mint 1.00 to the judge through M_mint (first approval) | Multisig.as_multi(Assets.mint) — first approval | Ok | [#169970](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xd529e2be20f6ec2400874a55b036cfaf70da290a161e7f56065b713a47c4242f) `0xd529e2be20f6ec2400874a55b036cfaf70da290a161e7f56065b713a47c4242f` | 169970-1 | `0x3ed0666bb95a3bef8bc394c81e95131584450764ab862bce8009e266aa48c722` | v3 |
+
+## roles-drill — roles-drill-v3-20261024T044514Z.json — ERROR (5/5 steps as expected, 3/4 state checks)
+
+Started 2026-10-24T04:45:14Z · source: `586d6ef` (UNCOMMITTED CHANGES)
+
+| step | call | outcome | block | extrinsic | extrinsic hash | profile |
+|---|---|---|---|---|---|---|
+| A proposes mint 1.00 to the judge through M_mint (first approval) | Multisig.as_multi(Assets.mint) — first approval | Ok | [#169995](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x3cac21afb571aa3d52af89b8971fdef576a66598b5a8e4fb8b84c19e433f78c9) `0x3cac21afb571aa3d52af89b8971fdef576a66598b5a8e4fb8b84c19e433f78c9` | 169995-1 | `0x55b1074799bbc7e3b501f72352d4176353100c652f23cfb43272d7131e9a144b` | v3 |
+| bot B co-signs: finalized reserves cover S1 + S2 + 1.00 -> mint executes | Multisig.as_multi(Assets.mint) — final approval | Ok (inner Ok) | [#169998](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x1e86e5107a0afd565864e59fadec2f04cca595f2620dbf4dbbd242344611871e) `0x1e86e5107a0afd565864e59fadec2f04cca595f2620dbf4dbbd242344611871e` | 169998-1 | `0x394a2cf8c3e9487a195baf792171ccbae8e68aba3ca230db5491f3497798d900` | v3 |
+| A proposes 0.01 more (reserves cover S1 + S2 exactly) | Multisig.as_multi(Assets.mint) — first approval | Ok | [#170001](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x553f831c0d3f84d15d362e120a72171d387ca05d587be5da6487573242c98e5c) `0x553f831c0d3f84d15d362e120a72171d387ca05d587be5da6487573242c98e5c` | 170001-1 | `0x6a66168f0b35917508a0f55f6971d11eaffc36c00d2006b7ffea0249b241c876` | v3 |

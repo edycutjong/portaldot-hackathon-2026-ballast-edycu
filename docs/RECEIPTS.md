@@ -32,6 +32,48 @@ The Sepolia `ReserveVault` deploy, its 100.00 USDC deposit and the real-Sepolia 
 
 Chain label: Portaldot V3 testnet
 
+### Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw — 2026-10-24T04:45:14Z
+
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-drill-v3-20261024T044514Z.json`](../evidence/roles-drill-v3-20261024T044514Z.json) · result: **ERROR** (5/5 steps as expected, 3/4 state checks) · source: `586d6ef` (UNCOMMITTED CHANGES)
+
+Role map: `M_mint` 5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb (2-of-2 A, B) · `M_admin` 5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg (2-of-3 A, A2, B) · `M_watch` 5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c (1-of-2 watchers).
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x22753E4264FDDc6181dc7cce468904A80a363E44`):
+
+| # | Step | Block | Tx hash | Observed |
+|---|---|---|---|---|
+| 1 | custodian receives 1.00 test token | 1289 | `0x9ed259a256120b71877a21cd06855806d324ffb1f78fce82c5021956f81d3ddc` | ✅ status 1 |
+| 2 | custodian deposits 1.00 into the vault | 1290 | `0x84f3963b5d3dc40812e6f313cfed2ad438dfaf9053e943ff0eadea9aac31c572` | ✅ status 1 |
+
+Portaldot extrinsics:
+
+Run stopped with an error: `AttributeError: 'NoneType' object has no attribute 'approvals'`
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | A proposes mint 1.00 to the judge through M_mint (first approval) | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `169995-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 2 | bot B co-signs: finalized reserves cover S1 + S2 + 1.00 -> mint executes | `Multisig.as_multi(Assets.mint) — final approval` (B (reserve bot)) | `169998-1` | Ok + inner Ok + Assets.Issued | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Issued |
+| 3 | A proposes 0.01 more (reserves cover S1 + S2 exactly) | `Multisig.as_multi(Assets.mint) — first approval` (A (operator)) | `170001-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+
+Block and transaction hashes (full):
+
+```
+ 1  169995-1 block 0x3cac21afb571aa3d52af89b8971fdef576a66598b5a8e4fb8b84c19e433f78c9  tx 0x55b1074799bbc7e3b501f72352d4176353100c652f23cfb43272d7131e9a144b
+ 2  169998-1 block 0x1e86e5107a0afd565864e59fadec2f04cca595f2620dbf4dbbd242344611871e  tx 0x394a2cf8c3e9487a195baf792171ccbae8e68aba3ca230db5491f3497798d900
+ 3  170001-1 block 0x553f831c0d3f84d15d362e120a72171d387ca05d587be5da6487573242c98e5c  tx 0x6a66168f0b35917508a0f55f6971d11eaffc36c00d2006b7ffea0249b241c876
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ asset 1 team == role map before the drill (ARMED): expected `[]`, observed `[]` at block `head`
+- ✅ level before the drill: vault reserves == S1 + S2: expected `50000000`, observed `101000000` at block `head`
+- ✅ S1 after the gated mint == S1 + 1.00: expected `1000000`, observed `1000000` at block `0x1e86e5107a0afd565864e59fadec2f04cca595f2620dbf4dbbd242344611871e`
+- ❌ bot refuses the over-mint (exit 1, no signature): expected `[1, 'refused']`, observed `[0, 'signed']` at block `bot`
+
+Other runs, newest first, any verdict (full tables in the JSON):
+
+- asset 4401 — 2026-10-24T04:42:42Z — ERROR (3/3 steps as expected, 2/2 state checks) — source: `586d6ef` (clean) — [`evidence/roles-drill-v3-20261024T044242Z.json`](../evidence/roles-drill-v3-20261024T044242Z.json) — RuntimeError: bot did not co-sign the covered mint: reserves unreadable: finalized: no provider answered a finalized reading; latest: no provider answered a lat
+
 ### Role split — asset 1 (breaker) + asset 2 (control), reserve vault, ReserveOracle — 2026-10-24T04:41:31Z
 
 Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-setup-v3.json`](../evidence/roles-setup-v3.json) · result: **PASS** (16/16 steps as expected, 6/6 state checks) · source: `775e97c` (UNCOMMITTED CHANGES)

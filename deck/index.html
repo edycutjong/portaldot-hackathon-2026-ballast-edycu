@@ -408,7 +408,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
   <div class="hd"><span class="eb">Architecture</span><h2>The runtime enforces the roles</h2></div>
   <div class="band" style="top: 330px; height: 290px">
     <span class="eb">Portaldot V3 runtime · enforcement</span>
-    <span class="legend">solid: Portaldot V3 runtime · dashed: off-chain processes, one role each · bottom: the reserve chain</span>
+    <span class="legend">solid: Portaldot V3 runtime · dashed: off-chain processes · bottom: the reserve chain</span>
     <div class="box asset" style="left: 0; top: 30px; width: 880px; height: 84px"><b>Assets · asset 4401 pUSDC-test (+ control asset 4402, keyless roles)</b><span>owner = issuer = <code>M_mint</code> · admin = <code>M_admin</code> · freezer = <code>M_watch</code></span></div>
     <div class="box" style="left: 910px; top: 30px; width: 390px; height: 84px"><b>System remarks</b><span><code>BALLAST/1</code> attest · heartbeat · freeze</span></div>
     <div class="box" style="left: 1330px; top: 30px; width: 290px; height: 190px"><b>Revive · ReserveOracle</b><span><code>post()</code> attester only · <code>status()</code> · <code>isBacked(maxAge)</code> for EVM dApps</span><span><code>0x4832…155e</code></span></div>
@@ -438,7 +438,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <div class="wire dash" style="left: 1475px; top: -82px; height: 82px"><em>@ block hash</em></div>
     <div class="box" style="left: 0; top: 0; width: 1620px; height: 84px"><b>Reserve chain · ReserveVault.sol + ERC-20 reserve token</b><span><code>reserves()</code> · <code>release()</code> owner-only · in these drills: a local anvil chain, NOT Sepolia · target: Sepolia with Circle test USDC</span></div>
   </div>
-  <aside class="speaker-notes">The Portaldot runtime enforces the asset's roles and the multisig thresholds; remarks and a read-only oracle on Revive carry the record. The reserve checks run in off-chain processes that each hold one key. The reserve vault sits on an EVM chain; in these drills that is a local anvil chain, with Sepolia as the target.</aside>
+  <aside class="speaker-notes">The Portaldot runtime enforces the asset's roles and the multisig thresholds; remarks and a read-only oracle on Revive carry the record. The reserve checks run in off-chain processes: the watchers, the reserve bot and the attester. The reserve vault sits on an EVM chain; in these drills that is a local anvil chain, with Sepolia as the target.</aside>
 </section>
 
 <!-- 7 · WHY IT'S NEW -->

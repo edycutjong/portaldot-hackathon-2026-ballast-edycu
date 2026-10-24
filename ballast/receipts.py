@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 EVIDENCE = ROOT / "evidence"
 RECEIPTS_MD = ROOT / "docs" / "RECEIPTS.md"
 PROOF_MD = ROOT / "docs" / "PROOF.md"
+FINALITY = EVIDENCE / "v3-finality.json"  # written by scripts/check_receipts.py --profile v3
 V3_CONSOLE = "https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/"
 
 
@@ -357,19 +358,25 @@ def render_index(runs: list[dict]) -> list[str]:
     rows = []
     for kind, scenario, what in INDEX_ROWS:
         group = [r for r in runs if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
-        if not group:
-            continue
-        lead = next((r for r in group if clean_pass(r)), group[0])
-        chain = lead["chain"]["profile"] + (" (stand-in, NOT V3)" if lead["chain"]["is_standin"] else "")
-        reserve = (lead.get("reserve") or {}).get("label") or "—"
-        rows.append(f"| {what} | {chain} | {reserve} | {lead['verdict']} ({score(lead)}) | "
-                    f"[`{lead['_file']}`](../evidence/{lead['_file']}) |")
+        v3 = [r for r in group if r["chain"]["profile"] == "v3"]
+        for part in (v3, [r for r in group if r["chain"]["profile"] != "v3"]):  # V3 gets its own row
+            if not part:
+                continue
+            lead = next((r for r in part if clean_pass(r)), None) or next(
+                (r for r in part if r.get("verdict") == "PASS"), part[0])
+            chain = lead["chain"]["profile"] + (" (stand-in, NOT V3)" if lead["chain"]["is_standin"] else "")
+            reserve = (lead.get("reserve") or {}).get("label") or "—"
+            dirty = " · ran from uncommitted changes" if (lead.get("source") or {}).get("dirty") else ""
+            rows.append(f"| {what} | {chain} | {reserve} | {lead['verdict']} ({score(lead)}){dirty} | "
+                        f"[`{lead['_file']}`](../evidence/{lead['_file']}) |")
     if not rows:
         return []
     return ["## At a glance", "",
-            "Three places, each labelled on every row: the Portaldot **stand-in** chain (not V3), the **local-anvil**",
-            "reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its section).", "",
-            "| Run | Portaldot chain | Reserve chain | Newest clean result | Evidence |", "|---|---|---|---|---|",
+            "Four places, each labelled on every row: the **Portaldot V3 testnet** (profile v3, real tPOT — every V3",
+            "extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** chain (not V3), the",
+            "**local-anvil** reserve chain (not Sepolia), and **Sepolia** (read-only so far — see its section).", "",
+            "| Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |",
+            "|---|---|---|---|---|",
             *rows, ""]
 
 
@@ -434,6 +441,11 @@ def render_proof_md(runs: list[dict] | None = None) -> str:
     if not runs:
         lines += ["No V3 transaction yet.", ""]
         return "\n".join(lines)
+    fin = json.loads(FINALITY.read_text()) if FINALITY.exists() else {"receipts": {}}
+    if fin.get("finalized_head"):
+        lines += [f"Finality: `check_receipts.py --profile v3` at {fin['checked_at']} found every row marked final at or below "
+                  f"the finalized head #{fin['finalized_head']}. A row whose inclusion block lost a fork links the canonical block "
+                  "holding the same extrinsic.", ""]
     for run in sorted(runs, key=lambda r: r["started_at"]):
         summarize(run)
         lines += [f"## {run['kind']} — {run['_file']} — {run['verdict']} ({score(run)})", "",
@@ -441,13 +453,18 @@ def render_proof_md(runs: list[dict] | None = None) -> str:
         oracle = run.get("oracle") or {}
         if oracle.get("address"):
             lines += [f"ReserveOracle on V3 Revive: `{oracle['address']}` (attester `{oracle.get('attester')}`)", ""]
-        lines += ["| step | call | outcome | block | extrinsic | extrinsic hash | profile |", "|---|---|---|---|---|---|---|"]
+        lines += ["| step | call | outcome | block | extrinsic | extrinsic hash | final | profile |",
+                  "|---|---|---|---|---|---|---|---|"]
         for name, r in v3_receipts(run):
             out = (r.get("outcome") or {}).get("text", "")
             inner = ", ".join(i.get("text", "") for i in r.get("inner") or [])
+            f = fin["receipts"].get(r["extrinsic_hash"]) or {}
+            bh, xid = f.get("block_hash", r["block_hash"]), r.get("extrinsic_id", "")
+            if f.get("reorged_from"):
+                xid = f"{f['block_number']}-{f['extrinsic_index']} (inclusion block `{f['reorged_from'][:12]}…` lost a fork)"
+            final = f"yes (≤ #{f['finalized_head']})" if f.get("ok") else ("NO" if f else "unchecked")
             lines.append(f"| {clean_text(name)} | {r.get('call', '')} | {out}{f' (inner {inner})' if inner else ''} | "
-                         f"[#{r['block_number']}]({V3_CONSOLE}{r['block_hash']}) `{r['block_hash']}` | "
-                         f"{r.get('extrinsic_id', '')} | `{r['extrinsic_hash']}` | v3 |")
+                         f"[#{r['block_number']}]({V3_CONSOLE}{bh}) `{bh}` | {xid} | `{r['extrinsic_hash']}` | {final} | v3 |")
         lines.append("")
     return "\n".join(lines)
 
@@ -459,21 +476,30 @@ def write_receipts_md() -> Path:
     return RECEIPTS_MD
 
 
-def refetch(substrate: Any, receipt: dict) -> list[str]:
-    """Re-read one receipt from the chain by extrinsic id; returns a list of mismatches (empty = confirmed)."""
+def refetch(substrate: Any, receipt: dict, placed: dict | None = None) -> list[str]:
+    """Re-read one receipt from the chain by extrinsic id; returns a list of mismatches (empty = confirmed).
+
+    A receipt is recorded at inclusion. If that block lost a fork, the same extrinsic is looked up in the canonical
+    block at the same height; found there, it is checked against that block instead and `placed` (if given) gets
+    {"block_number", "block_hash", "extrinsic_index", "reorged_from"} — the canonical location."""
     problems = []
     number, index = receipt["block_number"], receipt["extrinsic_index"]
     block_hash = substrate.get_block_hash(number)
-    if block_hash != receipt["block_hash"]:
-        problems.append(f"block #{number} hash {block_hash} != {receipt['block_hash']}")
-        return problems
     block = substrate.rpc_request("chain_getBlock", [block_hash])["result"]["block"]
     extrinsics = block["extrinsics"]
+    hashes = [blake2_256(bytes.fromhex(x[2:])) for x in extrinsics]
+    reorged_from = None
+    if block_hash != receipt["block_hash"]:
+        if receipt["extrinsic_hash"] not in hashes:
+            return [f"block #{number} hash {block_hash} != {receipt['block_hash']} and the extrinsic is not in it"]
+        reorged_from, index = receipt["block_hash"], hashes.index(receipt["extrinsic_hash"])
     if index >= len(extrinsics):
         return problems + [f"block #{number} has no extrinsic {index}"]
-    raw = bytes.fromhex(extrinsics[index][2:])
-    if blake2_256(raw) != receipt["extrinsic_hash"]:
-        problems.append(f"{receipt['extrinsic_id']}: tx hash {blake2_256(raw)} != {receipt['extrinsic_hash']}")
+    if hashes[index] != receipt["extrinsic_hash"]:
+        problems.append(f"{receipt['extrinsic_id']}: tx hash {hashes[index]} != {receipt['extrinsic_hash']}")
+    if placed is not None:
+        placed.update({"block_number": number, "block_hash": block_hash, "extrinsic_index": index,
+                       "reorged_from": reorged_from})
     events = [
         {k: e.value[k] for k in ("module_id", "event_id", "attributes")}
         for e in substrate.get_events(block_hash)

@@ -14,6 +14,7 @@ Drill runs also list reserve-chain transactions; `--evm-url` (default: the local
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -22,7 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ballast.chain import connect  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
-from ballast.receipts import load_runs, refetch, v3_receipts, write_receipts_md  # noqa: E402
+from ballast.receipts import FINALITY, load_runs, refetch, v3_receipts, write_receipts_md  # noqa: E402
+from ballast.runlog import now  # noqa: E402
 from ballast.rpc import RpcError, node_rpc  # noqa: E402
 
 
@@ -46,20 +48,35 @@ def main() -> int:
     substrate = connect(ident.profile, cfg.url)
     runs = [r for r in load_runs() if r["chain"]["genesis_hash"] == ident.facts.genesis_hash]
     checked = failed = 0
+    v3 = ident.profile.name == "v3"
+    finalized = substrate.get_block_number(substrate.get_chain_finalised_head()) if v3 else None
+    finality: dict[str, dict] = {}
     for run in runs:
         # v3: every receipt PROOF.md lists (setup steps + CLI subprocess receipts); stand-ins: the run's steps
         receipts = ([r for _, r in v3_receipts(run)] if ident.profile.name == "v3"
                     else [step["receipt"] for step in run["steps"]])
         for receipt in receipts:
-            problems = refetch(substrate, receipt)
+            placed: dict = {}
+            problems = refetch(substrate, receipt, placed)
             checked += 1
             rid = receipt["extrinsic_id"]
+            if v3 and placed:
+                if placed["block_number"] > finalized:
+                    problems.append(f"block #{placed['block_number']} is above the finalized head #{finalized}")
+                finality[receipt["extrinsic_hash"]] = placed | {"finalized_head": finalized, "ok": not problems}
+                if placed["reorged_from"] and not problems:
+                    print(f"reorg {run['_file']} {rid}: inclusion block {placed['reorged_from'][:12]}… lost a fork; "
+                          f"same extrinsic finalized in canonical #{placed['block_number']} {placed['block_hash'][:12]}…")
             if problems:
                 failed += 1
                 print(f"MISMATCH {run['_file']} {rid}: " + "; ".join(problems))
             else:
                 print(f"ok {run['_file']} {rid:>9} {receipt['outcome']['text']}")
     print(f"[{ident.profile.name}] {checked - failed}/{checked} receipts confirmed from {len(runs)} run(s)")
+    if v3:
+        FINALITY.write_text(json.dumps({"checked_at": now(), "finalized_head": finalized, "receipts": finality},
+                                       indent=2) + "\n")
+        print(f"[v3] all confirmed rows at or below the finalized head #{finalized} -> evidence/{FINALITY.name}")
     evm_checked = evm_failed = 0
     evm_runs = [r for r in runs if r.get("evm_steps")]
     if evm_runs:

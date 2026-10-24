@@ -160,8 +160,26 @@ def main() -> int:
         if st0["frozen"]:
             raise RuntimeError("asset 1 is frozen: thaw it first")
 
-        # 1. Deposit 1.00, wait for finality, gated mint of 1.00.
         one = 10 ** dep.decimals
+        # 0. Level: on a fresh chain the vault holds S1 + S2 but only S2 is minted. Mint the gap to the judge through
+        #    M_mint, gated by the bot, so the over-mint in step 2 really exceeds the reserves.
+        gap = reserves0 - st0["s1"] - st0["s2"]
+        if gap > 0:
+            amount = f"{gap / one:.{dep.decimals}f}"
+            finalize("the setup deposit")
+            rc, out = cli("mint", amount, JUDGE)
+            run.step(f"A proposes the S1 backlog {amount} to the judge through M_mint (level the breaker)",
+                     "Ok + Multisig.NewMultisig", out["receipt"], rc == 0, ("Multisig.NewMultisig",))
+            rc, out = bot("cosign-mint", amount, JUDGE)
+            if "receipt" not in out:
+                raise RuntimeError(f"bot did not co-sign the backlog mint: {out['reason']}")
+            run.step("bot B co-signs the backlog: finalized reserves cover it -> mint executes",
+                     "Ok + inner Ok + Assets.Issued", out["receipt"], rc == 0, ("Multisig.MultisigExecuted", "Assets.Issued"))
+            st0 = state(out["receipt"]["block_hash"])
+            run.check("level after the backlog mint: S1 + S2 == vault reserves", st0["s1"] + st0["s2"], reserves0,
+                      out["receipt"]["block_hash"])
+
+        # 1. Deposit 1.00, wait for finality, gated mint of 1.00.
         evm("custodian receives 1.00 test token", usdc.functions.mint(custodian, one).transact({"from": custodian}))
         evm("custodian deposits 1.00 into the vault", usdc.functions.transfer(dep.reserve["vault"], one)
             .transact({"from": custodian}))
@@ -190,7 +208,7 @@ def main() -> int:
                   ok=rc == 1 and out["decision"] == "refused" and out["reason"].startswith("over-mint"))
         mid = substrate.get_block_hash(None)
         run.check("over-mint still pending (no MultisigExecuted): approvals == [A]",
-                  [role_of.get(a, a) for a in (pending(substrate, rm.m_mint, over_hash, mid).approvals)],
+                  [role_of.get(a, a) for a in getattr(pending(substrate, rm.m_mint, over_hash, mid), "approvals", [])],
                   ["A (operator)"], mid)
         run.check("S1 unchanged by the refused over-mint", state(mid)["s1"], st1["s1"], mid)
         rc, out = cli("mint", "0.01", JUDGE, "--cancel")

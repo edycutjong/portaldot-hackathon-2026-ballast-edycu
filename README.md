@@ -5,6 +5,7 @@
 **A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+[![CI](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Tests: 274 passing](https://img.shields.io/badge/tests-274%20passing-brightgreen)
 ![Drills: Portaldot V3 testnet + stand-in](https://img.shields.io/badge/drills-Portaldot%20V3%20testnet%20%2B%20stand--in-brightgreen)
@@ -214,6 +215,10 @@ non-stand-in profile; on `v3` each role key is a mode-600 seed file outside the 
 `$BALLAST_KEY_DIR`; `scripts/v3_keys.py`). `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
 `SEPOLIA_*` variables from a file outside the tree (names in `.env.example`). On `v3`, `scripts/setup_roles.py --profile v3` sizes its funding from
 the chain's deposit constants, refuses to start if the funder is short, and deploys the oracle through `Revive.instantiate_with_code`. There is no frontend to launch.
+
+### Development
+
+CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat tests, a package build, CodeQL, gitleaks and pip-audit. It needs no key and does no live RPC write. Run the same checks locally with [`CONTRIBUTING.md`](CONTRIBUTING.md); the V3 and Sepolia drills stay opt-in.
 
 ## Demo
 

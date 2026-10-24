@@ -18,3 +18,12 @@ ballast.toml
 .DS_Store
 artifacts/
 typechain-types/
+
+# hardening
+*.pem
+*.key
+*.seed
+*.log
+.idea/
+.vscode/
+dist/

@@ -2,7 +2,7 @@
 
 # Ballast
 
-**A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. Since 2026-10-24 it runs on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
+**A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
@@ -41,7 +41,7 @@ contract on an EVM chain (Sepolia is the target; the drills use a local anvil ch
 enforces (thresholds and roles), plus a reserve gate in an off-chain bot:
 
 1. **Breaker.** The Assets *freezer* is a 1-of-N watcher multisig (`M_watch`, `Multisig.as_multi_threshold_1`). A watcher that sees the
-   reserve fall below supply freezes the asset; a holder's `Assets.transfer` is then refused (`Assets.AssetNotLive` on the stand-in, measured; other transfer paths while frozen were not drilled). The freezing
+   reserve fall below supply freezes the asset; a holder's `Assets.transfer` is then refused (`Assets.AssetNotLive`, measured on the stand-in and on V3 as `170114-1`; other transfer paths while frozen were not drilled). The freezing
    extrinsic carries the reason as a `BALLAST/1|freeze` remark.
 2. **Inert freezer.** A watcher's thaw attempts (`thaw_asset` and `thaw` of one account) fail with `Assets.NoPermission` (measured). The freezer role is for freeze-type calls (`freeze_asset`, `freeze`, `block`; other
    freezer-origin calls such as `touch_other` exist and were not drilled); mint and re-team stay with `M_mint`, and no drill has yet tried a watcher mint or `set_team`.
@@ -179,7 +179,7 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
 cp ballast.toml.example ballast.toml        # profile = standin-upstream, ws://127.0.0.1:49944
 
-pytest -q                                   # 235 tests, offline (metadata fixtures are sha256-pinned)
+pytest -q                                   # 239 tests, offline (metadata fixtures are sha256-pinned)
 forge test                                  # 20 ReserveVault tests
 npm ci && npx hardhat test                  # 15 ReserveOracle tests
 
@@ -205,8 +205,8 @@ scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 ```
 
 The unit tests, forge and Hardhat suites also ran from a fresh clone. `setup_roles.py` has set up two chains: the author's stand-in and the V3
-testnet (2026-10-24; that run crashed after 7 extrinsics on a message-formatting bug and was finished with `--resume`, which keeps the landed
-receipts and skips every step already on chain).
+testnet (2026-10-24; that run crashed on a message-formatting bug after 8 extrinsics were on chain, 7 of them recorded, and was finished with
+`--resume`, which keeps the recorded receipts, recovers the unrecorded one (`169927-1`) from the chain and skips every step already on chain).
 
 The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
 non-stand-in profile; on `v3` each role key is a mode-600 seed file outside the repo (default `~/.config/ballast`,
@@ -216,7 +216,7 @@ the chain's deposit constants, refuses to start if the funder is short, and depl
 
 ## Demo
 
-- **Video:** coming at check-in (≤ 3 min, stand-in labelled on screen).
+- **Video:** coming at check-in (≤ 3 min; chain and reserve labelled on screen: V3 testnet or stand-in, local anvil NOT Sepolia).
 - **Live demo:** no hosted UI. The V3 runs are public: every extrinsic in [`docs/PROOF.md`](docs/PROOF.md) opens on https://node-console.portaldot.dev/.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
   and the commands above on a fresh chain (they produce new ids and hashes; the committed receipts re-fetch only against the author's node).

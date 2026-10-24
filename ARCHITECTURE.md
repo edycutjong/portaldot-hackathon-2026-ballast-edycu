@@ -147,7 +147,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 | Profile | State |
 |---|---|
 | `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. Role split, role drill and attestation drill ran on 2026-10-24 (79 extrinsics, `docs/PROOF.md`; assets 4401/4402, `ReserveOracle` `0x4832…155e`); the old `feso-apps.xyz` names returned empty DNS on 2026-10-14 and are not used |
-| `standin-upstream` | the profile everything was measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
+| `standin-upstream` | the profile the scratch-asset drills and every timing before 2026-10-24 were measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 
 ## Not built

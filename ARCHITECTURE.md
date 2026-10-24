@@ -2,9 +2,11 @@
 
 > Generated from the code on 2026-10-14 (`a4bdcfa`, the code the stand-in drills ran on); updated 2026-10-20 for the V3 profile, seed-file keys,
 > WebSocket RPC and `docs/PROOF.md`, which change no recorded stand-in result. Only components that exist in this repository are drawn; what is not built is listed
-> at the end. **Everything measured so far ran on a labelled local stand-in chain (`standin-upstream`, NOT Portaldot V3) against a local
-> anvil reserve chain (NOT Sepolia).** Every drill and receipt ran on the stand-in; the only V3 data is the read-only day-0 check
-> of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`). Nothing here is a Sepolia-vault measurement.
+> at the end. Updated 2026-10-24: the role split, role drill and attestation drill also ran on the **Portaldot V3 testnet** (profile `v3`,
+> every extrinsic in `docs/PROOF.md`); the scratch-asset drills and every timing before that ran on a labelled local stand-in chain
+> (`standin-upstream`, NOT Portaldot V3). **The reserve chain in every run is a local anvil chain (NOT Sepolia).** The `resume`, fork-following
+> receipt check and websocket reconnect added on 2026-10-24 live in `scripts/setup_roles.py`, `ballast/receipts.py` and `ballast/chain.py`.
+> Nothing here is a Sepolia-vault measurement.
 
 ## What it is
 
@@ -35,13 +37,13 @@ flowchart LR
     VER["ballast verify<br/>re-reads both chains by block hash<br/>ballast/verify.py"]
   end
 
-  subgraph PD["Portaldot chain (stand-in: substrate-node --dev, NOT V3)"]
+  subgraph PD["Portaldot chain (V3 testnet since 2026-10-24; earlier drills: local stand-in)"]
     ASSET["Assets: asset 1 pUSDC-test<br/>owner = issuer = M_mint · admin = M_admin · freezer = M_watch<br/>asset 2 control: keyless roles"]
     MMINT["Multisig M_mint<br/>2-of-2 {A, B}"]
     MADMIN["Multisig M_admin<br/>2-of-3 {A, A2, B}"]
     MWATCH["Multisig M_watch<br/>1-of-2 {W1, W2}<br/>(as_multi_threshold_1)"]
     REMARK["System.remark_with_event<br/>BALLAST/1 remarks"]
-    ORACLE["Revive: ReserveOracle.sol<br/>post() attester only · status() · isBacked(maxAge)<br/>(deployed on the stand-in only)"]
+    ORACLE["Revive: ReserveOracle.sol<br/>post() attester only · status() · isBacked(maxAge)<br/>(deployed on V3 and the stand-in)"]
   end
 
   SQL[("ballast.db (SQLite)<br/>decision log, gitignored<br/>ballast/store.py")]
@@ -144,7 +146,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 | Profile | State |
 |---|---|
-| `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. No V3 transaction yet (the funder `5Fk6Zz…DP96` held 0 tPOT); the old `feso-apps.xyz` names returned empty DNS on 2026-10-14 and are not used |
+| `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. Role split, role drill and attestation drill ran on 2026-10-24 (79 extrinsics, `docs/PROOF.md`; assets 4401/4402, `ReserveOracle` `0x4832…155e`); the old `feso-apps.xyz` names returned empty DNS on 2026-10-14 and are not used |
 | `standin-upstream` | the profile everything was measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 
@@ -152,5 +154,5 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 Community-watcher mode (the "both providers short at the same block" rule); `ReserveOracle.trip()`; watcher-set rotation (K-block announcement);
 `M_admin` rotation; the wind-down branch (per-account freezes, `final` and `redeem` remarks are parsed by `verify` but no flow posts them); the
-reserves web page; the status HTTP endpoint; a Sepolia `ReserveVault` deployment (the deployer wallet holds 20.00 test USDC, below the 100.00 the
-plan needs); a watcher on separate infrastructure; any run on Portaldot V3.
+reserves web page; the status HTTP endpoint; a Sepolia `ReserveVault` deployment (the deployer wallet holds 80.00 test USDC on 2026-10-24, below the 100.00 the
+plan needs); a watcher on separate infrastructure; the scratch-asset outage and heartbeat drills on Portaldot V3.

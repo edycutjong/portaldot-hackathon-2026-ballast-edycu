@@ -13,13 +13,13 @@ flowchart LR
     VER["ballast verify<br/>re-reads both chains by block hash<br/>ballast/verify.py"]
   end
 
-  subgraph PD["Portaldot chain (stand-in: substrate-node --dev, NOT V3)"]
+  subgraph PD["Portaldot chain (V3 testnet since 2026-10-24; earlier drills: local stand-in)"]
     ASSET["Assets: asset 1 pUSDC-test<br/>owner = issuer = M_mint · admin = M_admin · freezer = M_watch<br/>asset 2 control: keyless roles"]
     MMINT["Multisig M_mint<br/>2-of-2 {A, B}"]
     MADMIN["Multisig M_admin<br/>2-of-3 {A, A2, B}"]
     MWATCH["Multisig M_watch<br/>1-of-2 {W1, W2}<br/>(as_multi_threshold_1)"]
     REMARK["System.remark_with_event<br/>BALLAST/1 remarks"]
-    ORACLE["Revive: ReserveOracle.sol<br/>post() attester only · status() · isBacked(maxAge)<br/>(deployed on the stand-in only)"]
+    ORACLE["Revive: ReserveOracle.sol<br/>post() attester only · status() · isBacked(maxAge)<br/>(deployed on V3 and the stand-in)"]
   end
 
   SQL[("ballast.db (SQLite)<br/>decision log, gitignored<br/>ballast/store.py")]

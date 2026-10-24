@@ -99,6 +99,7 @@ def submit(
     call_label: str | None = None,
 ) -> Receipt:
     """Sign, submit, wait for inclusion; decode the outcome from the chain's metadata. Never raises on Err."""
+    ensure_connected(substrate)
     call = substrate.compose_call(call_module=module, call_function=function, call_params=params)
     extrinsic = substrate.create_signed_extrinsic(call=call, keypair=signer)
     result = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)

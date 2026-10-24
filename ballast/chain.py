@@ -117,3 +117,42 @@ def submit(
         inner=multisig_inner_results(events, substrate.metadata),
         events=[{k: e[k] for k in ("module_id", "event_id", "attributes")} for e in events],
     )
+
+
+def find_receipt(
+    substrate: SubstrateInterface,
+    profile: Profile,
+    signer: str,
+    module: str,
+    function: str,
+    *,
+    step: str,
+    from_block: int,
+    to_block: int | None = None,
+    call_args: dict | None = None,
+) -> Receipt | None:
+    """Rebuild the receipt of an extrinsic that landed but was never recorded (a run that crashed after `submit`).
+
+    Scans blocks from_block..to_block (default: head) for the first extrinsic signed by `signer` calling
+    module.function (and, if given, whose call arguments include `call_args`), and decodes its outcome from that
+    block's events exactly like `submit`."""
+    head = substrate.get_block_number(None) if to_block is None else to_block
+    for number in range(from_block, head + 1):
+        block_hash = substrate.get_block_hash(number)
+        for idx, ext in enumerate(substrate.get_extrinsics(block_hash=block_hash)):
+            v = ext.value
+            if v.get("address") != signer or (v["call"]["call_module"], v["call"]["call_function"]) != (module, function):
+                continue
+            got = {a["name"]: a["value"] for a in v["call"].get("call_args", [])}
+            if any(got.get(k) != want for k, want in (call_args or {}).items()):
+                continue
+            events = [_jsonable(e.value) for e in substrate.get_events(block_hash)
+                      if e.value.get("extrinsic_idx") == idx]
+            return Receipt(
+                profile=profile.name, step=step, call=f"{module}.{function}", signer=signer,
+                block_number=number, block_hash=block_hash, extrinsic_index=idx,
+                extrinsic_hash=v.get("extrinsic_hash") or "", outcome=extrinsic_outcome(events, substrate.metadata),
+                inner=multisig_inner_results(events, substrate.metadata),
+                events=[{k: e[k] for k in ("module_id", "event_id", "attributes")} for e in events],
+            )
+    return None

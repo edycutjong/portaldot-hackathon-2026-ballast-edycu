@@ -13,7 +13,7 @@ dependencies = [
     "substrate-interface==1.8.1",
     "scalecodec==1.2.12",
     "xxhash>=3",
-    "web3>=7,<8",
+    "web3>=8.0.0,<9",
 ]
 
 [project.optional-dependencies]

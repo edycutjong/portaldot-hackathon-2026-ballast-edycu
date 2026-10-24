@@ -72,8 +72,15 @@ H160, [`evidence/roles-setup-v3.json`](evidence/roles-setup-v3.json)) and receiv
 
 ## Technical Architecture
 
+![Ballast architecture: a vault drain on local anvil is read by the watchdog, whose watcher key freezes asset 4401 through M_watch on the Portaldot V3 testnet, so the holder's transfer is refused](docs/architecture.png)
+
+*The breaker path 1–5 as it ran on the Portaldot V3 testnet on 2026-10-24 (reserve chain: local anvil, not Sepolia); drawn from the code, source [`docs/architecture.html`](docs/architecture.html).*
+
 Full write-up generated from the code: [`ARCHITECTURE.md`](ARCHITECTURE.md) (components, role map, invariants with the file that enforces each,
 what is not built). Diagram source: [`docs/architecture.mmd`](docs/architecture.mmd).
+
+<details>
+<summary>Diagram as text (Mermaid)</summary>
 
 ```mermaid
 flowchart LR
@@ -108,6 +115,8 @@ flowchart LR
   ATT -- "after inclusion" --> ORACLE
   VER -. reads both chains .-> REMARK
 ```
+
+</details>
 
 **Core tech stack**
 

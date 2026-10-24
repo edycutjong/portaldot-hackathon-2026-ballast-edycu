@@ -2,19 +2,21 @@
 
 # Ballast
 
-**A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. The drills so far ran on a local stand-in chain, not Portaldot V3; on V3 the chain identity is pinned read-only and no V3 transaction has been sent yet.**
+**A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. Since 2026-10-24 it runs on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
-![Tests: 270 passing](https://img.shields.io/badge/tests-270%20passing-brightgreen)
-![Drills: stand-in, not V3](https://img.shields.io/badge/drills-stand--in%2C%20not%20V3-orange)
+![Tests: 274 passing](https://img.shields.io/badge/tests-274%20passing-brightgreen)
+![Drills: Portaldot V3 testnet + stand-in](https://img.shields.io/badge/drills-Portaldot%20V3%20testnet%20%2B%20stand--in-brightgreen)
 ![Reserve: local anvil, not Sepolia](https://img.shields.io/badge/reserve-local%20anvil%2C%20not%20Sepolia-orange)
 
-*Portaldot Hacker House 2026 · check-in build. The Portaldot V3 testnet's old DNS names did not resolve on 2026-10-14
-([`evidence/v3-probe-2026-10-14-p5.txt`](evidence/v3-probe-2026-10-14-p5.txt)); a V3 testnet is reachable at `wss://test-node-v3.portaldot.dev`, and Ballast's
-read-only day-0 check on 2026-10-20 pinned its genesis, runtime `:code` hash and spec `portaldot-v3`/3002 ([`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)).
-The V3 transactions wait for test tokens (Ballast's V3 funder `5Fk6Zz…DP96` held 0 tPOT on 2026-10-20), so the breaker is still demonstrated on a labelled
-local stand-in chain against a local anvil reserve chain. No Sepolia vault is deployed yet. Every receipt says which chain it came from.*
+*Portaldot Hacker House 2026 · check-in build. On 2026-10-24 the breaker ran on the Portaldot V3 testnet (`wss://test-node-v3.portaldot.dev`;
+genesis, runtime `:code` hash and spec `portaldot-v3`/3002 pinned by the read-only day-0 check of 2026-10-20,
+[`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)): the role split on assets 4401/4402, `ReserveOracle` deployed
+through Revive, a watcher freeze, a refused freezer thaw, a bot-gated thaw and `BALLAST/1` attestations. That is 79 V3 extrinsics across 8 runs
+(4 ERROR runs kept as history), each re-queried at or below the finalized head, in [`docs/PROOF.md`](docs/PROOF.md). The reserve in those runs is a
+**local anvil chain, NOT Sepolia**; no Sepolia vault is deployed yet. Earlier drills ran on a labelled local stand-in chain (`standin-upstream`,
+not V3). Every receipt says which chain it came from.*
 
 ![Ballast architecture](docs/architecture.png)
 
@@ -62,9 +64,10 @@ subject to the chain's Root origin (`force_asset_status`); on the V3 testnet a `
 
 The breaker is assembled from pallet-native modules (Assets roles, Multisig, System remarks), with no contract code in the enforcement path,
 and it freezes at the asset level, so every transfer is refused rather than one pool's. The one contract that targets Portaldot's EVM layer,
-`ReserveOracle`, is a read-only mirror so EVM dApps can ask `isBacked(maxAge)`; it cannot freeze or thaw anything. It has only been deployed
-on the stand-in's `Revive` pallet. V3's `Revive` reports `AllowEVMBytecode = true` and a dry-run of the same deployment succeeds there
-(placeholder attester; storage deposit 138.53 tPOT, [`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)); it is not deployed on V3 yet.
+`ReserveOracle`, is a read-only mirror so EVM dApps can ask `isBacked(maxAge)`; it cannot freeze or thaw anything. On the V3 testnet it
+is deployed through `Revive.instantiate_with_code` at `0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e` (extrinsic `169960-1`, attester = the bot's
+H160, [`evidence/roles-setup-v3.json`](evidence/roles-setup-v3.json)) and receives each attestation after inclusion; it ran on the stand-in's
+`Revive` pallet first.
 
 ## Technical Architecture
 
@@ -83,7 +86,7 @@ flowchart LR
     OP["operator (A, A2)<br/>proposes"]
     VER["ballast verify"]
   end
-  subgraph PD["Portaldot chain (stand-in, NOT V3)"]
+  subgraph PD["Portaldot chain (V3 testnet since 2026-10-24; earlier drills: local stand-in)"]
     ASSET["Assets: pUSDC-test (asset 1)<br/>issuer M_mint · admin M_admin · freezer M_watch"]
     MWATCH["M_watch 1-of-2"]
     MMINT["M_mint 2-of-2 {A, B}"]
@@ -109,11 +112,11 @@ flowchart LR
 
 | Layer | Choice | State |
 |---|---|---|
-| Blockchain platform | **Portaldot V3 testnet** (target) | identity pinned read-only on 2026-10-20 (genesis, `:code`, `portaldot-v3`/3002, 14 decimals, 6000 ms blocks); no V3 transaction yet |
-| Chain used | `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** | running locally |
+| Blockchain platform | **Portaldot V3 testnet** | role split, role drill and attestation drill ran on 2026-10-24 ([`docs/PROOF.md`](docs/PROOF.md)); identity pinned on 2026-10-20 (genesis, `:code`, `portaldot-v3`/3002, 14 decimals, 6000 ms blocks) |
+| Chains used | `v3` (the 2026-10-24 runs); `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** (the earlier drills) | V3 public; stand-in local |
 | Runtime modules | Assets, Multisig, Utility, System, Revive (pallet-native) | used by the code and the drills |
 | Client | Python 3.11+, `substrate-interface` 1.8.1, `scalecodec` 1.2.12, `web3` 7 | built |
-| Contract language | Solidity 0.8.24: `ReserveVault` (Foundry), `ReserveOracle` (Hardhat) | built; vault on local anvil only, oracle on the stand-in's Revive only |
+| Contract language | Solidity 0.8.24: `ReserveVault` (Foundry), `ReserveOracle` (Hardhat) | built; vault on local anvil only, oracle on V3 Revive and the stand-in's Revive |
 | Reserve chain | local anvil (drills); Ethereum Sepolia + Circle test USDC (target) | Sepolia read-only so far |
 | Frontend | none | not built |
 
@@ -142,21 +145,24 @@ Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are 
 | Contract | Key functions | Tests | Where it has been deployed |
 |---|---|---|---|
 | [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) only. **Not on Sepolia** |
-| [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | the stand-in's Revive pallet only. **Not on V3** (V3 dry-run only) |
+| [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | V3 Revive (`0x4832…155e`, 2026-10-24) and the stand-in's Revive pallet |
 
 A multisig can report `MultisigExecuted` while the call inside it failed, so every executing multisig receipt records the *inner* result (the
 executed rows in `docs/RECEIPTS.md` read `inner Ok`). The freezer's thaw through `as_multi_threshold_1` fails the whole
-extrinsic with `Assets.NoPermission` (`6904-2` in the newest role-split drill).
+extrinsic with `Assets.NoPermission` (`170115-1` in the V3 role drill, `6904-2` in the newest stand-in one).
 
 **Receipts.** Every step is a real extrinsic or a real anvil transaction, the newest run of each kind is tabulated with extrinsic id, block hash and tx hash in
 [`docs/RECEIPTS.md`](docs/RECEIPTS.md) (older runs are linked), and every run is in raw JSON in [`evidence/`](evidence/). `python scripts/check_receipts.py` re-fetches them from the
 chains that recorded them: **486/486 stand-in extrinsics and 111/111 anvil transactions** at the last run
 ([`evidence/test-run-2026-10-14-p5.txt`](evidence/test-run-2026-10-14-p5.txt)). These are **stand-in receipts, not V3**: the stand-in is a local
-`--dev` node with no public explorer, and a fresh node run produces new hashes. V3 asset, account and contract IDs: none yet. V3 transactions will be listed in
-[`docs/PROOF.md`](docs/PROOF.md) with node-console links (it lists none today).
+`--dev` node with no public explorer, and a fresh node run produces new hashes. **V3 receipts** are in
+[`docs/PROOF.md`](docs/PROOF.md), each with a https://node-console.portaldot.dev/ link: `python scripts/check_receipts.py --profile v3` re-fetched
+79/79 extrinsics, all at or below the finalized head #170291 ([`evidence/v3-finality.json`](evidence/v3-finality.json)). Three were first included in
+a block that lost a fork; the same extrinsic is in the canonical block at the same height, and PROOF.md links that block. V3 IDs: assets 4401
+(breaker) and 4402 (control), `ReserveOracle` `0x4832…155e`, role addresses in [`deployments/v3.json`](deployments/v3.json).
 
 **Sepolia.** The reserve reader works against the real Sepolia USDC contract through two keyless providers (publicnode and drpc agree on
-finalized block #11913933, `evidence/sepolia-crosscheck-2026-10-14-p5.json`). The deployer wallet holds 20.00 test USDC, below the 100.00 the
+finalized block #11913933, `evidence/sepolia-crosscheck-2026-10-14-p5.json`). The deployer wallet holds 80.00 test USDC on 2026-10-24 (both providers at finalized #11981602, `evidence/sepolia-deployer-2026-10-24-p12.txt`), below the 100.00 the
 plan needs, so **no `ReserveVault` has been deployed or funded on Sepolia and no drill has run against it.**
 
 ## Installation & Setup
@@ -198,44 +204,48 @@ python scripts/check_receipts.py            # re-fetch receipts by extrinsic id 
 scripts/standin_node.sh stop; scripts/anvil_local.sh stop
 ```
 
-Tested on the author's one stand-in chain: the unit tests, forge and Hardhat suites also ran from a fresh clone, but `setup_roles.py` was run once and a second
-new chain has not been set up from scratch.
+The unit tests, forge and Hardhat suites also ran from a fresh clone. `setup_roles.py` has set up two chains: the author's stand-in and the V3
+testnet (2026-10-24; that run crashed after 7 extrinsics on a message-formatting bug and was finished with `--resume`, which keeps the landed
+receipts and skips every step already on chain).
 
 The scripts regenerate `docs/RECEIPTS.md` from `evidence/`. Demo accounts are deterministic dev URIs and every script refuses to use them on a
 non-stand-in profile; on `v3` each role key is a mode-600 seed file outside the repo (default `~/.config/ballast`,
 `$BALLAST_KEY_DIR`; `scripts/v3_keys.py`). `ballast reserves <holder>` reads any address's USDC balance from Sepolia keylessly; a Sepolia deployment needs
 `SEPOLIA_*` variables from a file outside the tree (names in `.env.example`). On `v3`, `scripts/setup_roles.py --profile v3` sizes its funding from
-the chain's deposit constants, refuses to start if the funder is short, and deploys the oracle through `Revive.instantiate_with_code`; it has not
-run on V3 yet. There is no frontend to launch.
+the chain's deposit constants, refuses to start if the funder is short, and deploys the oracle through `Revive.instantiate_with_code`. There is no frontend to launch.
 
 ## Demo
 
 - **Video:** coming at check-in (≤ 3 min, stand-in labelled on screen).
-- **Live demo:** none. The stand-in chain is local, and the V3 transactions wait for test tokens.
+- **Live demo:** no hosted UI. The V3 runs are public: every extrinsic in [`docs/PROOF.md`](docs/PROOF.md) opens on https://node-console.portaldot.dev/.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
   and the commands above on a fresh chain (they produce new ids and hashes; the committed receipts re-fetch only against the author's node).
-- **The drill in numbers** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
+- **On V3** (6000 ms blocks, local anvil reserve, wall clock, one machine): drain to freeze included took 12.22 s in the passing V3 role drill
+  ([`evidence/roles-drill-v3-20261024T045513Z.json`](evidence/roles-drill-v3-20261024T045513Z.json); that file's note label still says "stand-in",
+  a labelling bug fixed after the run; the run's chain is `v3`).
+- **The drill in numbers on the stand-in** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
   drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s; the earlier four took 7.9 to 8.4 s, one of them on uncommitted code and one on the same `ballast/` code as the latest, so the spread is run-to-run variance on one machine) and 6.33 s in the latest
   scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over blocks #4076 to #7035 (role-split setup to just after the ReserveOracle run): 25/25 bot attestations pass on both chains, 6 forged
   remarks REJECTED, 0 FAIL or FLAGGED ([`evidence/verify-standin-upstream-p5-fullrange.json`](evidence/verify-standin-upstream-p5-fullrange.json)).
-- **Test accounts / data:** deterministic dev keys on the stand-in only. Public role addresses are in
-  [`deployments/standin-upstream.json`](deployments/standin-upstream.json).
+- **Test accounts / data:** deterministic dev keys on the stand-in only; on V3, mode-600 seed files outside the repo. Public role addresses are in
+  [`deployments/v3.json`](deployments/v3.json) and [`deployments/standin-upstream.json`](deployments/standin-upstream.json).
 
 ## Roadmap
 
-**Completed (drills on the stand-in; on V3 only the read-only day-0 check)**
+**Completed (drills on the stand-in first, then on the Portaldot V3 testnet on 2026-10-24)**
 - [x] Chain profiles (`v3` pinned to the live chain, `standin-upstream`, `standin-1002`), genesis / `:code` identification, block-time-derived constants
 - [x] Assets role split + watcher-set freeze, refused freezer thaw, refused frozen transfer, admin thaw (6 spike runs, 5 PASS and 1 recorded FAIL kept as history)
 - [x] `ReserveVault` + 20 Foundry tests; reserve reader on two providers with block-hash pinning; watchdog with deficit, fail-closed and heartbeat rules
-- [x] `ReserveOracle` + 15 Hardhat tests; deployed on the stand-in's Revive pallet
+- [x] `ReserveOracle` + 15 Hardhat tests; deployed on the stand-in's Revive pallet, then on V3's
 - [x] Multisig role split (`M_mint` 2-of-2, `M_admin` 2-of-3, `M_watch` 1-of-2), reserve bot with mint / thaw / set_team gates, SQLite decision log
 - [x] `BALLAST/1` attestations, oracle mirror after inclusion, `ballast verify` with per-type signers and a forged-remark negative control
-- [x] 270 automated tests (235 pytest + 20 forge + 15 Hardhat, [`evidence/test-run-2026-10-20-p6.txt`](evidence/test-run-2026-10-20-p6.txt))
+- [x] Portaldot V3 testnet: role split + `ReserveOracle` on Revive (PASS 16/16 + 6/6), role drill PASS 22/22 + 20/20, attestation drill PASS 15/15 + 6/6,
+  79/79 V3 extrinsics re-queried and final ([`docs/PROOF.md`](docs/PROOF.md))
+- [x] 274 automated tests (239 pytest + 20 forge + 15 Hardhat, [`evidence/test-run-2026-10-24-p12.txt`](evidence/test-run-2026-10-24-p12.txt))
 
 **Next phase**
 - [ ] Deploy `ReserveVault` on Sepolia with 100.00 test USDC and run the drill against it, including the finality wait (needs faucet claims)
-- [ ] Re-run everything on the Portaldot V3 testnet once it is funded. Read-only day-0 checks done on 2026-10-20 ([`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)): Multisig
-  present, Revive accepts EVM bytecode, 6000 ms blocks. Still to show by transaction: freezer-cannot-thaw on V3
+- [ ] The scratch-asset outage and heartbeat drills on V3 (`ballast drill` targets the stand-in; the role and attestation drills ran on V3)
 - [ ] A watcher on separate infrastructure (today both watchers run on one machine)
 - [ ] Community-watcher mode, watcher-set rotation, `M_admin` rotation, wind-down branch, `ReserveOracle.trip()`
 - [ ] Benchmarks over many drills, reserves page

@@ -4,6 +4,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # substrate-interface==1.8.1 requires xxhash<4 and a web3 7-era eth stack; bumping either breaks the resolver
+      - dependency-name: "xxhash"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "web3"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -12,3 +18,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # hardhat 3 is an ESM-only breaking migration; Hardhat 2.x stays for the hackathon (see README Roadmap)
+      - dependency-name: "hardhat"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@nomicfoundation/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "chai"
+        update-types: ["version-update:semver-major"]

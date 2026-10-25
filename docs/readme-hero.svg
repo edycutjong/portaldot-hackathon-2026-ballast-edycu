@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="Ballast — The reserve line sinks below the load line — the breaker snaps shut, and pUSDC-test freezes on the Portaldot V3 testnet. Then reserves are restored and a multisig thaws it.">
+<!-- STORYBOARD (dur 8s — must equal this file's single master dur)
+  0-10%   steady state: cream plate, brand block left (mark, outlined BALLAST wordmark, tagline, metric, stack); right: load line across the story panel through the Plimsoll disc, reserves water up at the line, RESERVES 104.00 / SUPPLY 104.00, state word LEVEL (green), three transfers on the line
+  10-25%  trigger:      a vault.release() −31.20 tag appears on the reserve chain (local anvil); the reserves water sinks below the load line; the counter flips to RESERVES 72.80      data-story="beat-2"
+  25-55%  mechanism:    The reserve line sinks below the load line — the breaker snaps shut, and pUSDC-test freezes on the Portaldot V3 testnet.      data-story="beat-3" (gate drops across the line, line past it goes grey, AssetFrozen stamp, state word TRIPPED in orange)
+  55-80%  resolution:   held — two queued transfers sit stopped at the gate; "transfer → ExtrinsicFailed" appears; the frozen state persists (≥ 40% of the loop)      data-story="beat-4"
+  80-100% breathe + seam fade: reserves restored (84-90%), "thaw_asset · multisig" shows, gate lifts (90-95%), line navy, LEVEL returns, transfers fade back to their start — frame 100% = frame 0
+-->
+<title>Ballast</title>
+<style>
+  .swell { animation: swell 3.2s linear infinite; }
+  @keyframes swell { from { transform: translateX(0); } to { transform: translateX(-48px); } }
+  .pulse { animation: pulse 8s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+<defs>
+  <clipPath id="ha-plate"><rect x="0" y="0" width="1280" height="320" rx="22"/></clipPath>
+  <clipPath id="ha-disc"><circle cx="840" cy="160" r="108"/></clipPath>
+  <pattern id="ha-rule" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="1.2" y="31" fill="#1E3D52"/></pattern>
+  <filter id="ha-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceGraphic" stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <clipPath id="ha-mark"><circle cx="226" cy="256" r="156"/></clipPath>
+</defs>
+<g clip-path="url(#ha-plate)">
+  <rect width="1280" height="320" fill="#0C2536"/>
+  <rect width="1280" height="320" fill="url(#ha-rule)" opacity=".75"/>
+  <!-- draft-mark ruler on the hull edge -->
+  <g fill="#6F92A6" opacity=".7"><rect x="14" y="40" width="14" height="3"/><rect x="14" y="70" width="14" height="3"/><rect x="14" y="100" width="14" height="3"/><rect x="14" y="130" width="14" height="3"/><rect x="14" y="160" width="14" height="3"/><rect x="14" y="190" width="14" height="3"/><rect x="14" y="220" width="14" height="3"/><rect x="14" y="250" width="14" height="3"/><rect x="14" y="280" width="14" height="3"/></g>
+
+  <!-- ===== BRAND (left, ≤ 520px) ===== -->
+  <g transform="translate(40 42) scale(0.148)">
+    <rect x="8" y="8" width="496" height="496" rx="104" fill="#0C2536" stroke="#34566B" stroke-width="14"/>
+    <rect x="40" y="318" width="380" height="200" fill="#3FD9B5" clip-path="url(#ha-mark)"/><rect x="40" y="318" width="380" height="10" fill="#B8FFEC" clip-path="url(#ha-mark)"/>
+    <circle cx="226" cy="256" r="156" fill="none" stroke="#6F92A6" stroke-width="40"/>
+    <rect x="36" y="236" width="316" height="40" fill="#F4F1E6"/>
+    <rect x="398" y="236" width="80" height="40" fill="#3E5A6C"/>
+    <rect x="354" y="150" width="40" height="212" rx="6" fill="#FF5B2E"/>
+  </g>
+  <g transform="translate(128 112) scale(0.86)" fill="#F4F1E6"><path d="M6.5 0L6.5-68.8L26.5-68.8L26.5 0L6.5 0M30.7 0L30.7-15.3L34.8-15.3Q37.6-15.3 39.1-15.5Q40.5-15.6 41.2-16.2Q41.9-16.8 42.2-17.9Q42.4-19 42.4-21.1Q42.4-23.3 42.2-24.4Q41.9-25.5 41.2-26.1Q40-27.1 34.8-27.1L30.7-27.1L30.7-42.4L34.2-42.4Q37-42.4 38.5-42.6Q39.9-42.7 40.6-43.3Q41.3-43.9 41.6-45Q41.8-46 41.8-47.9Q41.8-49.9 41.6-51Q41.3-52 40.6-52.6Q39.9-53.2 38.5-53.4Q37-53.5 34.2-53.5L30.7-53.5L30.7-68.8L42.1-68.8Q62.2-68.8 62.2-51.5Q62.2-44.2 59.4-40.5Q56.5-36.8 50.3-35.3L50.3-34.9Q56.8-33.4 59.6-30.2Q62.8-26.4 62.8-18.4Q62.8-9.2 57.9-4.6Q53 0 42.2 0L30.7 0M67.2 0L89.1-68.8L90.8-68.8L98.7-41.4L87.2 0L67.2 0M115.1 0L111.6-12.2L94.9-12.2L99.1-27.6L107.1-27.6L95.3-68.8L113.6-68.8L135.5 0L115.1 0M142.2 0L142.2-68.8L162.2-68.8L162.2 0L142.2 0M166.4 0L166.4-16.1L187.8-16.1L187.8 0L166.4 0M196.3 0L196.3-68.8L216.3-68.8L216.3 0L196.3 0M220.5 0L220.5-16.1L241.9-16.1L241.9 0L220.5 0M244.1 0L266-68.8L267.7-68.8L275.6-41.4L264.1 0L244.1 0M292 0L288.5-12.2L271.8-12.2L276-27.6L284-27.6L272.2-68.8L290.5-68.8L312.4 0L292 0M366.5-53Q363.2-53.4 354.9-54.1Q350.3-54.3 347.5-54.3Q343.9-54.3 340.7-54.1L340.7-69.6L343.2-69.6Q351.4-69.6 360.2-68.5Q363-68.1 366.5-67.4L366.5-53M350 0.7L350-20.3Q350-22.4 349.7-23.4Q349.4-24.3 348.7-24.7Q348-25 346.3-25.2L334-26.7Q323.1-27.9 319.3-33.8Q317.6-36.3 317-39.9Q316.4-43.5 316.4-48.7Q316.4-59.8 322.1-64.7Q326.7-68.7 336.5-69.4L336.5-49.3Q336.5-48 336.6-47.1Q336.7-46.2 337-45.7Q337.3-45.1 338-44.9Q338.7-44.6 340.1-44.5L353.9-42.8Q358.2-42.2 360.9-41.3Q363.6-40.4 365.5-38.5Q370-33.8 370-21.8Q370-9.1 364.4-4Q361.9-1.7 358.3-0.6Q354.8 0.4 350 0.7M344.7 0.8Q334.7 0.8 326.1-0.1Q321-0.6 318.4-1.1L318.4-15.7Q324.3-15.2 331.9-14.7Q336.7-14.5 338.7-14.5Q344.1-14.5 345.8-14.8L345.8 0.8L344.7 0.8M374.7-52.8L374.7-68.8L431-68.8L431-52.8L374.7-52.8M392.8 0L392.8-48.8L412.8-48.8L412.8 0"/></g>
+  <text x="42" y="156" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="#F4F1E6">A circuit breaker for a custodial test dollar on Portaldot:</text>
+  <text x="42" y="182" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="20" fill="#F4F1E6">reserves run short, the asset freezes on V3.</text>
+  <text class="pulse" x="42" y="230" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700" fill="#FF5B2E">72.80 &lt; 104.00 → Assets.freeze_asset</text>
+  <text x="42" y="276" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#9AB0BE">Portaldot V3 · Assets · Multisig · Python SDK · Solidity</text>
+
+  <!-- ===== STORY (right) ===== -->
+  <line x1="548" y1="24" x2="548" y2="296" stroke="#1E3D52" stroke-width="2"/>
+  <text x="572" y="44" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4" fill="#9AB0BE">PORTALDOT · pUSDC-test</text>
+  <!-- reserves water (always present — it is the reserve), sinks on the drain -->
+  <g filter="url(#ha-glow)"><g clip-path="url(#ha-disc)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 48;0 48;0 0;0 0" keyTimes="0;0.1;0.24;0.84;0.9;1" dur="8s" repeatCount="indefinite"/>
+      <rect x="720" y="178" width="240" height="120" fill="#3FD9B5"/>
+      <rect x="720" y="176" width="240" height="4" fill="#B8FFEC"/>
+      <path class="swell" d="M720 178 q12 -5 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 v6 h-288z" fill="#B8FFEC"/>
+    </g>
+  </g></g>
+  <text x="840" y="140" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#F4F1E6">SUPPLY 104.00</text>
+  <text x="572" y="208" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="2" fill="#9AB0BE">RESERVES</text>
+  <text x="572" y="236" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#3FD9B5">104.00
+    <animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.15;0.17;0.86;0.88;1" dur="8s" repeatCount="indefinite"/></text>
+  <text data-story="beat-2" opacity="0" x="572" y="236" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#3FD9B5">72.80
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.15;0.17;0.86;0.88;1" dur="8s" repeatCount="indefinite"/></text>
+  <text x="572" y="256" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#9AB0BE">test USD · local anvil</text>
+  <circle cx="840" cy="160" r="108" fill="none" stroke="#6F92A6" stroke-width="24"/>
+  <!-- load line -->
+  <rect x="560" y="147" width="378" height="26" fill="#F4F1E6"/>
+  <rect x="938" y="147" width="306" height="26" fill="#F4F1E6">
+    <animate attributeName="fill" values="#F4F1E6;#F4F1E6;#3E5A6C;#3E5A6C;#F4F1E6;#F4F1E6" keyTimes="0;0.34;0.36;0.93;0.95;1" dur="8s" repeatCount="indefinite"/>
+  </rect>
+  <!-- reserve-chain drain tag -->
+  <g data-story="beat-2" opacity="0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.1;0.12;0.84;0.86;1" dur="8s" repeatCount="indefinite"/>
+    <text x="572" y="96" font-size="13" font-weight="700" fill="#F4F1E6">vault.release()</text>
+    <text x="572" y="116" font-size="13" font-weight="700" fill="#F4F1E6">−31.20</text>
+  </g>
+  <!-- transfers on the line -->
+  <g fill="#0C2536" stroke="#F4F1E6" stroke-width="4">
+    <circle r="9"><animateMotion path="M580 160 H1236" keyPoints="0;0;0.527;0.527;0;0" keyTimes="0;0.04;0.4;0.93;0.96;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.92;0.93;0.96;0.975;1" dur="8s" repeatCount="indefinite"/></circle>
+    <circle r="9"><animateMotion path="M580 160 H1236" keyPoints="0.2;0.2;0.495;0.495;0.2;0.2" keyTimes="0;0.04;0.42;0.93;0.96;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.92;0.93;0.96;0.975;1" dur="8s" repeatCount="indefinite"/></circle>
+    <circle r="9"><animateMotion path="M580 160 H1236" keyPoints="0.64;0.64;1;1;0.64;0.64" keyTimes="0;0.04;0.27;0.93;0.96;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.26;0.28;0.96;0.975;1" dur="8s" repeatCount="indefinite"/></circle>
+  </g>
+  <!-- the gate: snaps shut across the load line -->
+  <g data-story="beat-3" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.28;0.3;0.92;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0 -190;0 -190;0 10;0 0;0 0;0 -190;0 -190" keyTimes="0;0.28;0.33;0.36;0.9;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <rect x="938" y="62" width="24" height="196" rx="4" fill="#FF5B2E"/>
+  </g>
+  <!-- FROZEN stamp (event: Assets.AssetFrozen) -->
+  <g data-story="beat-3" opacity="0" transform="rotate(-4 1100 84)">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.36;0.38;0.9;0.93;1" dur="8s" repeatCount="indefinite"/>
+    <rect x="1000" y="62" width="208" height="42" fill="#FF5B2E"/>
+    <text x="1104" y="90" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="19" font-weight="800" letter-spacing="2" fill="#0C2536">FROZEN</text>
+  </g>
+  <!-- held-state caption -->
+  <text data-story="beat-4" opacity="0" x="974" y="204" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#F4F1E6">transfer → ExtrinsicFailed
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.44;0.46;0.84;0.86;1" dur="8s" repeatCount="indefinite"/></text>
+  <text data-story="beat-4" opacity="0" x="974" y="204" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#3FD9B5">reserves back → thaw_asset · multisig
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.86;0.87;0.95;0.97;1" dur="8s" repeatCount="indefinite"/></text>
+  <!-- state word -->
+  <text x="1244" y="284" text-anchor="end" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="24" font-weight="800" letter-spacing="5" fill="#3FD9B5">LEVEL
+    <animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.35;0.36;0.94;0.95;1" dur="8s" repeatCount="indefinite"/></text>
+  <text data-story="beat-3" opacity="0" x="1244" y="284" text-anchor="end" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="24" font-weight="800" letter-spacing="5" fill="#FF5B2E">TRIPPED
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.35;0.36;0.94;0.95;1" dur="8s" repeatCount="indefinite"/></text>
+</g>
+<rect x="1" y="1" width="1278" height="318" rx="21" fill="none" stroke="#34566B" stroke-width="2"/>
+</svg>

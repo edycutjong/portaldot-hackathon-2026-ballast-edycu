@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Ballast — The reserve line sinks below the load line — the breaker snaps shut, and pUSDC-test freezes on the Portaldot V3 testnet. Then reserves are restored and a multisig thaws it.">
+<!-- STORYBOARD (dur 6s — must equal this file's single master dur)
+  0-10%   steady state: cream plate, Plimsoll ring, load line solid navy end to end, reserves water up at the line (level); a transfer dot sits at the left of the line
+  10-25%  trigger:      the reserves water sinks below the load line (vault drained on local anvil); the transfer dot starts moving right   (water: always visible, animated)
+  25-55%  mechanism:    The reserve line sinks below the load line — the breaker snaps shut, and pUSDC-test freezes on the Portaldot V3 testnet.   data-story="beat-3" (gate drops in, line past it goes dead grey, the dot stops at the gate)
+  55-80%  resolution:   held — the gate stays shut, the dot stays stopped, the gate breathes (orange glow)                        data-story="beat-4"
+  80-100% breathe + seam fade: reserves refill (84-92%), gate lifts and fades (90-96%), line turns navy, dot fades back to its start — frame 100% = frame 0
+-->
+<title>Ballast</title>
+<style>
+  .breath[data-story] { animation: breath 6s linear infinite; }
+  @keyframes breath { 0% { opacity: 0; } 45% { opacity: 0; } 58% { opacity: .55; } 70% { opacity: .15; } 80% { opacity: .5; } 90% { opacity: 0; } 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+<defs>
+  <clipPath id="ia-disc"><circle cx="226" cy="256" r="156"/></clipPath>
+  <filter id="ia-glow" x="-60%" y="-20%" width="220%" height="140%"><feGaussianBlur stdDeviation="14"/></filter>
+</defs>
+<rect x="8" y="8" width="496" height="496" rx="104" fill="#0C2536" stroke="#34566B" stroke-width="8"/>
+<g clip-path="url(#ia-disc)">
+  <rect x="40" y="280" width="380" height="240" fill="#3FD9B5">
+    <animate attributeName="y" values="280;280;318;318;280;280" keyTimes="0;0.1;0.25;0.84;0.92;1" dur="6s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="40" y="280" width="380" height="8" fill="#B8FFEC">
+    <animate attributeName="y" values="280;280;318;318;280;280" keyTimes="0;0.1;0.25;0.84;0.92;1" dur="6s" repeatCount="indefinite"/>
+  </rect>
+</g>
+<circle cx="226" cy="256" r="156" fill="none" stroke="#6F92A6" stroke-width="40"/>
+<rect x="36" y="236" width="316" height="40" fill="#F4F1E6"/>
+<rect x="352" y="236" width="126" height="40" fill="#F4F1E6">
+  <animate attributeName="fill" values="#F4F1E6;#F4F1E6;#3E5A6C;#3E5A6C;#F4F1E6;#F4F1E6" keyTimes="0;0.34;0.37;0.9;0.93;1" dur="6s" repeatCount="indefinite"/>
+</rect>
+<circle r="17" cx="0" cy="0" fill="#0C2536" stroke="#F4F1E6" stroke-width="6">
+  <animateMotion path="M78 256 H336" keyPoints="0;0;1;1;0;0" keyTimes="0;0.12;0.4;0.92;0.95;1" calcMode="linear" dur="6s" repeatCount="indefinite"/>
+  <animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.91;0.93;0.95;0.97;1" dur="6s" repeatCount="indefinite"/>
+</circle>
+<rect class="breath" data-story="beat-4" x="346" y="150" width="56" height="212" rx="10" fill="#FF5B2E" filter="url(#ia-glow)" opacity="0"/>
+<g data-story="beat-3" opacity="0">
+  <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.28;0.3;0.92;0.96;1" dur="6s" repeatCount="indefinite"/>
+  <animateTransform attributeName="transform" type="translate" values="0 -230;0 -230;0 14;0 0;0 0;0 -230;0 -230" keyTimes="0;0.28;0.34;0.37;0.9;0.96;1" dur="6s" repeatCount="indefinite"/>
+  <rect x="354" y="150" width="40" height="212" rx="6" fill="#FF5B2E"/>
+</g>
+</svg>

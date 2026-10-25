@@ -1,15 +1,32 @@
+<a id="ballast"></a>
+
 <div align="center">
+  <img src="docs/icon.svg" alt="Ballast icon" width="144">
+  <h1>Ballast ⚓</h1>
+  <p><em>A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets.</em></p>
+  <img src="docs/readme-hero.svg" alt="Ballast animated hero: the reserve line sinks below the load line, the breaker snaps shut and the test dollar freezes" width="100%">
 
-# Ballast
+  <br/>
 
-**A reserve-gated circuit breaker for a custodial test dollar, built from the Assets and Multisig pallets. On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
+  [![Live](https://img.shields.io/badge/🚀_Live-ballast.edycu.dev-FF5B2E?style=for-the-badge)](https://ballast.edycu.dev)
+  [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-D9A13B?style=for-the-badge)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/pitch-deck.pdf)
+  [![Demo Video](https://img.shields.io/badge/🎬_Demo-Video-ef4444?style=for-the-badge)](https://youtu.be/jV5dCy1o3O8)
+  [![DoraHacks BUIDL](https://img.shields.io/badge/DoraHacks-BUIDL_50247-3A3240?style=for-the-badge)](https://dorahacks.io/build/50247)
 
-![License: MIT](https://img.shields.io/badge/license-MIT-blue)
-[![CI](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml)
-![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
-![Tests: 274 passing](https://img.shields.io/badge/tests-274%20passing-brightgreen)
-![Drills: Portaldot V3 testnet + stand-in](https://img.shields.io/badge/drills-Portaldot%20V3%20testnet%20%2B%20stand--in-brightgreen)
-![Reserve: local anvil, not Sepolia](https://img.shields.io/badge/reserve-local%20anvil%2C%20not%20Sepolia-orange)
+  <br/>
+
+  ![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat)
+  [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml)
+  ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
+  ![Tests: 274 passing](https://img.shields.io/badge/tests-274%20passing-brightgreen?style=flat)
+  ![Drills: Portaldot V3 testnet + stand-in](https://img.shields.io/badge/drills-Portaldot%20V3%20testnet%20%2B%20stand--in-brightgreen?style=flat)
+  ![Reserve: local anvil, not Sepolia](https://img.shields.io/badge/reserve-local%20anvil%2C%20not%20Sepolia-orange?style=flat)
+
+</div>
+
+---
+
+**On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
 
 *Portaldot Hacker House 2026 · check-in build. On 2026-10-24 the breaker ran on the Portaldot V3 testnet (`wss://test-node-v3.portaldot.dev`;
 genesis, runtime `:code` hash and spec `portaldot-v3`/3002 pinned by the read-only day-0 check of 2026-10-20,
@@ -19,15 +36,15 @@ through Revive, a watcher freeze, a refused freezer thaw, a bot-gated thaw and `
 **local anvil chain, NOT Sepolia**; no Sepolia vault is deployed yet. Earlier drills ran on a labelled local stand-in chain (`standin-upstream`,
 not V3). Every receipt says which chain it came from.*
 
-![Ballast architecture](docs/architecture.png)
+<a id="project-name"></a>
 
-</div>
-
-## Project Name
+## 🏷️ Project Name
 
 **Ballast** (repo: `portaldot-hackathon-2026-ballast-edycu`), track: Multi-Chain & Cross-Chain Infra.
 
-## Project Overview
+<a id="project-overview"></a>
+
+## 💡 Project Overview
 
 ### Problem Statement
 
@@ -70,7 +87,9 @@ is deployed through `Revive.instantiate_with_code` at `0x4832cdb7a89c0539fb2e762
 H160, [`evidence/roles-setup-v3.json`](evidence/roles-setup-v3.json)) and receives each attestation after inclusion; it ran on the stand-in's
 `Revive` pallet first.
 
-## Technical Architecture
+<a id="technical-architecture"></a>
+
+## 🏗️ Technical Architecture
 
 ![Ballast architecture: a vault drain on local anvil is read by the watchdog, whose watcher key freezes asset 4401 through M_watch on the Portaldot V3 testnet, so the holder's transfer is refused](docs/architecture.png)
 
@@ -136,7 +155,9 @@ over 20 blocks) that is a heartbeat H = 200 blocks (~10 min), K = 600 for the st
 polling step N = 2. The `v3` profile is pinned to the live chain; its day-0 block time (6000 ms, median over 20 blocks) gives H = 100,
 K = 300, W = 14,400 and N = 2 ([`evidence/v3-chain-2026-10-20-p6.txt`](evidence/v3-chain-2026-10-20-p6.txt)).
 
-## Smart Contracts
+<a id="smart-contracts"></a>
+
+## 📜 Smart Contracts
 
 Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are the reserve vault and the read-only oracle.
 
@@ -175,7 +196,9 @@ a block that lost a fork; the same extrinsic is in the canonical block at the sa
 finalized block #11913933, `evidence/sepolia-crosscheck-2026-10-14-p5.json`). The deployer wallet holds 80.00 test USDC on 2026-10-24 (both providers at finalized #11981602, `evidence/sepolia-deployer-2026-10-24-p12.txt`), below the 100.00 the
 plan needs, so **no `ReserveVault` has been deployed or funded on Sepolia and no drill has run against it.**
 
-## Installation & Setup
+<a id="installation--setup"></a>
+
+## 🚀 Installation & Setup
 
 **Requirements:** Python 3.11+, Node.js and npm (tested on v22), [Foundry](https://getfoundry.sh) (`forge`, `anvil`), `curl`, `lsof`. The stand-in node needs
 the prebuilt `substrate-node` for `polkadot-stable2606-3` (release URL in the header comment of `scripts/standin_node.sh`, sha256 as its `SHA256=` default); tested on macOS arm64
@@ -229,7 +252,9 @@ the chain's deposit constants, refuses to start if the funder is short, and depl
 
 CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat tests, a package build, CodeQL, gitleaks and pip-audit. It needs no key and does no live RPC write. Run the same checks locally with [`CONTRIBUTING.md`](CONTRIBUTING.md); the V3 and Sepolia drills stay opt-in.
 
-## Demo
+<a id="demo"></a>
+
+## 🎬 Demo
 
 - **Video:** demo: https://youtu.be/jV5dCy1o3O8
 - **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, printed from [`deck/index.html`](deck/index.html); figures pinned to build `0071879`).
@@ -246,7 +271,9 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - **Test accounts / data:** deterministic dev keys on the stand-in only; on V3, mode-600 seed files outside the repo. Public role addresses are in
   [`deployments/v3.json`](deployments/v3.json) and [`deployments/standin-upstream.json`](deployments/standin-upstream.json).
 
-## Roadmap
+<a id="roadmap"></a>
+
+## 🗺️ Roadmap
 
 **Completed (drills on the stand-in first, then on the Portaldot V3 testnet on 2026-10-24)**
 - [x] Chain profiles (`v3` pinned to the live chain, `standin-upstream`, `standin-1002`), genesis / `:code` identification, block-time-derived constants
@@ -279,7 +306,9 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - The drills use drill overrides where noted (fail-closed 15 s instead of 300 s, K = 10 instead of 600) and a mock token on a local anvil
   chain, whose finality is emulated by mining 65 blocks. Sepolia's real finality (~13-19 min) has not been exercised in a drill.
 
-## Team
+<a id="team"></a>
+
+## 👥 Team
 
 - **Team name:** edycu
 - **Members & roles:** edycu, solo (design, architecture, role map and on-chain design decisions, review)
@@ -290,6 +319,8 @@ AI assistance and reviewed by the author. The architecture, the role map and the
 `substrate-interface` / `scalecodec`, `web3`, `xxhash`, `pytest`, Foundry and `forge-std`, Hardhat; the stand-in node is the upstream
 `polkadot-sdk` `substrate-node` binary, unmodified.
 
-## License
+<a id="license"></a>
+
+## 📄 License
 
 [MIT](LICENSE)

@@ -44,7 +44,7 @@
   --font-data:    "Red Hat Mono", ui-monospace, Menlo, monospace;
   --ease: cubic-bezier(.16, 1, .3, 1);
   --short: 76px;      /* the shortfall band: 31.20 of 104.00 drained */
-  --ringw: 440px;
+  --ringw: 480px;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--font-body); -webkit-font-smoothing: antialiased;
@@ -103,9 +103,11 @@ h1 em { font-style: normal; color: var(--after); display: inline-block; text-sha
 .strip { font: 400 13px/1.5 var(--font-data); color: var(--muted); padding-bottom: 30px; }
 .ringbox { position: relative; width: 100%; justify-self: end; }
 .ringbox svg { display: block; width: 100%; height: auto; overflow: visible; }
-.stamp { margin-bottom: 20px; padding-left: 4px; }
-.stamp b { display: block; font: 700 clamp(34px, 3.4vw, 48px)/1 var(--font-display); color: var(--after); letter-spacing: .02em; }
-.stamp span { display: block; margin-top: 8px; font: 400 13px/1.45 var(--font-data); color: var(--prose); }
+.above .ringbox { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding-top: 58px; }
+.stamp { padding: 4px 0 4px 22px; border-left: 4px solid var(--after); }
+.stamp b { display: block; font: 700 clamp(44px, 4.6vw, 70px)/.95 var(--font-display); color: var(--after); letter-spacing: .02em; text-shadow: 0 0 30px rgba(255,91,46,.28); }
+.stamp span { display: block; margin-top: 10px; font: 400 13px/1.5 var(--font-data); color: var(--prose); overflow-wrap: anywhere; }
+.stamp span + span { margin-top: 2px; color: var(--muted); }
 
 /* the load line: one painted bar across the whole hull */
 .line { position: relative; height: 10px; z-index: 3; }
@@ -160,11 +162,13 @@ h1 em { font-style: normal; color: var(--after); display: inline-block; text-sha
 .a4 { animation: rise .7s var(--ease) .36s backwards; }
 .a5 { animation: rise .7s var(--ease) .46s backwards; }
 .a6 { animation: rise .7s var(--ease) .56s backwards; }
-h1 em { animation: halt 1.15s linear .45s backwards; }
-.sea { animation: drain 1.15s cubic-bezier(.5, 0, .85, .45) .45s backwards; }
-.gate { animation: snap .2s cubic-bezier(.3, 1.5, .6, 1) 1.58s backwards; }
-.deadbar { animation: die .24s cubic-bezier(.6, 0, .4, 1) 1.66s backwards; }
-.stamp, .short, .mark.res, .replay { animation: show .35s ease-out 1.7s backwards; }
+h1 em { animation: halt .9s linear .3s backwards; }
+.sea { animation: drain .9s cubic-bezier(.5, 0, .85, .45) .3s backwards; }
+.gate { animation: snap .2s cubic-bezier(.3, 1.5, .6, 1) 1.2s backwards; }
+.deadbar { animation: die .24s cubic-bezier(.6, 0, .4, 1) 1.27s backwards; }
+@keyframes lit { from { opacity: .3; text-shadow: none; } }
+.stamp b { animation: lit .3s ease-out 1.24s backwards; }
+.short, .mark.res, .replay { animation: show .35s ease-out 1.3s backwards; }
 
 /* ---------- the log: five blocks ---------- */
 section { position: relative; }
@@ -194,18 +198,24 @@ section { position: relative; }
 .frame { border: 1px solid var(--rule); background: #0A2131; box-shadow: 0 24px 60px -24px rgba(0,0,0,.6); }
 .frame .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--rule); font: 400 12px/1.2 var(--font-data); color: var(--muted); min-width: 0; }
 .frame .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); flex: none; }
+.shot { position: relative; display: block; }
+.shot .hl { position: absolute; left: 51.2%; top: 53.8%; width: 22%; height: 7%; border: 2px solid var(--after); box-shadow: 0 0 0 4px rgba(255,91,46,.18); pointer-events: none; }
 .frame .bar span { margin-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 figcaption { margin-top: 12px; font-size: 14px; color: var(--muted); }
+figcaption .trip { color: #FFB49E; font: 500 .92em var(--font-data); }
 .term pre { margin: 0; padding: 18px 18px 22px; min-height: 360px; font: 400 13px/1.65 var(--font-data); color: var(--prose); white-space: pre-wrap; overflow-wrap: anywhere; }
 .term .p { color: var(--before); } .term .c { color: var(--ink); }
 .term .ok { color: var(--crest); } .term .er { color: #FFB49E; } .term .re { color: var(--muted); }
 .term .caret { display: inline-block; width: .55em; height: 1.1em; vertical-align: -.2em; background: var(--crest); animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
-.video { position: relative; display: block; margin-top: 28px; border: 1px solid var(--rule); background: var(--bg); aspect-ratio: 16 / 9; overflow: hidden; }
-.video img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease), filter .3s; filter: saturate(.92); }
+.video { position: relative; display: block; margin-top: 28px; border: 1px solid var(--rule); background: var(--bg); overflow: hidden; text-decoration: none; }
+.video .screen { display: block; overflow: hidden; }
+.video img { width: 100%; transition: transform .6s var(--ease), filter .3s; filter: saturate(.92); }
 .video:hover img { transform: scale(1.015); filter: saturate(1.05); }
-.video .play { position: absolute; left: 28px; bottom: 26px; display: flex; align-items: center; gap: 14px; padding: 14px 20px 14px 16px;
-  background: var(--ink); color: var(--deep); font: 700 16px/1 var(--font-body); }
+.video .play { display: flex; align-items: center; gap: 14px; padding: 16px 22px; background: var(--ink); color: var(--deep); font: 700 16px/1 var(--font-body); transition: background-color .2s; }
+.video:hover .play { background: var(--crest); }
+.video .play small { margin-left: auto; font: 400 13px/1 var(--font-data); color: var(--dead); }
+.video.on { aspect-ratio: 16 / 9; }
 .video .play::before { content: ""; width: 0; height: 0; border-left: 14px solid var(--after); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
 .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
@@ -215,8 +225,8 @@ figcaption { margin-top: 12px; font-size: 14px; color: var(--muted); }
 .card { position: relative; padding: 28px 28px 26px; border: 1px solid var(--rule); background: linear-gradient(180deg, rgba(30,61,82,.42), rgba(8,27,40,.3)); }
 .card.big { grid-column: span 4; grid-row: span 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .72fr); gap: 28px; align-items: stretch; }
 .card.big > div { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; }
-.thr { font: 700 clamp(64px, 7vw, 112px)/.9 var(--font-display); color: var(--ink); letter-spacing: .01em; }
-.thr small { display: block; margin-top: 12px; font: 500 12px/1.4 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.card .thr { margin: 0; max-width: none; font: 700 clamp(64px, 7vw, 112px)/.9 var(--font-display); color: var(--ink); letter-spacing: .01em; }
+.card .thr small { display: block; margin-top: 12px; font: 500 12px/1.4 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .card.big svg.mini { align-self: center; width: 100%; max-width: 300px; justify-self: center; }
 .card.mid { grid-column: span 2; }
 .card.wide { grid-column: span 3; }
@@ -226,10 +236,26 @@ figcaption { margin-top: 12px; font-size: 14px; color: var(--muted); }
 .card p { margin-top: 10px; color: var(--prose); font-size: 15.5px; line-height: 1.55; max-width: 40em; }
 .card .chip { margin-right: 6px; }
 
+/* ---------- who: the users and the path ---------- */
+.who { padding: 112px 0 104px; background: linear-gradient(180deg, var(--bg), #0A2131); border-top: 1px solid var(--rule); }
+.users { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; margin-top: 48px; max-width: 1100px; }
+.users p { font-size: 20px; line-height: 1.5; color: var(--prose); max-width: 34em; }
+.users p b { color: var(--ink); }
+.path { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 64px; position: relative; }
+.path::before { content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 2px; background: linear-gradient(90deg, var(--before) 0 33%, var(--dead) 33%); }
+.path li { position: relative; padding: 34px 28px 0 0; }
+.path li::before { content: ""; position: absolute; left: 0; top: 0; width: 16px; height: 16px; transform: rotate(45deg); background: var(--deep); border: 2px solid var(--hull); }
+.path li.now::before { background: var(--before); border-color: var(--before); box-shadow: 0 0 14px rgba(63,217,181,.7); }
+.path b { display: block; font: 700 24px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.path span { display: block; margin-top: 6px; font: 500 12px/1.3 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.path p { margin-top: 10px; font-size: 15.5px; line-height: 1.5; color: var(--prose); max-width: 30em; }
+.today { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); max-width: 70ch; color: var(--prose); }
+.today b { color: var(--ink); }
+
 /* ---------- architecture ---------- */
 .arch { padding: 24px 0 120px; }
 .arch figure { margin-top: 48px; border: 1px solid var(--rule); background: #0A2131; padding: 18px; }
-.arch figure img { margin: 0 auto; max-height: 920px; width: auto; }
+.arch figure img { margin: 0 auto; width: 100%; max-width: 1180px; }
 .arch figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
 
 /* ---------- honest: below the waterline ---------- */
@@ -289,33 +315,46 @@ footer p { max-width: 62ch; }
   .ringbox { max-width: var(--ringw); }
   .strip { padding-bottom: 26px; }
   .stamp { margin-top: 4px; }
+  .above .ringbox { max-width: none; padding-top: 4px; gap: 18px; }
+  .above .ringbox svg { max-width: var(--ringw); margin-left: auto; }
   .below .ringbox { grid-row: 1; }
   .readings { grid-row: 2; padding-top: 34px; }
   .short p { max-width: 38%; font-size: 11px; }
   .rx { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 26px; }
   .pair { grid-template-columns: minmax(0, 1fr); }
   .faq .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .users { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .path { grid-template-columns: minmax(0, 1fr); gap: 30px; padding-left: 34px; }
+  .path::before { left: 7px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; background: linear-gradient(180deg, var(--before) 0 30%, var(--dead) 30%); }
+  .path li { padding: 0; }
+  .path li::before { left: -34px; top: 2px; }
   .faq h2 { position: static; }
 }
 @media (max-width: 620px) {
   html { font-size: 16px; }
   :root { --short: 62px; }
-  h1 { font-size: 37px; }
+  h1 { font-size: 34px; margin: 16px 0 18px; }
   .sub, .lede { font-size: 17px; }
-  .btn { padding: 13px 16px; }
-  :root { --ringw: 270px; }
+  .btn { padding: 12px 14px; font-size: 14px; }
+  .cta { gap: 10px; margin: 22px 0 14px; }
+  .strip { font-size: 11.5px; padding-bottom: 20px; }
+  :root { --ringw: 250px; }
   .mark b { font-size: 16px; }
   .mark { font-size: 9.5px; letter-spacing: .06em; }
   .gate { top: -40px; height: 90px; }
   .short p { max-width: 36%; letter-spacing: .06em; }
   .short p .long { display: none; }
   .replay { display: none; }
+  .stamp b { font-size: 30px; }
+  .stamp { padding-left: 14px; }
+  .stamp span + span { display: none; }
+  .stamp span { font-size: 12px; }
   .rx div { padding: 2px 12px; }
   .rx b { font-size: 34px; }
   .card.mid, .card.wide { grid-column: span 6; }
   .card { padding: 22px 20px; }
   .card.big h3 { font-size: 28px; }
-  .log, .demo, .how, .honest, .faq { padding: 80px 0; }
+  .log, .demo, .how, .who, .honest, .faq { padding: 80px 0; }
   .arch { padding-bottom: 80px; }
   .quotes blockquote { padding-left: 0; padding-top: 18px; }
   .quotes blockquote::before { top: 0; }
@@ -343,6 +382,7 @@ footer p { max-width: 62ch; }
      <li><a href="#log">The drain</a></li>
      <li><a href="#demo">Re-check it</a></li>
      <li><a href="#how">How it works</a></li>
+     <li><a href="#who">Who it's for</a></li>
      <li><a href="#honest">Limits</a></li>
      <li><a href="#faq">FAQ</a></li>
     </ul>
@@ -360,10 +400,10 @@ footer p { max-width: 62ch; }
      <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
      <a class="btn v3" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">See the freeze on V3</a>
     </div>
-    <p class="strip a5">Portaldot V3 testnet · 79/79 extrinsics final · reserve: local anvil, NOT Sepolia</p>
+    <p class="strip a5">Portaldot V3 testnet · 79/79 extrinsics final · re-queried 2026-10-25</p>
    </div>
    <div class="ringbox">
-    <p class="stamp"><b>#170,112</b><span>Assets.AssetFrozen · extrinsic 170112-1 · watcher W2</span></p>
+    <p class="stamp"><b>#170,112</b><span>Assets.AssetFrozen · extrinsic 170112-1 · watcher W2</span><span>BALLAST/1|freeze|a=4401|reason=deficit</span></p>
     <svg viewBox="0 0 460 172" aria-hidden="true">
      <circle cx="180" cy="172" r="150" fill="none" stroke="#6F92A6" stroke-width="20"/>
      <path d="M180 22v18M60 70l12 10M300 70l-12 10" stroke="#1E3D52" stroke-width="3"/>
@@ -449,9 +489,9 @@ footer p { max-width: 62ch; }
    <figure>
     <div class="frame">
      <div class="bar"><i></i><i></i><i></i><span>node-console.portaldot.dev · PortaldotV3 Test · block 170,112</span></div>
-     <a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624"><img src="assets/node-console-170112.jpg" width="1600" height="900" loading="lazy" alt="Portaldot node console, block 170,112 on portaldot-v3/3002: a utility.batchAll extrinsic with system.Remarked, assets.AssetFrozen and multisig.MultisigExecuted events"></a>
+     <a class="shot" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624"><span class="hl" aria-hidden="true"></span><img src="assets/node-console-170112.jpg" width="1300" height="876" loading="lazy" alt="Portaldot node console, block 170,112 on portaldot-v3/3002: a utility.batchAll extrinsic with system.Remarked, assets.AssetFrozen and multisig.MultisigExecuted events"></a>
     </div>
-    <figcaption>Block 170,112: <code>system.Remarked</code>, <code>assets.AssetFrozen</code>, <code>multisig.MultisigExecuted</code> in one <code>utility.batchAll</code>. Captured 2026-10-24.</figcaption>
+    <figcaption>Block 170,112 on <code>portaldot-v3</code>/3002: <code>system.Remarked</code>, <b class="trip">assets.AssetFrozen</b> (outlined), <code>multisig.MultisigExecuted</code> in one <code>utility.batchAll</code>. Captured 2026-10-24.</figcaption>
    </figure>
    <figure class="term">
     <div class="frame">
@@ -471,8 +511,8 @@ footer p { max-width: 62ch; }
    </figure>
   </div>
   <a class="video" href="https://youtu.be/jV5dCy1o3O8" data-yt="jV5dCy1o3O8">
-   <img src="assets/demo-poster.jpg" width="1280" height="720" loading="lazy" alt="Frame from the Ballast demo video: the load-line gauge frozen at block 170112, supply 104.00, reserve 72.80, drain to freeze 12.22 s">
-   <span class="play">Watch the recorded V3 run</span>
+   <span class="screen"><img src="assets/demo-poster.jpg" width="1280" height="600" loading="lazy" alt="Frame from the Ballast demo video: the load-line gauge frozen at block 170112, supply 104.00, reserve 72.80, drain to freeze 12.22 s"></span>
+   <span class="play">Watch the recorded V3 run <small>YouTube</small></span>
   </a>
  </div>
 </section>
@@ -489,7 +529,7 @@ footer p { max-width: 62ch; }
      <div>
      <svg class="ic" viewBox="0 0 46 46" aria-hidden="true"><circle cx="20" cy="23" r="14" fill="none" stroke="#6F92A6" stroke-width="4"/><path d="M2 23h30" stroke="#F4F1E6" stroke-width="4"/><path d="M38 23h8" stroke="#3B5568" stroke-width="4"/><rect x="33" y="12" width="4" height="22" fill="#FF5B2E"/></svg>
      <h3>The breaker</h3>
-     <p>A 1-of-2 watcher multisig freezes the asset the moment reserves fall below supply; the reason rides in the same extrinsic.</p>
+     <p>A 1-of-2 watcher multisig freezes the asset once a watcher sees reserves fall below supply (12.22 s from drain to freeze in the V3 drill); the reason rides in the same extrinsic.</p>
      <span class="chip">Multisig.as_multi_threshold_1</span><span class="chip">Assets.freeze_asset</span>
      </div>
     </div>
@@ -507,7 +547,7 @@ footer p { max-width: 62ch; }
    <article class="card mid">
     <svg class="ic" viewBox="0 0 46 46" aria-hidden="true"><rect x="19" y="4" width="8" height="38" fill="#FF5B2E"/><path d="M6 30c0-9 6-15 14-15" fill="none" stroke="#9AB0BE" stroke-width="3"/><path d="M4 40L42 6" stroke="#F4F1E6" stroke-width="3"/></svg>
     <h3>The inert freezer</h3>
-    <p>The watcher that froze it cannot thaw it: <code>thaw_asset</code> comes back <code>Assets.NoPermission</code> (170115-1).</p>
+    <p>A watcher cannot thaw what its freezer role froze: W1's <code>thaw_asset</code> through <code>M_watch</code>, the multisig W2 froze through, comes back <code>Assets.NoPermission</code> (170115-1).</p>
    </article>
    <article class="card mid">
     <svg class="ic" viewBox="0 0 46 46" aria-hidden="true"><path d="M4 30h38" stroke="#F4F1E6" stroke-width="3"/><rect x="9" y="10" width="7" height="20" fill="#9AB0BE"/><rect x="26" y="10" width="7" height="20" fill="#3FD9B5"/><path d="M4 38h38" stroke="#1E3D52" stroke-width="3"/></svg>
@@ -518,7 +558,7 @@ footer p { max-width: 62ch; }
    <article class="card wide">
     <svg class="ic" viewBox="0 0 46 46" aria-hidden="true"><path d="M8 4v38" stroke="#6F92A6" stroke-width="3"/><path d="M8 12h10M8 22h14M8 32h10" stroke="#6F92A6" stroke-width="3"/><path d="M26 34l10-10 0 0M36 24v8M36 24h-8" fill="none" stroke="#3FD9B5" stroke-width="3"/></svg>
     <h3>Gated thaw</h3>
-    <p>The admin is a 2-of-3; the bot co-signs a thaw only after finality has passed the drain block (170133-1). It refused one earlier: finalized #1559 was older than the drain at #1622.</p>
+    <p>The admin is a 2-of-3 {A, A2, B}; the bot co-signs a thaw only after finality has passed the drain block (170133-1). It refused one earlier: finalized anvil block #1559 was older than the drain at anvil block #1622. A and A2 together could still thaw without the bot.</p>
     <span class="chip">M_admin 2-of-3</span>
    </article>
    <article class="card wide">
@@ -531,9 +571,26 @@ footer p { max-width: 62ch; }
  </div>
 </section>
 
+<section class="who" id="who" aria-labelledby="who-h">
+ <div class="wrap">
+  <h2 id="who-h">Who needs a load line</h2>
+  <div class="users">
+   <p><b>The first issuer of a dollar on Portaldot</b>, who needs a safety layer it can show, and that the ecosystem can require of any issuer.</p>
+   <p><b>The dApp builder</b> deciding whether checkout may accept that dollar, who must tell users why it is safe.</p>
+  </div>
+  <ol class="path">
+   <li class="now"><b>Testnet, today</b><span>done</span><p>V3 drills pass; one person holds every key; reserve on local anvil.</p></li>
+   <li><b>Sepolia reserve</b><span>plan</span><p><code>ReserveVault</code> with 100.00 test USDC; a watcher on separate infrastructure.</p></li>
+   <li><b>A real issuer</b><span>plan</span><p>Watcher and attester keys held by parties other than the issuer; community-watcher mode.</p></li>
+  </ol>
+  <p class="today"><b>Funding (plan):</b> an ecosystem grant to reach a Sepolia-backed deployment with outside watchers. <b>Today:</b> no external users and no revenue.</p>
+ </div>
+</section>
+
 <section class="arch" aria-labelledby="arch-h">
  <div class="wrap">
   <h2 id="arch-h">Where each piece runs</h2>
+  <p class="lede">Follow steps 1 to 5: the drain on the reserve chain, the watchdog reading it, the freeze through <code>M_watch</code>, and the holder's refused transfer.</p>
   <figure>
    <a href="architecture.png"><img src="architecture.png" width="2560" height="2546" loading="lazy" alt="Ballast architecture: a vault drain on local anvil is read by the watchdog, whose watcher key freezes asset 4401 through M_watch on the Portaldot V3 testnet, so the holder's transfer is refused"></a>
    <figcaption><span>Solid: the Portaldot V3 runtime enforces. Dashed: off-chain processes. Bottom: the reserve chain (local anvil, NOT Sepolia).</span><a href="architecture.png">Open full size ↗</a></figcaption>
@@ -545,7 +602,7 @@ footer p { max-width: 62ch; }
  <div class="wrap">
   <p class="label">Below the waterline</p>
   <h2 id="honest-h" style="margin-top:18px">What it does not do</h2>
-  <p class="lede">In the README's own words. A judge should know where the line is before trusting it.</p>
+  <p class="lede">In the README's own words. A judge should know where the line is before trusting it. <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/README.md">All of them are in the README.</a></p>
   <div class="quotes">
    <blockquote><p>Custody is trusted: the vault owner can move reserves. Ballast makes that visible and stops the shortfall from spreading.</p><cite>— README · Honest limitations</cite></blockquote>
    <blockquote><p>Freezing reads <strong>latest</strong> reserve state and can false-trip on a reorg; recovery is a thaw by <code>M_admin</code> once finalized reserves cover supply (a multisig round-trip).</p><cite>— README · Honest limitations</cite></blockquote>
@@ -564,12 +621,12 @@ footer p { max-width: 62ch; }
     <p>No. In the V3 runs the reserve is a local anvil chain; the Sepolia vault is not deployed yet (it needs 100.00 test USDC). Every receipt names its chain.</p></details>
    <details><summary>Is this a trustless bridge?</summary>
     <p>No. Custody is trusted; Ballast makes a drain visible and stops the shortfall from being minted over or spreading.</p></details>
-   <details><summary>Can the watcher that froze the asset unfreeze it?</summary>
-    <p>No. W1's <code>thaw_asset</code> returned <code>Assets.NoPermission</code> (170115-1); the thaw needs <code>M_admin</code> 2-of-3 with the bot, after finality passes the drain (170133-1).</p></details>
+   <details><summary>Can a watcher unfreeze the asset?</summary>
+    <p>No. W1's <code>thaw_asset</code> through <code>M_watch</code>, the multisig W2 froze through, returned <code>Assets.NoPermission</code> (170115-1). A thaw needs two of the three <code>M_admin</code> keys (A, A2, B). The bot co-signs only after finality passes the drain (170133-1), but A and A2 together could thaw without it.</p></details>
    <details><summary>Who holds the keys?</summary>
     <p>In this build one person holds every operator key; the separation is enforced by the runtime, not by independent people. Root can override every role (V3 has a <code>Sudo</code> key set; who controls it is not known to us).</p></details>
    <details><summary>What happens if the bot stops?</summary>
-    <p>Nothing is enforced while it is stopped; the heartbeat rule freezes the asset if a watcher is running, and <code>ReserveOracle.isBacked(maxAge)</code> reads <code>false</code> when stale.</p></details>
+    <p>Nothing is enforced while it is stopped; the heartbeat rule freezes the asset if a watcher is running, and <code>ReserveOracle.isBacked(maxAge)</code> reads <code>false</code> when stale. That is the design; the outage and heartbeat drills ran on the stand-in, not yet on V3.</p></details>
   </div>
  </div>
 </section>
@@ -609,10 +666,10 @@ footer p { max-width: 62ch; }
   if (btn) {
     btn.hidden = reduce;
     btn.addEventListener('click', function () {
-      hull.querySelectorAll('.sea, .gate, .deadbar, .stamp, .short, .mark.res, .replay, h1 em').forEach(function (el) {
+      hull.querySelectorAll('.sea, .gate, .deadbar, .stamp b, .short, .mark.res, .replay, h1 em').forEach(function (el) {
         el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
       });
-      countAll(document.querySelectorAll('[data-count]'), 1600);
+      countAll(document.querySelectorAll('[data-count]'), 1250);
     });
   }
 
@@ -659,7 +716,7 @@ footer p { max-width: 62ch; }
         if (!e.isIntersecting || seen.has(e.target)) return;
         seen.add(e.target);
         if (e.target.id === 'readings') {
-          var started = performance.now() < 1500 ? 1650 : 0;
+          var started = performance.now() < 1200 ? 1300 : 0;
           countAll(e.target.querySelectorAll('[data-count]'), started);
         } else if (e.target === pre) replay();
       });
@@ -677,6 +734,7 @@ footer p { max-width: 62ch; }
     f.title = 'Ballast demo video';
     f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     f.allowFullscreen = true;
+    v.classList.add('on');
     v.replaceChildren(f);
   });
 })();

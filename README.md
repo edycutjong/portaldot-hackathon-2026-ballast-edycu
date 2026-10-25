@@ -28,6 +28,11 @@
 
 ---
 
+<div align="center">
+  <img src="docs/broll.gif" alt="Ballast b-roll from the demo video: reserves drop to 72.80 against a supply of 104.00, the watcher freezes asset 4401 at block #170112, and a holder's transfer fails with AssetNotLive" width="100%">
+  <br/><sub>B-roll: the V3 freeze run (1.6× speed) · <a href="https://youtu.be/jV5dCy1o3O8">full demo video</a></sub>
+</div>
+
 **On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia.**
 
 *Portaldot Hacker House 2026 · check-in build. On 2026-10-24 the breaker ran on the Portaldot V3 testnet (`wss://test-node-v3.portaldot.dev`;

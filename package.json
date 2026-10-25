@@ -18,6 +18,9 @@
   "overrides": {
     "serialize-javascript": "^7.0.5",
     "adm-zip": "^0.6.1",
-    "diff": "^8.0.3"
+    "diff": "^8.0.3",
+    "cookie": "^0.7.2",
+    "tmp": "^0.2.6",
+    "uuid": "^11.1.1"
   }
 }

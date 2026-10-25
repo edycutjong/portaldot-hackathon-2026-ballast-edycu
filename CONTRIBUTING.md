@@ -20,3 +20,14 @@ The live drills (`scripts/role_drill.py`, `scripts/attest_drill.py`, `ballast dr
 - Keep each PR focused and add or update tests.
 - Never commit seeds, keys or `.env` files. `gitleaks` runs in CI.
 - Numbers in docs must trace to `docs/PROOF.md`, `docs/RECEIPTS.md`, a test run or a file in `evidence/`.
+
+## Releases
+
+Releases are automatic: on every push to `main`, `.github/workflows/release.yml` reads the commit messages since the last tag and, if any are releasable, tags the next semantic version and publishes a GitHub Release. Use Angular-style prefixes:
+
+| Prefix | Bump |
+|---|---|
+| `fix:` · `perf:` | patch |
+| `feat:` | minor |
+| `feat!:` or a `BREAKING CHANGE:` footer | major |
+| `docs:` `chore:` `test:` `refactor:` `style:` `ci:` | none |

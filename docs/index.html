@@ -95,17 +95,17 @@ nav ul a { text-decoration: none; padding: 6px 0; } nav ul a:hover { color: var(
 .above .wrap { display: grid; grid-template-columns: minmax(0, 1fr) var(--ringw); gap: 40px; align-items: end; padding-top: 18px; }
 .eyebrow { display: flex; align-items: center; gap: 12px; font: 500 12px/1.4 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--before); }
 .eyebrow::before { content: ""; width: 36px; height: 2px; background: var(--before); flex: none; }
-h1 { font: 700 clamp(42px, 4.6vw, 66px)/.94 var(--font-display); text-transform: uppercase; letter-spacing: .005em; margin: 20px 0 22px; text-wrap: balance; }
+h1 { font: 700 clamp(42px, 4.4vw, 63px)/.94 var(--font-display); text-transform: uppercase; letter-spacing: .005em; margin: 20px 0 22px; text-wrap: balance; }
 h1 .ln { display: block; }
 h1 em { font-style: normal; color: var(--after); display: inline-block; text-shadow: 0 0 36px rgba(255,91,46,.32); }
 .sub { max-width: 35em; color: var(--prose); font-size: 19px; }
 .sub b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
-.fine { margin-top: 10px; font: 400 13px/1.4 var(--font-data); color: var(--muted); }
+.fine { margin-top: 12px; font: 500 14px/1.4 var(--font-data); color: var(--prose); }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 18px; }
 .strip { font: 400 13px/1.5 var(--font-data); color: var(--muted); padding-bottom: 30px; }
 .ringbox { position: relative; width: calc(100% + var(--bleed)); margin-right: calc(-1 * var(--bleed)); justify-self: end; }
 .ringbox svg { display: block; width: 100%; height: auto; overflow: visible; }
-.above .ringbox { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding-top: 44px; }
+.above .ringbox { align-self: stretch; display: flex; flex-direction: column; justify-content: flex-end; gap: 26px; padding-top: 44px; }
 .stamp { padding: 4px 0 4px 22px; border-left: 4px solid var(--after); }
 .stamp b { display: block; font: 700 clamp(44px, 5vw, 78px)/.95 var(--font-display); color: var(--after); letter-spacing: .02em; text-shadow: 0 0 30px rgba(255,91,46,.28); }
 .stamp span { display: block; margin-top: 10px; font: 400 13px/1.5 var(--font-data); color: var(--prose); overflow-wrap: anywhere; }
@@ -136,11 +136,12 @@ h1 em { font-style: normal; color: var(--after); display: inline-block; text-sha
 .below .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) var(--ringw); gap: 40px; }
 .below .ringbox { align-self: start; }
 .mark.res { top: calc(var(--short) + 14px); color: var(--prose); }
+.swipe { display: none; }
 .mark.res b { color: var(--crest); }
 .replay { position: absolute; right: 0; top: calc(var(--short) + 78px); font: 500 12px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase;
   color: var(--prose); background: none; border: 1px solid var(--rule); padding: 8px 12px; cursor: pointer; transition: color .2s, border-color .2s; }
 .replay:hover { color: var(--ink); border-color: var(--hull); }
-.readings { padding-top: calc(var(--short) + 58px); }
+.readings { padding-top: calc(var(--short) + 40px); }
 .readings .label { color: var(--prose); margin-bottom: 22px; }
 .rx { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-left: 1px solid rgba(184,255,236,.22); }
 .rx div { padding: 4px 16px 2px; border-right: 1px solid rgba(184,255,236,.22); min-width: 0; }
@@ -191,7 +192,7 @@ section { position: relative; }
 .chip.ok { border-color: rgba(63,217,181,.55); color: var(--crest); }
 .voyage a.q { display: inline-block; margin-top: 10px; font: 500 13px/1.3 var(--font-data); color: var(--muted); }
 .voyage a.q:hover { color: var(--ink); }
-.remark { margin-top: 56px; padding: 18px 22px; border-left: 4px solid var(--after); background: rgba(8,27,40,.7); font: 400 14px/1.6 var(--font-data); color: var(--prose); overflow-wrap: anywhere; }
+.remark { margin-top: 56px; padding: 18px 22px; border-left: 4px solid var(--after); background: rgba(8,27,40,.7); font: 400 14px/1.6 var(--font-data); color: var(--prose); overflow-wrap: break-word; }
 .remark b { color: var(--ink); font-weight: 500; }
 
 /* ---------- demo pair ---------- */
@@ -371,6 +372,8 @@ footer p { max-width: 62ch; }
   .scrollx > a { display: block; width: 640px; }
   .arch .scrollx > a { width: 900px; }
   .stamp span + span + span { display: none; }
+  .above .ringbox .stamp { display: none; }
+  .swipe { display: block; margin-top: 8px; font: 500 12px/1.3 var(--font-data); letter-spacing: .08em; color: var(--muted); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -435,7 +438,7 @@ footer p { max-width: 62ch; }
 
  <div class="below">
   <div class="sea" aria-hidden="true"></div>
-  <div class="short"><div class="wrap"><p><b>−31.20</b><span class="long">drained by <code>release()</code> on the reserve chain</span></p></div></div>
+  <div class="short"><div class="wrap"><p><b>−31.20</b><span class="long">drained by <code>release()</code> on the reserve chain (local anvil)</span></p></div></div>
   <div class="wrap">
    <div class="readings" id="readings">
     <p class="label">Draft readings · Portaldot V3 testnet · 2026-10-24 run</p>
@@ -450,7 +453,7 @@ footer p { max-width: 62ch; }
     <svg viewBox="0 0 460 172" aria-hidden="true">
      <circle cx="180" cy="0" r="150" fill="none" stroke="#6F92A6" stroke-width="20"/>
     </svg>
-    <span class="mark res"><b>72.80</b>RESERVES</span>
+    <span class="mark res"><b>72.80</b>RESERVES<br>LOCAL ANVIL</span>
     <button class="replay" type="button" hidden>↻ Replay the drain</button>
    </div>
   </div>
@@ -478,7 +481,7 @@ footer p { max-width: 62ch; }
     <span class="chip err">Err(Assets.AssetNotLive)</span><br>
     <a class="q" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe6ca737bce559f4a85450656e1d6ef9e315526bb3258202fd7d28c9107f21bb2">#170,114 on node-console ↗</a></li>
    <li class="t-refuse"><span class="blk">170115-1</span><span class="tick"></span>
-    <h3>The freezer can't undo it</h3>
+    <h3>The freezer can't thaw it</h3>
     <p>Watcher W1 tries <code>thaw_asset</code> through the same multisig. Refused.</p>
     <span class="chip err">Err(Assets.NoPermission)</span><br>
     <a class="q" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">#170,115 on node-console ↗</a></li>
@@ -488,7 +491,7 @@ footer p { max-width: 62ch; }
     <span class="chip ok">Assets.thaw_asset · Ok</span><br>
     <a class="q" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xaa1fae018db52208466a9f4abf26890b3130cae019428438a551289da040110b">#170,133 on node-console ↗</a></li>
   </ol>
-  <p class="remark"><b>The reason, on chain, in extrinsic 170112-1:</b> BALLAST/1|freeze|a=4401|reason=deficit|s=104000000|r=72800000|p=anvil|eb=1622|eh=0x3987686a… &nbsp;(6 decimals: supply 104.00 = asset 4401 + control asset 4402; reserves 72.80)</p>
+  <p class="remark"><b>The reason, on chain, in extrinsic 170112-1:</b> BALLAST/1|<wbr>freeze|<wbr>a=4401|<wbr>reason=deficit|<wbr>s=104000000|<wbr>r=72800000|<wbr>p=anvil|<wbr>eb=1622|<wbr>eh=0x3987686a… &nbsp;(6 decimals: supply 104.00 = asset 4401 + control asset 4402; reserves 72.80)</p>
  </div>
 </section>
 
@@ -501,6 +504,7 @@ footer p { max-width: 62ch; }
     <div class="frame">
      <div class="bar"><i></i><i></i><i></i><span>node-console.portaldot.dev · block 170,112 · utility.batchAll events</span></div>
      <div class="scrollx"><a class="shot" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624"><span class="hl" aria-hidden="true"></span><img src="assets/node-console-170112.jpg" width="1060" height="880" loading="lazy" alt="Portaldot node console, block 170,112: the events of its utility.batchAll extrinsic, system.Remarked, assets.AssetFrozen and multisig.MultisigExecuted"></a></div>
+     <span class="swipe" aria-hidden="true">Scroll sideways →</span>
     </div>
     <figcaption>The events of block 170,112's <code>utility.batchAll</code>: <code>system.Remarked</code>, <b class="trip">assets.AssetFrozen</b> (outlined), <code>multisig.MultisigExecuted</code>. Block 170,112 is from the 2026-10-24 drill; screenshot of Portaldot's node console.</figcaption>
    </figure>
@@ -606,6 +610,7 @@ footer p { max-width: 62ch; }
   <p class="lede">Follow steps 1 to 5: the drain on the reserve chain (1), the watchdog reading it (2), W2's batch to <code>M_watch</code> (3), the freeze on asset 4401 (4), and the holder's refused transfer (5).</p>
   <figure>
    <div class="scrollx"><a href="architecture.png"><img src="architecture.png" width="2560" height="2546" loading="lazy" alt="Ballast architecture: a vault drain on local anvil is read by the watchdog, whose watcher key freezes asset 4401 through M_watch on the Portaldot V3 testnet, so the holder's transfer is refused"></a></div>
+   <span class="swipe" aria-hidden="true">Scroll sideways →</span>
    <figcaption><span>Solid: the Portaldot V3 runtime enforces. Dashed: off-chain processes. Bottom: the reserve chain (local anvil, NOT Sepolia).</span><a href="architecture.png">Open full size ↗</a></figcaption>
   </figure>
  </div>
@@ -729,8 +734,8 @@ footer p { max-width: 62ch; }
         if (!e.isIntersecting || seen.has(e.target)) return;
         seen.add(e.target);
         if (e.target.id === 'readings') {
-          var started = performance.now() < 1200 ? 1300 : 0;
-          countAll(e.target.querySelectorAll('[data-count]'), started);
+          // already on screen at load: keep the final values (a still of the fold never shows a half-counted number)
+          if (performance.now() > 1200) countAll(e.target.querySelectorAll('[data-count]'), 0);
         } else if (e.target === pre) replay();
       });
     }, { threshold: 0.25 });

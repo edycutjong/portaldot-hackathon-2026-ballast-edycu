@@ -1,0 +1,107 @@
+# python scripts/check_receipts.py --profile v3   (read-only re-query; started 2026-10-25T01:35:04Z, finished 01:35:41Z; code at 2c65ab6; reserve = local anvil chain 127.0.0.1:49545, NOT Sepolia)
+[v3 | V3] genesis 0xd4f9acbc… spec portaldot-v3/3002 head #182416
+ok roles-operator-v3-20261024T044400Z.json  169989-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170214-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170215-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170216-1 Ok
+reorg roles-attest-v3-20261024T050653Z.json 170217-1: inclusion block 0x40d35c389b… lost a fork; same extrinsic finalized in canonical #170217 0xb6fa7c53bc…
+ok roles-attest-v3-20261024T050653Z.json  170217-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170218-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170219-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170221-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170224-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170228-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170229-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170252-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170253-1 Ok
+ok roles-attest-v3-20261024T050653Z.json  170253-2 Ok
+ok roles-attest-v3-20261024T050157Z.json  170164-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170165-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170166-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170167-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170168-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170169-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170170-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170173-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170177-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170178-1 Ok
+ok roles-attest-v3-20261024T050157Z.json  170201-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170095-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170098-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170100-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170105-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170112-1 Ok
+reorg roles-drill-v3-20261024T045513Z.json 170114-1: inclusion block 0x9d34fa883f… lost a fork; same extrinsic finalized in canonical #170114 0xe6ca737bce…
+ok roles-drill-v3-20261024T045513Z.json  170114-1 Err(Assets.AssetNotLive)
+ok roles-drill-v3-20261024T045513Z.json  170115-1 Err(Assets.NoPermission)
+ok roles-drill-v3-20261024T045513Z.json  170117-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170122-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170125-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170133-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170134-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170137-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170142-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170145-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170150-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170153-1 Ok
+ok roles-drill-v3-20261024T045513Z.json  170156-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170018-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170021-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170024-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170027-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170030-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170035-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170041-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170042-1 Err(Assets.AssetNotLive)
+ok roles-drill-v3-20261024T044734Z.json  170043-1 Err(Assets.NoPermission)
+ok roles-drill-v3-20261024T044734Z.json  170045-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170049-1 Ok
+reorg roles-drill-v3-20261024T044734Z.json 170052-1: inclusion block 0x2b9c80efd5… lost a fork; same extrinsic finalized in canonical #170052 0x66f30f0879…
+ok roles-drill-v3-20261024T044734Z.json  170052-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170060-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170061-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170063-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170068-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170070-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170075-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170078-1 Ok
+ok roles-drill-v3-20261024T044734Z.json  170082-1 Ok
+ok roles-drill-v3-20261024T044514Z.json  169995-1 Ok
+ok roles-drill-v3-20261024T044514Z.json  169998-1 Ok
+ok roles-drill-v3-20261024T044514Z.json  170001-1 Ok
+ok roles-drill-v3-20261024T044242Z.json  169970-1 Ok
+ok roles-setup-v3.json  169920-1 Ok
+ok roles-setup-v3.json  169921-1 Ok
+ok roles-setup-v3.json  169922-1 Ok
+ok roles-setup-v3.json  169923-1 Ok
+ok roles-setup-v3.json  169924-1 Ok
+ok roles-setup-v3.json  169925-1 Ok
+ok roles-setup-v3.json  169926-1 Ok
+ok roles-setup-v3.json  169927-1 Ok
+ok roles-setup-v3.json  169957-1 Ok
+ok roles-setup-v3.json  169958-1 Ok
+ok roles-setup-v3.json  169959-1 Err(Assets.NoPermission)
+ok roles-setup-v3.json  169960-1 Ok
+[v3] 79/79 receipts confirmed from 8 run(s)
+[v3] all confirmed rows at or below the finalized head #182414
+ok roles-attest-v3-20261024T050653Z.json evm #1756 0x3931541bf6beeaa9… status 1
+ok roles-attest-v3-20261024T050653Z.json evm #1757 0xec30f111a44ea7f1… status 1
+ok roles-attest-v3-20261024T050157Z.json evm #1689 0x6558c40dd8295000… status 1
+ok roles-attest-v3-20261024T050157Z.json evm #1690 0x09cd78187c9960cd… status 1
+ok roles-drill-v3-20261024T045513Z.json evm #1555 0xc9c30aabd8707442… status 1
+ok roles-drill-v3-20261024T045513Z.json evm #1556 0x531062078693c955… status 1
+ok roles-drill-v3-20261024T045513Z.json evm #1622 0xec4b585e18bb55d8… status 1
+ok roles-drill-v3-20261024T045513Z.json evm #1623 0xd07e14157791ef65… status 1
+ok roles-drill-v3-20261024T044734Z.json evm #1421 0xc9b5adc21ac594bb… status 1
+ok roles-drill-v3-20261024T044734Z.json evm #1422 0x047bab9111b3c53e… status 1
+ok roles-drill-v3-20261024T044734Z.json evm #1488 0xd8c380022446c1fa… status 1
+ok roles-drill-v3-20261024T044734Z.json evm #1489 0x4671bdd6cced8480… status 1
+ok roles-drill-v3-20261024T044514Z.json evm #1289 0x9ed259a256120b71… status 1
+ok roles-drill-v3-20261024T044514Z.json evm #1290 0x84f3963b5d3dc408… status 1
+ok roles-drill-v3-20261024T044242Z.json evm #1221 0x41fe2cfbb1efcddf… status 1
+ok roles-drill-v3-20261024T044242Z.json evm #1222 0x6139d43012fbd189… status 1
+ok roles-setup-v3.json evm #1217 0xcdef806dd63f8366… status 1
+ok roles-setup-v3.json evm #1218 0x286bb9ad4e337c2d… status 1
+ok roles-setup-v3.json evm #1219 0xe9627e59bcf7e553… status 1
+ok roles-setup-v3.json evm #1220 0x1457a7d9311d1136… status 1
+[reserve http://127.0.0.1:49545] 20/20 reserve-chain txs confirmed

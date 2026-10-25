@@ -43,6 +43,7 @@ body.idle { cursor: none; }
 a { color: inherit; text-decoration: none; border-bottom: 2px solid var(--hull); }
 a:hover, a:focus-visible { border-bottom-color: var(--crest); }
 a:focus-visible { outline: 3px solid var(--crest); outline-offset: 4px; }
+::selection { background: var(--after); color: var(--deep); }
 
 /* the hull: night water, faint plate seams */
 .slide { position: absolute; inset: 0; display: none; overflow: hidden; background-color: var(--bg);
@@ -180,6 +181,7 @@ h2 em.lv { color: var(--crest); text-shadow: 0 0 30px rgba(184,255,236,.22); }
 .s6 .sea span { position: absolute; right: 0; top: -30px; font: 500 15px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 
 /* ---------- 7 why it's new ---------- */
+.s6 h2 { font-size: 82px; }
 .s7 table { position: absolute; left: 200px; top: 338px; width: 1620px; border-collapse: collapse; }
 .s7 th { text-align: left; padding: 0 26px 14px 0; font: 600 16px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--hull); }
 .s7 td { vertical-align: top; padding: 17px 26px 17px 0; border-bottom: 2px solid var(--rule); font: 400 23px/1.4 var(--font-body); }

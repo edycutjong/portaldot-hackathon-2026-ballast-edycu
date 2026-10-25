@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ballast · pitch deck · Portaldot Hacker House 2026</title>
-<meta name="description" content="Ballast: a reserve-gated circuit breaker for a custodial test dollar on Portaldot. Week 2 check-in deck, facts at build 0071879.">
+<meta name="description" content="Ballast: a reserve-gated circuit breaker for a custodial test dollar on Portaldot. Deck rebuilt 2026-10-25; facts at build 0071879 except the cover's 2026-10-25 receipt re-run.">
 <!--
   Ballast pitch deck. Single file, 1920x1080 stage scaled to the window.
   Keys: arrows / space / PageUp / PageDown, Home / End, 1-9 and 0 jump, Esc overview, P presenter notes, F fullscreen.
   Print (Cmd+P, "Save as PDF", background graphics on) gives one slide per page; docs/pitch-deck.pdf is that print.
-  Every figure on these slides comes from docs/PROOF.md, docs/RECEIPTS.md, evidence/ or README.md at build 0071879.
+  Every figure on these slides comes from docs/PROOF.md, docs/RECEIPTS.md, evidence/ or README.md at build 0071879, except the
+  cover terminal: evidence/check-receipts-v3-20261025T013504Z.txt (2026-10-25 read-only re-run).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -413,7 +414,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xb82d68a566fac58fefe36d0c30638a84f00bb353499b65316d05c01f87057724">170156-1</a><span>safe <code>set_team</code>, co-signed</span></li>
   </ul>
   <div class="tot">
-    <div><b>79/79</b><span>V3 extrinsics in 8 runs (4 ERROR runs kept as history), all final ≤ #170291 on 2026-10-24</span></div>
+    <div><b>79/79</b><span>V3 extrinsics in 8 runs (4 ERROR runs kept as history), all final ≤ #170291 on <span style="white-space:nowrap">2026-10-24</span></span></div>
     <div><b>22/22</b><span>role drill steps, 20/20 state checks</span></div>
     <div><b>15/15</b><span>attestation drill steps, 6/6 checks</span></div>
     <div><b>16/16</b><span>role setup steps, 6/6 checks</span></div>
@@ -582,7 +583,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     tb.className = 'tb';
     tb.innerHTML = '<span class="name">BALLAST</span><span>' + s.dataset.title + '</span><span>' + pad(i + 1) + ' / ' + pad(N) + '</span>' +
       '<span class="grow"></span><span>Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span>' +
-      '<span><span class="ver">v0.0.1</span> · facts at build <span class="ver">0071879</span></span>';
+      '<span><span class="ver">v0.0.1</span> · facts at build <span class="ver">0071879</span> · cover re-run 2026-10-25</span>';
     s.appendChild(tb);
   });
   let cur = 0, overview = false;

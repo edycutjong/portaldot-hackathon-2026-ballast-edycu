@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ballast · pitch deck · Portaldot Hacker House 2026</title>
+<meta name="description" content="Ballast: a reserve-gated circuit breaker for a custodial test dollar on Portaldot. Week 2 check-in deck, facts at build 0071879.">
+<!--
+  Ballast pitch deck. Single file, 1920x1080 stage scaled to the window.
+  Keys: arrows / space / PageUp / PageDown, Home / End, 1-9 and 0 jump, Esc overview, P presenter notes, F fullscreen.
+  Print (Cmd+P, "Save as PDF", background graphics on) gives one slide per page; docs/pitch-deck.pdf is that print.
+  Every figure on these slides comes from docs/PROOF.md, docs/RECEIPTS.md, evidence/ or README.md at build 0071879.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Red+Hat+Text:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* design tokens: the same values as the icon and the README hero */
+:root {
+  --bg:      #0C2536;  /* night-harbour water under the hull — deep navy, max channel 0x36 so outside the #0B0E14 cluster */
+  --ink:     #F4F1E6;  /* marking white — the painted load line, stencil lettering */
+  --muted:   #9AB0BE;  /* salt-faded draft-mark grey-blue for secondary labels */
+  --before:  #3FD9B5;  /* state: level — reserves ≥ supply, asset live (the luminous reserve water) */
+  --after:   #FF5B2E;  /* state: tripped — reserves < supply, asset frozen (signal orange); fires only on Assets.AssetFrozen */
+  --rule:    #1E3D52;  /* faint hull-plate seams */
+  --hull:    #6F92A6;  /* hull steel — the Plimsoll ring, recessive so the water and the line lead */
+  --crest:   #B8FFEC;  /* the lit waterline riding the reserve water */
+  --deep:    #081B28;  /* the water below the hull */
+  --dead:    #3B5568;  /* the bar past a shut gate */
+  --prose:   #C9D6DE;  /* long-form text on the hull */
+  --font-display: "Stardos Stencil", Impact, sans-serif;  /* hull stencil, 700 caps — same face as the landing */
+  --font-body:    "Red Hat Text", "Helvetica Neue", Arial, sans-serif;
+  --font-data:    "Red Hat Mono", ui-monospace, Menlo, monospace;  /* blocks, hashes, balances, code identifiers */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); overflow: hidden;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: var(--font-body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+body.idle { cursor: none; }
+.viewport { position: fixed; inset: 0; }
+.stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 50% 50%; }
+a { color: inherit; text-decoration: none; border-bottom: 2px solid var(--hull); }
+a:hover, a:focus-visible { border-bottom-color: var(--crest); outline: none; }
+
+/* the hull: night water, faint plate seams */
+.slide { position: absolute; inset: 0; display: none; overflow: hidden; background-color: var(--bg);
+  background-image: radial-gradient(circle at 50% 50%, rgba(111,146,166,.30) 2px, transparent 2.8px),
+    linear-gradient(90deg, var(--rule) 2px, transparent 2px), linear-gradient(var(--rule) 2px, transparent 2px),
+    radial-gradient(90% 60% at 80% 110%, rgba(63,217,181,.09), transparent 60%);
+  background-size: 30px 360px, 480px 100%, 100% 360px, 100% 100%; background-position: 0 -54px, 168px 0, 0 -68px, 0 0;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.slide.active { display: block; }
+
+/* chrome injected per slide: the draft scale (left), the load line, the footer */
+.draft { position: absolute; left: 40px; top: 140px; width: 100px; height: 820px; z-index: 2; }
+.draft .water { position: absolute; left: 0; bottom: 0; width: 6px; background: var(--before); }
+.draft .water::before { content: ""; position: absolute; left: 0; top: 0; width: 6px; height: 4px; background: var(--crest); }
+.draft .mk { position: absolute; left: 22px; height: 40px; font: 700 30px/40px var(--font-display); color: var(--hull); letter-spacing: .02em; }
+.draft .mk.on { color: var(--crest); }
+.draft .mk.on::before { content: ""; position: absolute; left: -22px; top: 18px; width: 16px; height: 4px; background: var(--crest); }
+.ll { position: absolute; left: 200px; right: 120px; top: 292px; height: 4px; background: var(--ink); z-index: 1; }
+.ll::before { content: ""; position: absolute; left: -26px; top: -24px; width: 52px; height: 52px; border-radius: 50%;
+  border: 6px solid var(--hull); box-sizing: border-box; }
+.tb { position: absolute; left: 200px; right: 120px; bottom: 30px; display: flex; gap: 28px; align-items: baseline;
+  font: 500 17px/1 var(--font-body); color: var(--muted); letter-spacing: .02em; z-index: 2; }
+.tb .name { font: 700 22px/1 var(--font-display); color: var(--ink); letter-spacing: .06em; }
+.tb .grow { flex: 1; }
+.tb .ver { font-family: var(--font-data); font-size: 16px; }
+
+/* type */
+.hd { position: absolute; left: 200px; top: 104px; width: 1560px; z-index: 2; }
+.eb { font: 600 20px/1 var(--font-body); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+h2 { margin-top: 22px; white-space: nowrap; font: 700 88px/1 var(--font-display); text-transform: uppercase; letter-spacing: .01em; color: var(--ink); }
+.lede { font: 400 30px/1.4 var(--font-body); color: var(--ink); }
+.small { font: 400 20px/1.45 var(--font-body); color: var(--muted); }
+code, .mono { font-family: var(--font-data); font-weight: 500; }
+.lvl { color: var(--before); }
+.trip { color: var(--after); }
+h2 em, h1 em { font-style: normal; color: var(--after); text-shadow: 0 0 36px rgba(255,91,46,.3); }
+h2 em.lv { color: var(--crest); text-shadow: 0 0 30px rgba(184,255,236,.22); }
+.stencil { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.label { display: inline-block; padding: 6px 12px 5px; border: 2px solid var(--hull); font: 600 16px/1 var(--font-body);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- 1 cover ---------- */
+.s1 .title { position: absolute; left: 200px; top: 120px; width: 900px; z-index: 2; }
+.s1 h1 { margin-top: 30px; font: 700 92px/.95 var(--font-display); letter-spacing: .005em; text-transform: uppercase; color: var(--ink); text-wrap: balance; }
+.s1 .brand { margin-top: 34px; display: flex; align-items: center; gap: 20px; font: 500 28px/1.3 var(--font-body); color: var(--prose); max-width: 880px; }
+.s1 .brand svg { width: 64px; height: 64px; flex: none; filter: drop-shadow(0 0 22px rgba(63,217,181,.35)); }
+.s1 .brand b { font: 700 30px/1 var(--font-display); letter-spacing: .1em; color: var(--ink); margin-right: 4px; }
+.s1 .run { position: absolute; left: 200px; top: 690px; width: 900px; border: 2px solid var(--hull); background: var(--deep); z-index: 2; }
+.s1 .run .bar { padding: 10px 18px; border-bottom: 2px solid var(--rule); font: 500 15px/1 var(--font-data); color: var(--muted); }
+.s1 .run pre { margin: 0; padding: 14px 18px 16px; font: 400 19px/1.55 var(--font-data); color: var(--prose); white-space: pre-wrap; }
+.s1 .run .p { color: var(--before); } .s1 .run .c { color: var(--ink); }
+.s1 .proof { position: absolute; left: 200px; top: 924px; width: 900px; font: 400 21px/1.45 var(--font-body); color: var(--muted); }
+.s1 .proof .mono { color: var(--ink); font-size: 21px; }
+.s1 .gauge { position: absolute; left: 1060px; top: 150px; width: 780px; }
+
+/* ---------- 2 problem ---------- */
+.s2 .lede { position: absolute; left: 200px; top: 352px; width: 1440px; }
+.s2 .seq { position: absolute; left: 200px; top: 560px; width: 1600px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+.s2 .step { position: relative; padding: 30px 40px 0 0; border-top: 4px solid var(--hull); }
+.s2 .step.dead { border-top-color: var(--ink); }
+.s2 .step .n { font: 700 30px/1 var(--font-display); color: var(--hull); }
+.s2 .step .fig { margin-top: 16px; font: 500 64px/1 var(--font-data); color: var(--ink); }
+.s2 .step .fig.lvl { color: var(--before); }
+.s2 .step .what { margin-top: 18px; font: 400 25px/1.4 var(--font-body); color: var(--ink); max-width: 470px; }
+.s2 .foot { position: absolute; left: 200px; top: 900px; width: 1500px; }
+
+/* ---------- 3 what it does ---------- */
+.s3 .pair { position: absolute; left: 200px; top: 340px; width: 520px; }
+.s3 .pair figure { display: grid; grid-template-columns: 210px 1fr; gap: 26px; align-items: center; padding: 14px 0 22px; }
+.s3 .pair figure + figure { border-top: 2px solid var(--rule); padding-top: 26px; }
+.s3 .pair svg { width: 210px; height: auto; display: block; }
+.s3 .pair figcaption b { display: block; font: 700 40px/1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.s3 .pair figcaption span { display: block; margin-top: 10px; font: 400 21px/1.4 var(--font-body); color: var(--muted); }
+.s3 .roles { position: absolute; left: 800px; top: 340px; width: 1000px; border-collapse: collapse; }
+.s3 .roles th { text-align: left; padding: 0 18px 12px 0; font: 600 16px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--hull); }
+.s3 .roles td { vertical-align: top; padding: 20px 18px 20px 0; border-bottom: 2px solid var(--rule); font: 400 22px/1.4 var(--font-body); }
+.s3 .roles td:first-child { width: 170px; font: 700 30px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.s3 .roles td:nth-child(2) { width: 280px; }
+.s3 .roles td:nth-child(2) code { font-size: 21px; }
+.s3 .roles td:nth-child(2) span { display: block; color: var(--muted); font-size: 19px; margin-top: 4px; }
+.s3 .roles .freezer td:first-child { color: var(--ink); }
+.s3 .note { position: absolute; left: 800px; top: 912px; width: 1000px; }
+
+/* ---------- 4 the freeze on V3 (frozen slide) ---------- */
+.s4 .gauge { position: absolute; left: 150px; top: 336px; width: 760px; }
+.s4 .cap { position: absolute; left: 200px; top: 924px; width: 680px; font: 400 18px/1.4 var(--font-body); color: var(--muted); }
+.s4 .tl { position: absolute; left: 960px; top: 340px; width: 860px; list-style: none; }
+.s4 .tl li { position: relative; display: grid; grid-template-columns: 200px 1fr; gap: 22px; padding: 16px 0 18px; border-bottom: 2px solid var(--rule); }
+.s4 .tl .id { font: 500 24px/1.3 var(--font-data); color: var(--ink); }
+.s4 .tl .id small { display: block; margin-top: 4px; font: 500 15px/1.2 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.s4 .tl .ev { font: 400 22px/1.38 var(--font-body); color: var(--ink); }
+.s4 .tl .ev code { font-size: 20px; }
+.s4 .tl li.hot .id, .s4 .tl li.hot .out { color: var(--after); }
+.s4 .tl li.hot::before { content: ""; position: absolute; left: -26px; top: 18px; bottom: 18px; width: 6px; background: var(--after); }
+.s4 .remark { display: block; margin-top: 10px; padding: 12px 16px; background: var(--rule); font: 500 17px/1.45 var(--font-data); color: var(--crest); word-break: break-all; }
+
+/* ---------- 5 the drill, gate by gate ---------- */
+.s5 .term { position: absolute; left: 200px; top: 336px; width: 1080px; border: 2px solid var(--hull); background: var(--bg); }
+.s5 .term .bar { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 2px solid var(--hull); background: var(--rule);
+  font: 500 15px/1 var(--font-data); color: var(--muted); }
+.s5 .term .bar i { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--hull); display: inline-block; }
+.s5 .term .bar span { margin-left: 10px; }
+.s5 .term .log { padding: 16px 22px 18px; font: 400 17px/1.5 var(--font-data); color: var(--ink); }
+.s5 .term .log div { white-space: pre-wrap; }
+.s5 .term .log .c { padding-left: 2ch; text-indent: -2ch; }
+.s5 .term .log .r { padding-left: 4ch; text-indent: -2ch; }
+.s5 .term .log .ok { color: var(--before); }
+.s5 .term .log .no { color: var(--muted); }
+.s5 .term .log .tr { color: var(--after); }
+.s5 .term .log .cmd { color: var(--muted); }
+.s5 .rx { position: absolute; left: 1340px; top: 336px; width: 480px; list-style: none; }
+.s5 .rx li { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 13px 0; border-bottom: 2px solid var(--rule); font: 400 20px/1.3 var(--font-body); }
+.s5 .rx li .mono { font-size: 20px; }
+.s5 .rx .h { display: block; padding-bottom: 12px; border-bottom: 2px solid var(--hull); font: 600 16px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.s5 .tot { position: absolute; left: 200px; top: 892px; width: 1620px; display: flex; gap: 52px; align-items: baseline; }
+.s5 .tot div b { display: block; font: 500 40px/1 var(--font-data); color: var(--ink); }
+.s5 .tot div span { display: block; margin-top: 8px; font: 400 18px/1.3 var(--font-body); color: var(--muted); }
+
+/* ---------- 6 architecture ---------- */
+.s6 .band { position: absolute; left: 200px; width: 1620px; }
+.s6 .band > .eb { position: absolute; left: 0; top: 0; font-size: 17px; }
+.s6 .box { position: absolute; padding: 12px 16px 12px; border: 2px solid var(--hull); background: var(--bg); }
+.s6 .box b { display: block; font: 600 22px/1.2 var(--font-body); color: var(--ink); }
+.s6 .box span { display: block; margin-top: 5px; font: 400 18px/1.3 var(--font-body); color: var(--muted); }
+.s6 .box code { font-size: 17px; color: var(--ink); }
+.s6 .box.asset { border-color: var(--ink); border-width: 3px; }
+.s6 .box.watch { border-left: 8px solid var(--ink); }
+.s6 .box.off { border-style: dashed; }
+.s6 .wire { position: absolute; width: 0; border-left: 3px solid var(--hull); }
+.s6 .wire.dash { border-left-style: dashed; }
+.s6 .wire em { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 500 17px/1.2 var(--font-data); font-style: normal; color: var(--muted); }
+.s6 .legend { position: absolute; right: 0; top: 0; font: 400 17px/1 var(--font-body); color: var(--muted); }
+.s6 .sea { position: absolute; left: 200px; width: 1620px; top: 836px; height: 0; border-top: 3px dashed var(--hull); }
+.s6 .sea span { position: absolute; right: 0; top: -30px; font: 500 15px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- 7 why it's new ---------- */
+.s7 table { position: absolute; left: 200px; top: 338px; width: 1620px; border-collapse: collapse; }
+.s7 th { text-align: left; padding: 0 26px 14px 0; font: 600 16px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--hull); }
+.s7 td { vertical-align: top; padding: 17px 26px 17px 0; border-bottom: 2px solid var(--rule); font: 400 23px/1.4 var(--font-body); }
+.s7 td:first-child { width: 380px; font: 700 30px/1.15 var(--font-display); text-transform: uppercase; letter-spacing: .02em; }
+.s7 td:nth-child(2) { width: 470px; color: var(--muted); }
+.s7 td:nth-child(3) code { font-size: 21px; }
+.s7 .foot { position: absolute; left: 200px; top: 916px; width: 1600px; }
+
+/* ---------- 8 ecosystem fit ---------- */
+.s8 .mods { position: absolute; left: 200px; top: 338px; width: 1080px; list-style: none; }
+.s8 .mods li { display: grid; grid-template-columns: 210px 1fr; gap: 26px; padding: 17px 0; border-bottom: 2px solid var(--rule); }
+.s8 .mods li b { font: 700 34px/1.05 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.s8 .mods li div { font: 400 21px/1.42 var(--font-body); }
+.s8 .mods li div code { font-size: 19px; }
+.s8 .mods li div span { display: block; color: var(--muted); margin-top: 4px; }
+.s8 .pin { position: absolute; left: 1360px; top: 338px; width: 460px; }
+.s8 .pin .label { margin-bottom: 18px; }
+.s8 .pin dl { font: 400 21px/1.4 var(--font-body); }
+.s8 .pin dt { margin-top: 18px; font: 600 15px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.s8 .pin dd { margin-top: 6px; }
+.s8 .pin dd .mono { font-size: 20px; }
+
+/* ---------- 9 users and model ---------- */
+.s9 .who { position: absolute; left: 200px; top: 340px; width: 1620px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+.s9 .who p { font: 400 28px/1.42 var(--font-body); }
+.s9 .who p b { font-weight: 600; }
+.s9 .path { position: absolute; left: 200px; top: 540px; width: 1620px; height: 280px; }
+.s9 .path > .eb { position: absolute; left: 0; top: 0; font-size: 17px; }
+.s9 .track { position: absolute; left: 0; right: 0; top: 74px; height: 4px; background: var(--hull); }
+.s9 .track::before { content: ""; position: absolute; left: 0; top: 0; width: 560px; height: 4px; background: var(--before); }
+.s9 .st { position: absolute; top: 48px; width: 500px; }
+.s9 .st .n { display: block; width: 56px; height: 56px; border-radius: 50%; border: 4px solid var(--hull); background: var(--bg);
+  font: 700 30px/48px var(--font-display); text-align: center; color: var(--hull); }
+.s9 .st.now .n { border-color: var(--before); color: var(--before); }
+.s9 .st b { display: block; margin-top: 22px; font: 700 34px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.s9 .st .t { display: block; margin-top: 10px; font: 400 23px/1.4 var(--font-body); color: var(--muted); max-width: 480px; }
+.s9 .honest { position: absolute; left: 200px; top: 856px; width: 1620px; padding-top: 18px; border-top: 4px solid var(--hull); font: 400 24px/1.42 var(--font-body); }
+.s9 .honest b { font-weight: 600; }
+
+/* ---------- 10 status + links ---------- */
+.s10 .cols { position: absolute; left: 200px; top: 338px; width: 1100px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+.s10 .cols h3 { font: 700 32px/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; padding-bottom: 12px; border-bottom: 4px solid var(--before); }
+.s10 .cols .open h3 { border-bottom: 4px dashed var(--hull); }
+.s10 .cols ul { list-style: none; }
+.s10 .cols li { padding: 12px 0; border-bottom: 2px solid var(--rule); font: 400 20px/1.38 var(--font-body); }
+.s10 .cols li .mono { font-size: 19px; }
+.s10 .ai { position: absolute; left: 200px; top: 880px; width: 1100px; font: 400 18px/1.45 var(--font-body); color: var(--muted); }
+.s10 .links { position: absolute; left: 1380px; top: 338px; width: 440px; }
+.s10 .qr { width: 260px; height: 260px; padding: 18px; background: var(--ink); }
+.s10 .qr svg { width: 100%; height: 100%; display: block; }
+.s10 .links .small { margin-top: 10px; }
+.s10 .links ul { list-style: none; margin-top: 18px; }
+.s10 .links li { padding: 9px 0; border-bottom: 2px solid var(--rule); font: 400 19px/1.35 var(--font-body); }
+.s10 .links li b { display: block; font: 600 14px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.s10 .links li .mono { font-size: 17px; }
+
+/* overview (Esc) */
+body.overview .slide { display: block; cursor: pointer; transform-origin: 0 0; }
+body.overview .slide .speaker-notes { display: none !important; }
+
+/* presenter notes (P) */
+.speaker-notes { display: none; }
+body.presenter .slide.active .speaker-notes { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 216px;
+  background: var(--rule); color: var(--ink); border-top: 4px solid var(--before); padding: 26px 200px;
+  font: 400 26px/1.45 var(--font-body); z-index: 6; }
+
+/* Press C to toggle contrast debug mode */
+body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, p, td, th, li, pre, span, code, b) {
+  outline: 1px dashed var(--after); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .slide.active .gate { animation: shut .5s cubic-bezier(.2, .9, .3, 1.2) .5s both; transform-box: fill-box; transform-origin: 50% 0; }
+  @keyframes shut { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+}
+
+/* print: one slide per page, final state, no chrome */
+@page { size: 20in 11.25in; margin: 0; }
+@media print {
+  html, body { height: auto; overflow: visible; background: var(--bg); }
+  .viewport { position: static; overflow: visible; }
+  .stage { position: static; transform: none !important; width: 1920px; height: auto; }
+  .slide { position: relative; display: block !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always;
+    break-inside: avoid; page-break-inside: avoid; transform: none !important; }
+  .speaker-notes { display: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="viewport">
+<div class="stage">
+
+<!-- 1 · COVER: the frozen moment (design.md §2), the tripped load-line gauge (§5) -->
+<section class="slide s1" data-title="Cover" data-noline>
+  <div class="title">
+    <span class="label">Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span>
+    <h1>When the vault runs short, the test dollar <em>stops moving.</em></h1>
+    <p class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><clipPath id="bl-c"><circle cx="226" cy="256" r="156"/></clipPath></defs><rect x="8" y="8" width="496" height="496" rx="104" fill="#0C2536"/><rect x="40" y="318" width="380" height="200" fill="#3FD9B5" clip-path="url(#bl-c)"/><rect x="40" y="318" width="380" height="8" fill="#B8FFEC" clip-path="url(#bl-c)"/><circle cx="226" cy="256" r="156" fill="none" stroke="#6F92A6" stroke-width="40"/><rect x="36" y="236" width="316" height="40" fill="#F4F1E6"/><rect x="398" y="236" width="80" height="40" fill="#3E5A6C"/><rect x="354" y="150" width="40" height="212" rx="6" fill="#FF5B2E"/></svg><span><b>BALLAST</b> a reserve-gated circuit breaker for a custodial test dollar on Portaldot.</span></p>
+  </div>
+  <div class="run"><div class="bar">re-run read-only 2026-10-25 · evidence/check-receipts-v3-20261025T013504Z.txt</div>
+<pre><span class="p">$</span> <span class="c">python scripts/check_receipts.py --profile v3</span>
+[v3] 79/79 receipts confirmed from 8 run(s)
+[v3] all confirmed rows at or below the finalized head #182414</pre></div>
+  <p class="proof">On the Portaldot V3 testnet, 2026-10-24: watcher W2 froze asset 4401 in extrinsic
+    <a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a>. Reserve: local anvil chain, NOT Sepolia. Deck 2026-10-25 · <span class="mono">v0.0.1</span></p>
+  <svg class="gauge" viewBox="0 0 900 760" role="img" aria-label="Ballast — the load-line gauge tripped: reserves sunk below the supply line, the gate shut, block 170,112">
+    <defs><clipPath id="c1"><circle cx="340" cy="380" r="250"/></clipPath></defs>
+    <rect x="60" y="476" width="600" height="420" fill="var(--before)" clip-path="url(#c1)"/>
+    <rect x="60" y="476" width="600" height="10" fill="var(--crest)" clip-path="url(#c1)"/>
+    <circle cx="340" cy="380" r="250" fill="none" stroke="var(--hull)" stroke-width="56"/>
+    <rect x="40" y="354" width="492" height="52" fill="var(--ink)"/>
+    <rect x="602" y="354" width="290" height="52" fill="var(--hull)" opacity=".45"/>
+    <rect class="gate" x="540" y="214" width="56" height="332" rx="8" fill="var(--after)"/>
+    <text x="616" y="320" font-family="Stardos Stencil, Impact, sans-serif" font-weight="700" font-size="58" fill="var(--ink)">#170,112</text>
+    <text x="618" y="458" font-family="Red Hat Mono, Menlo, monospace" font-size="22" font-weight="500" fill="var(--muted)">Assets.AssetFrozen</text>
+  </svg>
+  <aside class="speaker-notes">Ballast is a circuit breaker for a custodial test dollar. When the vault's reserves fall below what has been minted, a watcher freezes the asset on Portaldot. This drawing is a real moment: block 170,112 on the V3 testnet, on October 24.</aside>
+</section>
+
+<!-- 2 · PROBLEM -->
+<section class="slide s2" data-title="Problem">
+  <div class="hd"><span class="eb">The problem</span><h2>Reserves drain. Nobody sees.</h2></div>
+  <p class="lede">As far as we found, Portaldot has no stable unit of account. The realistic first step is a custodial wrapped dollar, and when its reserves drain, every holder keeps trading an IOU that is already worth less than its face value.</p>
+  <div class="seq">
+    <div class="step"><span class="n">01</span><div class="fig lvl">104.00</div><p class="what">in supply: 54.00 pUSDC-test (asset 4401) + 50.00 control asset (4402), matched 1:1 by test tokens in the vault.</p></div>
+    <div class="step"><span class="n">02</span><div class="fig">−31.20</div><p class="what">The custodian calls <code>release()</code>: 30% of the reserve leaves the vault.</p></div>
+    <div class="step dead"><span class="n">03</span><div class="fig">72.80</div><p class="what">Reserves left. Supply still says 104.00 unless something on Portaldot acts.</p></div>
+  </div>
+  <p class="foot small">Figures from Ballast's own V3 drill (<code>evidence/roles-drill-v3-20261024T045513Z.json</code>; reserve on a local anvil chain, NOT Sepolia). The person it protects: a dApp builder deciding whether checkout may accept pUSDC-test.</p>
+  <aside class="speaker-notes">A wrapped dollar is custodial: someone holds the real dollars. If they drain the vault, nothing on the token side notices. Holders keep paying each other in a token that is no longer fully backed. That gap between steps two and three is what Ballast closes.</aside>
+</section>
+
+<!-- 3 · WHAT IT DOES -->
+<section class="slide s3" data-title="What it does">
+  <div class="hd"><span class="eb">What it does</span><h2>Four roles, three multisigs</h2></div>
+  <div class="pair">
+    <figure>
+      <svg viewBox="0 0 520 420" role="img" aria-label="Level: reserves at the load line, asset live">
+        <defs><clipPath id="c3a"><circle cx="230" cy="210" r="168"/></clipPath></defs>
+        <rect x="40" y="238" width="400" height="200" fill="var(--before)" clip-path="url(#c3a)"/>
+        <rect x="40" y="238" width="400" height="8" fill="var(--crest)" clip-path="url(#c3a)"/>
+        <circle cx="230" cy="210" r="168" fill="none" stroke="var(--hull)" stroke-width="40"/>
+        <rect x="30" y="190" width="460" height="44" fill="var(--ink)"/>
+      </svg>
+      <figcaption><b class="lvl">Level</b><span>reserves ≥ supply · asset Live · transfers work</span></figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 520 420" role="img" aria-label="Tripped: reserves below the load line, gate shut, asset frozen">
+        <defs><clipPath id="c3b"><circle cx="230" cy="210" r="168"/></clipPath></defs>
+        <rect x="40" y="300" width="400" height="200" fill="var(--before)" clip-path="url(#c3b)"/>
+        <rect x="40" y="300" width="400" height="8" fill="var(--crest)" clip-path="url(#c3b)"/>
+        <circle cx="230" cy="210" r="168" fill="none" stroke="var(--hull)" stroke-width="40"/>
+        <rect x="30" y="190" width="346" height="44" fill="var(--ink)"/>
+        <rect x="420" y="190" width="90" height="44" fill="var(--hull)" opacity=".45"/>
+        <rect class="gate" x="378" y="100" width="40" height="224" rx="6" fill="var(--after)"/>
+      </svg>
+      <figcaption><b class="trip">Tripped</b><span>reserves &lt; supply · asset Frozen · <code>Assets.transfer</code> refused</span></figcaption>
+    </figure>
+  </div>
+  <table class="roles">
+    <thead><tr><th>Role</th><th>Held by</th><th>What it may do</th></tr></thead>
+    <tbody>
+      <tr class="freezer"><td>Freezer</td><td><code>M_watch</code> 1-of-2<span>watchers W1, W2</span></td><td>Any one watcher freezes the asset when reserves &lt; supply. Its thaw attempts fail with <code>Assets.NoPermission</code>.</td></tr>
+      <tr><td>Issuer</td><td><code>M_mint</code> 2-of-2<span>operator A, reserve bot B</span></td><td>The bot co-signs a mint only if <em>finalized</em> reserves cover supply plus the amount, and never while frozen.</td></tr>
+      <tr><td>Admin</td><td><code>M_admin</code> 2-of-3<span>A, A2, B</span></td><td>The bot co-signs a thaw only after finality passes the drain block and reserves cover supply again.</td></tr>
+      <tr><td>Record</td><td>bot B<span>remarks + EVM mirror</span></td><td><code>BALLAST/1</code> attestations on chain, mirrored into <code>ReserveOracle</code>; <code>ballast verify</code> re-reads both chains.</td></tr>
+    </tbody>
+  </table>
+  <p class="note small">Roles are set with <code>Assets.set_team</code>; the reserve check itself runs off chain, in the bot and the watchers.</p>
+  <aside class="speaker-notes">Three multisigs hold the asset's three roles. Watchers hold only the freezer role, and their thaw attempt fails. Minting needs the reserve bot's signature, and the bot checks finalized reserves first. The bot co-signs a thaw only after finality has passed the drain, though A and A2 together could still thaw without it. The bot also writes a public record.</aside>
+</section>
+
+<!-- 4 · THE FREEZE ON V3: the frozen slide -->
+<section class="slide s4" data-title="The freeze on V3">
+  <div class="hd"><span class="eb">Live proof · Portaldot V3 testnet · 2026-10-24</span><h2>Reserves sank. <em>Asset froze.</em></h2></div>
+  <svg class="gauge" viewBox="0 0 900 640" role="img" aria-label="The V3 drill on the gauge: supply 104.00 on the load line, reserves 72.80, shortfall 31.20, gate shut at block 170,112">
+    <defs><clipPath id="c4"><circle cx="330" cy="320" r="236"/></clipPath></defs>
+    <rect x="60" y="420" width="560" height="320" fill="var(--before)" clip-path="url(#c4)"/>
+    <rect x="60" y="420" width="560" height="10" fill="var(--crest)" clip-path="url(#c4)"/>
+    <circle cx="330" cy="320" r="236" fill="none" stroke="var(--hull)" stroke-width="52"/>
+    <rect x="40" y="296" width="478" height="50" fill="var(--ink)"/>
+    <rect x="586" y="296" width="300" height="50" fill="var(--hull)" opacity=".45"/>
+    <rect class="gate" x="526" y="160" width="52" height="320" rx="8" fill="var(--after)"/>
+    <text x="318" y="280" text-anchor="middle" font-family="Stardos Stencil, Impact, sans-serif" font-weight="700" font-size="30" fill="var(--ink)">SUPPLY 104.00</text>
+    <text x="318" y="398" text-anchor="middle" font-family="Stardos Stencil, Impact, sans-serif" font-weight="700" font-size="24" fill="var(--ink)">SHORTFALL 31.20</text>
+    <text x="318" y="470" text-anchor="middle" font-family="Stardos Stencil, Impact, sans-serif" font-weight="700" font-size="28" fill="var(--bg)">RESERVES 72.80</text>
+    <text x="600" y="266" font-family="Stardos Stencil, Impact, sans-serif" font-weight="700" font-size="52" fill="var(--ink)">#170,112</text>
+    <text x="602" y="398" font-family="Red Hat Mono, Menlo, monospace" font-size="20" font-weight="500" fill="var(--muted)">Assets.AssetFrozen</text>
+  </svg>
+  <p class="cap">Drain to freeze included: 12.22 s (wall clock, one machine). Gauge = the freeze remark: s=104000000 (supply of asset 4401 + control asset 4402), r=72800000, 6 decimals. Reserve: local anvil chain, NOT Sepolia.</p>
+  <ol class="tl">
+    <li><span class="id">anvil #1622<small>reserve chain</small></span><span class="ev">Custodian drains 30% (31.20) with <code>release()</code>.</span></li>
+    <li class="hot"><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a><small>V3 · watcher W2</small></span><span class="ev"><code>M_watch</code> freezes asset 4401 <span class="out">(<code>Assets.freeze_asset</code>, Ok)</span>. The reason rides in the same extrinsic:
+      <span class="remark">BALLAST/1|freeze|a=4401|reason=deficit|s=104000000|r=72800000|p=anvil|eb=1622|eh=0x3987686a…</span></span></li>
+    <li class="hot"><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe6ca737bce559f4a85450656e1d6ef9e315526bb3258202fd7d28c9107f21bb2">170114-1</a><small>V3 · a holder</small></span><span class="ev"><code>Assets.transfer</code> 1.00 → <code class="out">Err(Assets.AssetNotLive)</code></span></li>
+    <li><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">170115-1</a><small>V3 · watcher W1</small></span><span class="ev">A watcher tries <code>thaw_asset</code> → <code>Err(Assets.NoPermission)</code>: the freezer cannot undo its own freeze.</span></li>
+  </ol>
+  <aside class="speaker-notes">This is the moment. The custodian pulled 31.20 out of the 104.00 in the vault. Watcher W2 saw the deficit and froze asset 4401 on V3, and wrote why into the same extrinsic. Two blocks later a holder's transfer was refused by the runtime, and the other watcher could not thaw it.</aside>
+</section>
+
+<!-- 5 · THE WHOLE DRILL, GATE BY GATE -->
+<section class="slide s5" data-title="Gate by gate">
+  <div class="hd"><span class="eb">Live proof · the full role drill on V3</span><h2>Every gate, <em class="lv">signed</em> or <em>refused</em></h2></div>
+  <div class="term">
+    <div class="bar"><i></i><i></i><i></i><span>evidence/roles-drill-v3-20261024T045513Z.json · bot B decisions (… = cut) · reserve: local anvil, NOT Sepolia</span></div>
+<div class="log">
+<div class="c"><span class="cmd">$ ballast bot cosign-mint 1.00 …</span>  <span class="ok">signed</span></div>
+<div class="r">finalized reserves 104000000 (latest 104000000) &gt;= S1 53000000 + S2 50000000 + amount 1000000 = 104000000</div>
+<div class="c"><span class="cmd">$ ballast bot cosign-mint 0.01 …</span>  <span class="no">refused</span></div>
+<div class="r">over-mint: finalized reserves 104000000 &lt; S1 54000000 + S2 50000000 + amount 10000 = 104010000</div>
+<div class="c"><span class="cmd">$ ballast bot cosign-mint 0.01 …</span>  <span class="no">refused</span>   <span class="tr">(asset frozen)</span></div>
+<div class="r">I7: the breaker asset is frozen — no mint over a tripped breaker</div>
+<div class="c"><span class="cmd">$ ballast bot cosign-thaw</span>  <span class="no">refused</span></div>
+<div class="r">finalized block #1559 is older than the deficit block #1622: finality has not reached the drain yet</div>
+<div class="c"><span class="cmd">$ ballast bot cosign-thaw</span>  <span class="ok">signed</span></div>
+<div class="r">finalized reserves 104000000 … &gt;= S1 54000000 + S2 50000000 = 104000000, finalized block #1624 past the freeze</div>
+<div class="c"><span class="cmd">$ ballast bot cosign-team …</span>  <span class="no">refused</span>   the freezer would change …</div>
+<div class="c"><span class="cmd">$ ballast bot cosign-team …</span>  <span class="no">refused</span>   admin must stay M_admin … another admin could thaw without the bot …</div>
+</div>
+  </div>
+  <ul class="rx">
+    <li><span class="h" style="grid-column: 1 / -1">On chain, V3 testnet</span></li>
+    <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xfb7fb01bf22f668170ba5ff05be91e6f22c5b3e4edc87773dc5b0bfc69087408">170098-1</a><span>mint 1.00 executes</span></li>
+    <li><a class="mono trip" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a><span>freeze, asset Frozen</span></li>
+    <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe6ca737bce559f4a85450656e1d6ef9e315526bb3258202fd7d28c9107f21bb2">170114-1</a><span>transfer refused: <code>AssetNotLive</code></span></li>
+    <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">170115-1</a><span>watcher thaw refused: <code>NoPermission</code></span></li>
+    <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xaa1fae018db52208466a9f4abf26890b3130cae019428438a551289da040110b">170133-1</a><span>gated thaw, asset Live</span></li>
+    <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc78172b6a6dbbd6ea7483b3315587d24b390b0958247c04ed092018fed3d6000">170134-1</a><span>transfer 1.00 Ok</span></li>
+    <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xb82d68a566fac58fefe36d0c30638a84f00bb353499b65316d05c01f87057724">170156-1</a><span>safe <code>set_team</code>, co-signed</span></li>
+  </ul>
+  <div class="tot">
+    <div><b>79/79</b><span>V3 extrinsics in 8 runs (4 ERROR runs kept as history), all final ≤ #170291</span></div>
+    <div><b>22/22</b><span>role drill steps, 20/20 state checks</span></div>
+    <div><b>15/15</b><span>attestation drill steps, 6/6 checks</span></div>
+    <div><b>16/16</b><span>role setup steps, 6/6 checks</span></div>
+  </div>
+  <aside class="speaker-notes">On the left is the reserve bot's own decision log from the V3 run: it signs only what the reserves cover and refuses the rest, with the numbers. On the right are the extrinsics; every one opens in Portaldot's node console. All 79 V3 extrinsics re-query as final.</aside>
+</section>
+
+<!-- 6 · ARCHITECTURE (redrawn from docs/architecture.mmd) -->
+<section class="slide s6" data-title="Architecture">
+  <div class="hd"><span class="eb">Architecture</span><h2>The runtime enforces the roles</h2></div>
+  <div class="band" style="top: 330px; height: 290px">
+    <span class="eb">Portaldot V3 runtime · enforcement</span>
+    <span class="legend">solid: Portaldot V3 runtime · dashed: off-chain processes · bottom: the reserve chain</span>
+    <div class="box asset" style="left: 0; top: 30px; width: 880px; height: 84px"><b>Assets · asset 4401 pUSDC-test (+ control asset 4402, keyless roles)</b><span>owner = issuer = <code>M_mint</code> · admin = <code>M_admin</code> · freezer = <code>M_watch</code></span></div>
+    <div class="box" style="left: 910px; top: 30px; width: 390px; height: 84px"><b>System remarks</b><span><code>BALLAST/1</code> attest · heartbeat · freeze</span></div>
+    <div class="box" style="left: 1330px; top: 30px; width: 290px; height: 190px"><b>Revive · ReserveOracle</b><span><code>post()</code> attester only · <code>status()</code> · <code>isBacked(maxAge)</code> for EVM dApps</span><span><code>0x4832…155e</code></span></div>
+    <div class="wire" style="left: 150px; top: 114px; height: 50px"><em>freeze_asset</em></div>
+    <div class="wire" style="left: 480px; top: 114px; height: 50px"><em>mint · set_team</em></div>
+    <div class="wire" style="left: 810px; top: 114px; height: 50px"><em>thaw_asset</em></div>
+    <div class="box watch" style="left: 0; top: 164px; width: 300px; height: 92px"><b>M_watch · 1-of-2</b><span><code>as_multi_threshold_1</code></span></div>
+    <div class="box" style="left: 340px; top: 164px; width: 300px; height: 92px"><b>M_mint · 2-of-2</b><span>A, B · <code>as_multi</code></span></div>
+    <div class="box" style="left: 680px; top: 164px; width: 300px; height: 92px"><b>M_admin · 2-of-3</b><span>A, A2, B · <code>as_multi</code></span></div>
+  </div>
+  <div class="band" style="top: 620px; height: 210px">
+    <div class="wire" style="left: 150px; top: -34px; height: 90px"><em>batch_all[remark, freeze]</em></div>
+    <div class="wire" style="left: 480px; top: -34px; height: 90px"><em>A: first approval</em></div>
+    <div class="wire" style="left: 810px; top: -34px; height: 90px"><em>B: final, if the gate passes</em></div>
+    <div class="wire" style="left: 1155px; top: -176px; height: 232px"><em style="top: 72%">attest · heartbeat</em></div>
+    <div class="wire dash" style="left: 1475px; top: -70px; height: 126px"><em style="top: 55%">reads</em></div>
+    <div class="box off" style="left: 0; top: 56px; width: 300px; height: 112px"><b>watchdog</b><span>keys W1, W2 · freeze only · reads latest on each provider</span></div>
+    <div class="box off" style="left: 340px; top: 56px; width: 300px; height: 112px"><b>operator</b><span>keys A, A2 · proposes mint, thaw, team</span></div>
+    <div class="box off" style="left: 680px; top: 56px; width: 300px; height: 112px"><b>reserve bot</b><span>key B · co-signs mint, thaw, set_team · SQLite decision log</span></div>
+    <div class="box off" style="left: 1010px; top: 56px; width: 290px; height: 112px"><b>attester</b><span>key B · remark, then <code>post()</code> to the oracle</span></div>
+    <div class="box off" style="left: 1330px; top: 56px; width: 290px; height: 112px"><b>ballast verify</b><span>re-reads both chains; rejects wrong signers</span></div>
+  </div>
+  <div class="band" style="top: 870px; height: 100px">
+    <div class="wire" style="left: 150px; top: -82px; height: 82px"><em>balanceOf @ latest, each provider</em></div>
+    <div class="wire" style="left: 810px; top: -82px; height: 82px"><em>@ finalized and latest</em></div>
+    <div class="wire" style="left: 1155px; top: -82px; height: 82px"><em>@ finalized</em></div>
+    <div class="wire dash" style="left: 1475px; top: -82px; height: 82px"><em>@ block hash</em></div>
+    <div class="box" style="left: 0; top: 0; width: 1620px; height: 84px"><b>Reserve chain · ReserveVault.sol + ERC-20 reserve token</b><span><code>reserves()</code> · <code>release()</code> owner-only · in these drills: a local anvil chain, NOT Sepolia · target: Sepolia with Circle test USDC</span></div>
+  </div>
+  <aside class="speaker-notes">The Portaldot runtime enforces the asset's roles and the multisig thresholds; remarks and a read-only oracle on Revive carry the record. The reserve checks run in off-chain processes: the watchers, the reserve bot and the attester. The reserve vault sits on an EVM chain; in these drills that is a local anvil chain, with Sepolia as the target.</aside>
+</section>
+
+<!-- 7 · WHY IT'S NEW -->
+<section class="slide s7" data-title="Why it's new">
+  <div class="hd"><span class="eb">Why it's new</span><h2>The stop lives <em>in the asset</em></h2></div>
+  <table>
+    <thead><tr><th>Question</th><th>A reserve number alone (framing, not measured)</th><th>Ballast, measured on V3</th></tr></thead>
+    <tbody>
+      <tr><td>Who stops transfers?</td><td>each dApp that chose to read it</td><td>the runtime refuses <code>Assets.transfer</code> → <code class="trip">AssetNotLive</code> (<a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe6ca737bce559f4a85450656e1d6ef9e315526bb3258202fd7d28c9107f21bb2">170114-1</a>; other transfer paths not drilled)</td></tr>
+      <tr><td>Can the stopper restart it?</td><td>the number carries no role on the asset</td><td>no: a watcher's thaw → <code>NoPermission</code> (<a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">170115-1</a>)</td></tr>
+      <tr><td>When can it restart?</td><td>whenever a consumer decides</td><td>the bot co-signs a thaw only once finalized reserves pass the drain: refused at anvil #1559 &lt; #1622, co-signed in <a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xaa1fae018db52208466a9f4abf26890b3130cae019428438a551289da040110b">170133-1</a>. A and A2 together could still thaw without it.</td></tr>
+      <tr><td>Can someone fake the record?</td><td>depends on who signs the feed</td><td>a forged remark from another key (<a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x515f1c6dcf46d0b648cd49e2b2f76261b577f8b0c1d14b1e9afd5ecfecab5fca">170253-1</a>) → <code>ballast verify</code> REJECTED; 4/4 bot attestations PASS</td></tr>
+    </tbody>
+  </table>
+  <p class="foot small">Built from pallet-native modules (Assets roles, Multisig, System remarks) with no contract code in the enforcement path. The one contract, <code>ReserveOracle</code>, is a read-only mirror: it cannot freeze or thaw anything.</p>
+  <aside class="speaker-notes">A reserve number alone tells you something is wrong and leaves each app to act on it. Ballast puts the stop in the asset's own roles, so the runtime refuses the frozen asset's transfers, the freezer cannot undo it, and the bot will not co-sign a thaw before finality passes the drain. The record is checkable, and a forged one is rejected.</aside>
+</section>
+
+<!-- 8 · ECOSYSTEM FIT -->
+<section class="slide s8" data-title="Ecosystem fit">
+  <div class="hd"><span class="eb">Ecosystem fit</span><h2>Portaldot's own modules</h2></div>
+  <ul class="mods">
+    <li><b>Assets</b><div><code>create</code> · <code>set_metadata</code> · <code>set_team</code> · <code>mint</code> · <code>freeze_asset</code> · <code>thaw_asset</code> · <code>transfer</code><span>breaker asset 4401 and control asset 4402 on V3</span></div></li>
+    <li><b>Multisig</b><div><code>as_multi</code> · <code>as_multi_threshold_1</code> · <code>cancel_as_multi</code><span>three role multisigs: 2-of-2, 2-of-3, 1-of-2</span></div></li>
+    <li><b>Utility</b><div><code>batch_all</code><span>the freeze and its reason remark land as one extrinsic</span></div></li>
+    <li><b>System</b><div><code>remark_with_event</code><span><code>BALLAST/1</code> attestations, heartbeats, freeze reasons</span></div></li>
+    <li><b>Revive</b><div><code>instantiate_with_code</code> · <code>call</code><span><code>ReserveOracle</code> on V3 (deployed in 169960-1) exposes <code>isBacked(maxAge)</code> to EVM dApps; called on the stand-in, not yet on V3</span></div></li>
+  </ul>
+  <div class="pin">
+    <span class="label">Pinned to the live chain</span>
+    <dl>
+      <dt>Genesis</dt><dd><span class="mono">0xd4f9acbc…5283bd</span></dd>
+      <dt>Runtime</dt><dd><span class="mono">portaldot-v3 / 3002</span></dd>
+      <dt>Blocks</dt><dd><span class="mono">6000 ms</span></dd>
+      <dt>Open source</dt><dd>MIT · one CLI, <code>ballast</code> · 274 tests (239 pytest, 20 Foundry, 15 Hardhat)</dd>
+    </dl>
+  </div>
+  <aside class="speaker-notes">The role split and the thresholds come from Portaldot modules: Assets roles, Multisig, batched remarks, and Revive for the EVM-readable oracle; the reserve checks run in the off-chain bot and watchers. The chain profile is pinned to V3's genesis and runtime, so the tools refuse to run against the wrong chain.</aside>
+</section>
+
+<!-- 9 · USERS AND MODEL -->
+<section class="slide s9" data-title="Users and model">
+  <div class="hd"><span class="eb">Users and model</span><h2>Who needs a load line</h2></div>
+  <div class="who">
+    <p><b>The first issuer of a dollar on Portaldot</b>, who needs a safety layer it can show, and that the ecosystem can require of any issuer.</p>
+    <p><b>The dApp builder</b> deciding whether checkout may accept that dollar, who must tell users why it is safe.</p>
+  </div>
+  <div class="path">
+    <span class="eb">Path · steps 2 and 3 are plans</span>
+    <div class="track"></div>
+    <div class="st now" style="left: 0"><span class="n">1</span><b>Testnet, today</b><span class="t">V3 drills pass; one person holds every key; reserve on local anvil.</span></div>
+    <div class="st" style="left: 560px"><span class="n">2</span><b>Sepolia reserve</b><span class="t"><code>ReserveVault</code> with 100.00 test USDC; a watcher on separate infrastructure.</span></div>
+    <div class="st" style="left: 1120px"><span class="n">3</span><b>A real issuer</b><span class="t">watcher and attester keys held by parties other than the issuer; community-watcher mode.</span></div>
+  </div>
+  <p class="honest"><b>Funding (plan):</b> an ecosystem grant to reach a Sepolia-backed deployment with outside watchers; after that, the dollar's issuer runs Ballast as the safety layer the ecosystem could ask of it. <b>Today:</b> no external users and no revenue.</p>
+  <aside class="speaker-notes">The user is whoever issues the first dollar on Portaldot, and the builders who would accept it. Today this is a testnet build with one operator. The next steps are a real Sepolia reserve and watchers run by other people, funded by a grant. We have no users or revenue yet, and we say so.</aside>
+</section>
+
+<!-- 10 · STATUS + LINKS -->
+<section class="slide s10" data-title="Status and links">
+  <div class="hd"><span class="eb">Status vs. the final</span><h2>Done on V3. Next: the final</h2></div>
+  <div class="cols">
+    <div class="done">
+      <h3>Done</h3>
+      <ul>
+        <li>Role split + <code>ReserveOracle</code> on V3: PASS <span class="mono">16/16 + 6/6</span></li>
+        <li>Role drill on V3: PASS <span class="mono">22/22 + 20/20</span></li>
+        <li>Attestation drill on V3: PASS <span class="mono">15/15 + 6/6</span></li>
+        <li><span class="mono">79/79</span> V3 extrinsics (8 runs) final, re-queried by <code>check_receipts.py --profile v3</code></li>
+        <li><span class="mono">274</span> tests · <span class="mono">130</span> commits from 2026-10-14 to build <span class="mono">0071879</span></li>
+      </ul>
+    </div>
+    <div class="open">
+      <h3>Next</h3>
+      <ul>
+        <li>Sepolia <code>ReserveVault</code> with 100.00 test USDC (the wallet holds 80.00), then the drill with the real finality wait</li>
+        <li>Outage and heartbeat drills on V3 (stand-in only so far)</li>
+        <li>A watcher on separate infrastructure</li>
+        <li>Watcher-set rotation, <code>M_admin</code> rotation, wind-down</li>
+        <li>Benchmarks over many drills; a reserves page</li>
+      </ul>
+    </div>
+  </div>
+  <p class="ai">AI assistance: built with Claude Code (Anthropic). Most of the code, the tests and the prose were drafted with AI assistance and reviewed by the author. The architecture, the role map and the on-chain design decisions are the author's.</p>
+  <div class="links">
+    <div class="qr"><svg viewBox="0 0 37 37" role="img" aria-label="QR code: the Ballast GitHub repository"><path stroke="#0C2536" d="M0 0.5h7m2 0h3m1 0h1m3 0h3m1 0h1m3 0h2m3 0h7m-37 1h1m5 0h1m1 0h1m1 0h1m3 0h2m3 0h1m2 0h1m2 0h1m4 0h1m5 0h1m-37 1h1m1 0h3m1 0h1m1 0h2m2 0h2m4 0h4m1 0h2m1 0h3m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m1 0h6m1 0h1m1 0h1m1 0h1m3 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m3 0h2m3 0h2m1 0h4m1 0h1m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-37 1h1m5 0h1m2 0h1m3 0h1m1 0h2m1 0h1m3 0h1m3 0h1m3 0h1m5 0h1m-37 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-29 1h2m2 0h2m1 0h2m2 0h1m2 0h1m4 0h2m-29 1h1m5 0h1m1 0h2m2 0h4m2 0h1m1 0h2m2 0h3m2 0h2m2 0h3m-36 1h2m2 0h2m1 0h2m1 0h1m3 0h1m5 0h4m1 0h3m1 0h1m2 0h1m1 0h2m-36 1h5m1 0h2m1 0h2m1 0h1m1 0h1m3 0h1m1 0h1m4 0h6m1 0h1m2 0h2m-37 1h4m3 0h3m1 0h2m2 0h2m7 0h1m1 0h1m2 0h1m3 0h1m2 0h1m-37 1h1m1 0h1m3 0h1m2 0h1m2 0h2m2 0h1m2 0h1m7 0h2m1 0h2m4 0h1m-37 1h3m1 0h2m2 0h3m1 0h1m1 0h7m2 0h1m3 0h1m3 0h1m1 0h1m-34 1h1m2 0h1m1 0h2m1 0h2m2 0h2m1 0h1m1 0h1m2 0h2m5 0h1m2 0h4m1 0h2m-36 1h1m3 0h1m1 0h2m2 0h1m2 0h1m1 0h4m2 0h3m2 0h2m1 0h2m1 0h3m-36 1h1m2 0h1m1 0h2m4 0h1m4 0h1m2 0h1m1 0h1m3 0h3m2 0h3m1 0h1m-32 1h3m4 0h2m1 0h1m3 0h2m1 0h2m1 0h1m1 0h5m3 0h1m1 0h1m-35 1h1m1 0h2m1 0h3m1 0h2m2 0h2m1 0h1m2 0h1m2 0h3m1 0h3m2 0h3m1 0h1m-37 1h1m1 0h1m1 0h1m2 0h1m1 0h2m2 0h2m3 0h3m1 0h1m3 0h2m1 0h5m2 0h1m-37 1h1m1 0h2m1 0h2m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m2 0h1m1 0h2m1 0h1m1 0h2m1 0h3m-35 1h1m4 0h1m2 0h1m4 0h3m2 0h2m1 0h3m2 0h2m1 0h1m2 0h1m1 0h1m-34 1h1m1 0h2m1 0h1m2 0h1m1 0h1m3 0h2m1 0h1m3 0h1m2 0h1m1 0h2m1 0h4m1 0h2m-37 1h1m1 0h1m1 0h1m3 0h4m1 0h1m2 0h1m4 0h1m2 0h1m1 0h1m1 0h1m2 0h3m1 0h1m-35 1h1m4 0h1m1 0h2m1 0h1m1 0h2m1 0h4m1 0h1m2 0h1m2 0h5m3 0h2m-37 1h1m3 0h1m2 0h2m2 0h1m1 0h1m2 0h1m4 0h1m1 0h1m1 0h5m4 0h1m-35 1h1m1 0h13m5 0h1m1 0h1m2 0h6m1 0h2m1 0h2m-37 1h1m1 0h1m2 0h1m7 0h1m1 0h1m2 0h1m1 0h1m1 0h1m7 0h2m1 0h2m1 0h1m-37 1h1m1 0h1m1 0h4m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m1 0h1m2 0h2m1 0h9m-29 1h1m1 0h2m1 0h3m1 0h4m2 0h1m3 0h2m3 0h1m-33 1h7m2 0h1m1 0h3m1 0h2m2 0h1m1 0h5m2 0h1m1 0h1m1 0h1m3 0h1m-37 1h1m5 0h1m2 0h3m4 0h5m1 0h1m4 0h2m3 0h1m2 0h2m-37 1h1m1 0h3m1 0h1m2 0h1m2 0h1m2 0h2m2 0h1m1 0h1m2 0h2m1 0h6m1 0h1m1 0h1m-37 1h1m1 0h3m1 0h1m2 0h2m1 0h3m1 0h3m4 0h1m2 0h1m1 0h3m2 0h1m2 0h1m-37 1h1m1 0h3m1 0h1m3 0h8m1 0h1m2 0h1m3 0h3m5 0h3m-37 1h1m5 0h1m2 0h1m1 0h2m1 0h1m4 0h2m1 0h1m3 0h1m1 0h3m1 0h2m2 0h1m-37 1h7m1 0h5m1 0h2m4 0h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h1m2 0h1"/></svg></div>
+    <p class="small">Scan for the repository.</p>
+    <ul>
+      <li><b>Repository</b><a class="mono" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu">github.com/edycutjong/<wbr><span style="white-space: nowrap">portaldot-hackathon-2026-ballast-edycu</span></a></li>
+      <li><b>V3 proof tables</b><a class="mono" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md">docs/PROOF.md</a></li>
+      <li><b>The freeze, in the node console</b><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">block #170,112</a></li>
+    </ul>
+  </div>
+  <aside class="speaker-notes">Everything on these slides has a file and a command behind it, at build 0071879. Before the final we want the real Sepolia reserve, the outage drills on V3, and a watcher that is not on our machine. Scan the code for the repository.</aside>
+</section>
+
+</div>
+</div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const N = slides.length;
+  const stage = document.querySelector('.stage');
+  const pad = n => String(n).padStart(2, '0');
+  slides.forEach((s, i) => {
+    // draft scale: numerals stacked keel-up, the water rises to this slide's mark
+    const d = document.createElement('div');
+    d.className = 'draft';
+    const step = 820 / N;
+    let html = '<div class="water" style="height:' + Math.round(step * (i + 1) - step / 2 + 2) + 'px"></div>';
+    for (let j = 0; j < N; j++) {
+      html += '<span class="mk' + (j === i ? ' on' : '') + '" style="bottom:' + Math.round(step * j + step / 2 - 20) + 'px">' + pad(j + 1) + '</span>';
+    }
+    d.innerHTML = html;
+    s.prepend(d);
+    if (!s.hasAttribute('data-noline')) {
+      const ll = document.createElement('div');
+      ll.className = 'll';
+      s.prepend(ll);
+    }
+    const tb = document.createElement('footer');
+    tb.className = 'tb';
+    tb.innerHTML = '<span class="name">BALLAST</span><span>' + s.dataset.title + '</span><span>' + pad(i + 1) + ' / ' + pad(N) + '</span>' +
+      '<span class="grow"></span><span>Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span>' +
+      '<span><span class="ver">v0.0.1</span> · facts at build <span class="ver">0071879</span></span>';
+    s.appendChild(tb);
+  });
+  let cur = 0, overview = false;
+  const fit = () => {
+    const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = 'translate(-50%, -50%) scale(' + k + ')';
+  };
+  const show = i => {
+    cur = Math.max(0, Math.min(N - 1, i));
+    slides.forEach((s, j) => s.classList.toggle('active', j === cur));
+    if (location.hash !== '#' + (cur + 1)) history.replaceState(null, '', '#' + (cur + 1));
+  };
+  const setOverview = on => {
+    overview = on;
+    document.body.classList.toggle('overview', on);
+    slides.forEach((s, j) => {
+      if (on) {
+        const c = j % 4, r = Math.floor(j / 4);
+        s.style.transform = 'translate(' + (c * 480 + 4) + 'px,' + (r * 270 + 135) + 'px) scale(' + (472 / 1920) + ')';
+      } else s.style.transform = '';
+    });
+    fit();
+  };
+  const fromHash = () => { const h = parseInt(location.hash.slice(1), 10); return Number.isFinite(h) ? h - 1 : 0; };
+  addEventListener('resize', fit);
+  addEventListener('hashchange', () => show(fromHash()));
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (k === 'Escape') { setOverview(!overview); return; }
+    if (overview) return;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { show(cur + 1); e.preventDefault(); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { show(cur - 1); e.preventDefault(); }
+    else if (k === 'Home') show(0);
+    else if (k === 'End') show(N - 1);
+    else if (/^[0-9]$/.test(k)) show(k === '0' ? 9 : Number(k) - 1);
+    else if (k === 'p' || k === 'P') document.body.classList.toggle('presenter');
+    else if (k === 'c' || k === 'C') document.body.classList.toggle('debug-contrast');
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.closest('a')) return;
+    if (overview) {
+      const s = e.target.closest('.slide');
+      if (s) { setOverview(false); show(slides.indexOf(s)); }
+      return;
+    }
+    show(cur + (e.clientX > innerWidth / 2 ? 1 : -1));
+  });
+  let idle;
+  addEventListener('mousemove', () => {
+    document.body.classList.remove('idle');
+    clearTimeout(idle);
+    if (document.body.classList.contains('presenter')) idle = setTimeout(() => document.body.classList.add('idle'), 2000);
+  });
+  fit();
+  show(fromHash());
+})();
+</script>
+</body>
+</html>

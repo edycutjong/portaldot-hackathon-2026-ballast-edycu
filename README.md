@@ -12,10 +12,12 @@
   [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-D9A13B?style=for-the-badge)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/pitch-deck.pdf)
   [![Demo Video](https://img.shields.io/badge/🎬_Demo-Video-ef4444?style=for-the-badge)](https://youtu.be/jV5dCy1o3O8)
   [![DoraHacks BUIDL](https://img.shields.io/badge/DoraHacks-BUIDL_50247-3A3240?style=for-the-badge)](https://dorahacks.io/build/50247)
+  [![Portaldot Hacker House 2026](https://img.shields.io/badge/🏆_Portaldot-Hacker_House_2026-8b5cf6?style=for-the-badge)](https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail)
 
   <br/>
 
   ![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat)
+  [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-ballast-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml)
   ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
   ![Tests: 274 passing](https://img.shields.io/badge/tests-274%20passing-brightgreen?style=flat)

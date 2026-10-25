@@ -45,6 +45,7 @@
   --ease: cubic-bezier(.16, 1, .3, 1);
   --short: 76px;      /* the shortfall band: 31.20 of 104.00 drained */
   --ringw: 480px;
+  --bleed: max(0px, calc((100vw - 1240px) / 2 - 12px));
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--font-body); -webkit-font-smoothing: antialiased;
@@ -65,6 +66,7 @@ code { font-size: .86em; color: var(--ink); overflow-wrap: anywhere; }
 .label { font: 500 12px/1.4 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 h2 { font: 700 clamp(34px, 4.1vw, 58px)/.98 var(--font-display); text-transform: uppercase; letter-spacing: .005em; text-wrap: balance; }
 h2 em { font-style: normal; color: var(--after); }
+.nw { white-space: nowrap; }
 .lede { max-width: 38em; color: var(--prose); font-size: 19px; margin-top: 18px; }
 
 /* ---------- hull: the hero ---------- */
@@ -101,11 +103,11 @@ h1 em { font-style: normal; color: var(--after); display: inline-block; text-sha
 .fine { margin-top: 10px; font: 400 13px/1.4 var(--font-data); color: var(--muted); }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 18px; }
 .strip { font: 400 13px/1.5 var(--font-data); color: var(--muted); padding-bottom: 30px; }
-.ringbox { position: relative; width: 100%; justify-self: end; }
+.ringbox { position: relative; width: calc(100% + var(--bleed)); margin-right: calc(-1 * var(--bleed)); justify-self: end; }
 .ringbox svg { display: block; width: 100%; height: auto; overflow: visible; }
-.above .ringbox { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding-top: 58px; }
+.above .ringbox { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding-top: 44px; }
 .stamp { padding: 4px 0 4px 22px; border-left: 4px solid var(--after); }
-.stamp b { display: block; font: 700 clamp(44px, 4.6vw, 70px)/.95 var(--font-display); color: var(--after); letter-spacing: .02em; text-shadow: 0 0 30px rgba(255,91,46,.28); }
+.stamp b { display: block; font: 700 clamp(44px, 5vw, 78px)/.95 var(--font-display); color: var(--after); letter-spacing: .02em; text-shadow: 0 0 30px rgba(255,91,46,.28); }
 .stamp span { display: block; margin-top: 10px; font: 400 13px/1.5 var(--font-data); color: var(--prose); overflow-wrap: anywhere; }
 .stamp span + span { margin-top: 2px; color: var(--muted); }
 
@@ -136,7 +138,7 @@ h1 em { font-style: normal; color: var(--after); display: inline-block; text-sha
 .mark.res { top: calc(var(--short) + 14px); color: var(--prose); }
 .mark.res b { color: var(--crest); }
 .replay { position: absolute; right: 0; top: calc(var(--short) + 78px); font: 500 12px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase;
-  color: var(--muted); background: none; border: 1px solid var(--rule); padding: 8px 12px; cursor: pointer; transition: color .2s, border-color .2s; }
+  color: var(--prose); background: none; border: 1px solid var(--rule); padding: 8px 12px; cursor: pointer; transition: color .2s, border-color .2s; }
 .replay:hover { color: var(--ink); border-color: var(--hull); }
 .readings { padding-top: calc(var(--short) + 58px); }
 .readings .label { color: var(--prose); margin-bottom: 22px; }
@@ -147,7 +149,7 @@ h1 em { font-style: normal; color: var(--after); display: inline-block; text-sha
 .rx b i { font-style: normal; }
 .rx b small { font-size: .55em; letter-spacing: .02em; }
 .rx span { display: block; margin-top: 12px; font-size: 14.5px; line-height: 1.45; color: var(--prose); }
-.rx code { display: block; margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+.rx code { display: block; margin-top: 10px; font-size: 11.5px; color: var(--prose); opacity: .85; }
 
 /* the orchestrated load: the water drains, the gate snaps, the line dies, the headline stops */
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
@@ -199,7 +201,7 @@ section { position: relative; }
 .frame .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--rule); font: 400 12px/1.2 var(--font-data); color: var(--muted); min-width: 0; }
 .frame .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); flex: none; }
 .shot { position: relative; display: block; }
-.shot .hl { position: absolute; left: 51.2%; top: 53.8%; width: 22%; height: 7%; border: 2px solid var(--after); box-shadow: 0 0 0 4px rgba(255,91,46,.18); pointer-events: none; }
+.shot .hl { position: absolute; left: 6%; top: 33.6%; width: 41%; height: 8.8%; border: 2px solid var(--after); box-shadow: 0 0 0 4px rgba(255,91,46,.18); pointer-events: none; }
 .frame .bar span { margin-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 figcaption { margin-top: 12px; font-size: 14px; color: var(--muted); }
 figcaption .trip { color: #FFB49E; font: 500 .92em var(--font-data); }
@@ -237,7 +239,7 @@ figcaption .trip { color: #FFB49E; font: 500 .92em var(--font-data); }
 .card .chip { margin-right: 6px; }
 
 /* ---------- who: the users and the path ---------- */
-.who { padding: 112px 0 104px; background: linear-gradient(180deg, var(--bg), #0A2131); border-top: 1px solid var(--rule); }
+.who { padding: 112px 0 88px; background: linear-gradient(180deg, var(--bg), #0A2131); border-top: 1px solid var(--rule); }
 .users { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; margin-top: 48px; max-width: 1100px; }
 .users p { font-size: 20px; line-height: 1.5; color: var(--prose); max-width: 34em; }
 .users p b { color: var(--ink); }
@@ -249,8 +251,11 @@ figcaption .trip { color: #FFB49E; font: 500 .92em var(--font-data); }
 .path b { display: block; font: 700 24px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
 .path span { display: block; margin-top: 6px; font: 500 12px/1.3 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .path p { margin-top: 10px; font-size: 15.5px; line-height: 1.5; color: var(--prose); max-width: 30em; }
-.today { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); max-width: 70ch; color: var(--prose); }
-.today b { color: var(--ink); }
+.ledger { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 56px; border: 1px solid var(--rule); background: rgba(8,27,40,.55); }
+.ledger div { padding: 22px 26px; }
+.ledger div + div { border-left: 1px solid var(--rule); }
+.ledger dt { font: 500 12px/1.3 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.ledger dd { margin-top: 8px; font-size: 18px; line-height: 1.5; color: var(--ink); max-width: 36em; }
 
 /* ---------- architecture ---------- */
 .arch { padding: 24px 0 120px; }
@@ -324,6 +329,8 @@ footer p { max-width: 62ch; }
   .pair { grid-template-columns: minmax(0, 1fr); }
   .faq .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .users { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .ledger { grid-template-columns: minmax(0, 1fr); }
+  .ledger div + div { border-left: 0; border-top: 1px solid var(--rule); }
   .path { grid-template-columns: minmax(0, 1fr); gap: 30px; padding-left: 34px; }
   .path::before { left: 7px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; background: linear-gradient(180deg, var(--before) 0 30%, var(--dead) 30%); }
   .path li { padding: 0; }
@@ -360,6 +367,10 @@ footer p { max-width: 62ch; }
   .quotes blockquote::before { top: 0; }
   .video .play { left: 14px; bottom: 14px; padding: 11px 14px 11px 12px; font-size: 14px; }
   .term pre { min-height: 0; font-size: 12px; }
+  .scrollx { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .scrollx > a { display: block; width: 640px; }
+  .arch .scrollx > a { width: 900px; }
+  .stamp span + span + span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -403,7 +414,7 @@ footer p { max-width: 62ch; }
     <p class="strip a5">Portaldot V3 testnet · 79/79 extrinsics final · re-queried 2026-10-25</p>
    </div>
    <div class="ringbox">
-    <p class="stamp"><b>#170,112</b><span>Assets.AssetFrozen · extrinsic 170112-1 · watcher W2</span><span>BALLAST/1|freeze|a=4401|reason=deficit</span></p>
+    <p class="stamp"><b>#170,112</b><span>Assets.AssetFrozen · extrinsic 170112-1 · watcher W2</span><span>BALLAST/1|freeze|a=4401|reason=deficit</span><span>12.22 s from drain to freeze · wall clock, one machine</span></p>
     <svg viewBox="0 0 460 172" aria-hidden="true">
      <circle cx="180" cy="172" r="150" fill="none" stroke="#6F92A6" stroke-width="20"/>
      <path d="M180 22v18M60 70l12 10M300 70l-12 10" stroke="#1E3D52" stroke-width="3"/>
@@ -483,15 +494,15 @@ footer p { max-width: 62ch; }
 
 <section class="demo" id="demo" aria-labelledby="demo-h">
  <div class="wrap">
-  <h2 id="demo-h">Don't trust this page. <em>Re-query the chain.</em></h2>
+  <h2 id="demo-h">Don't trust this page. <em><span class="nw">Re-query</span> the chain.</em></h2>
   <p class="lede">The block that froze the asset, as Portaldot's own node console shows it, beside a real re-run of the receipt checker against the V3 testnet.</p>
   <div class="pair">
    <figure>
     <div class="frame">
-     <div class="bar"><i></i><i></i><i></i><span>node-console.portaldot.dev · PortaldotV3 Test · block 170,112</span></div>
-     <a class="shot" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624"><span class="hl" aria-hidden="true"></span><img src="assets/node-console-170112.jpg" width="1300" height="876" loading="lazy" alt="Portaldot node console, block 170,112 on portaldot-v3/3002: a utility.batchAll extrinsic with system.Remarked, assets.AssetFrozen and multisig.MultisigExecuted events"></a>
+     <div class="bar"><i></i><i></i><i></i><span>node-console.portaldot.dev · block 170,112 · utility.batchAll events</span></div>
+     <div class="scrollx"><a class="shot" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624"><span class="hl" aria-hidden="true"></span><img src="assets/node-console-170112.jpg" width="1060" height="880" loading="lazy" alt="Portaldot node console, block 170,112: the events of its utility.batchAll extrinsic, system.Remarked, assets.AssetFrozen and multisig.MultisigExecuted"></a></div>
     </div>
-    <figcaption>Block 170,112 on <code>portaldot-v3</code>/3002: <code>system.Remarked</code>, <b class="trip">assets.AssetFrozen</b> (outlined), <code>multisig.MultisigExecuted</code> in one <code>utility.batchAll</code>. Captured 2026-10-24.</figcaption>
+    <figcaption>The events of block 170,112's <code>utility.batchAll</code>: <code>system.Remarked</code>, <b class="trip">assets.AssetFrozen</b> (outlined), <code>multisig.MultisigExecuted</code>. Block 170,112 is from the 2026-10-24 drill; screenshot of Portaldot's node console.</figcaption>
    </figure>
    <figure class="term">
     <div class="frame">
@@ -533,15 +544,16 @@ footer p { max-width: 62ch; }
      <span class="chip">Multisig.as_multi_threshold_1</span><span class="chip">Assets.freeze_asset</span>
      </div>
     </div>
-    <svg class="mini" viewBox="0 0 220 200" aria-hidden="true">
+    <svg class="mini" viewBox="0 0 250 200" aria-hidden="true">
      <defs><clipPath id="mc"><circle cx="100" cy="100" r="74"/></clipPath></defs>
      <rect x="20" y="128" width="160" height="80" fill="#3FD9B5" opacity=".55" clip-path="url(#mc)"/>
      <rect x="20" y="126" width="160" height="3" fill="#B8FFEC" clip-path="url(#mc)"/>
      <circle cx="100" cy="100" r="74" fill="none" stroke="#6F92A6" stroke-width="12"/>
-     <path d="M8 100h170" stroke="#F4F1E6" stroke-width="10"/><path d="M190 100h30" stroke="#3B5568" stroke-width="10"/>
+     <path d="M8 100h170" stroke="#F4F1E6" stroke-width="10"/><path d="M190 100h56" stroke="#3B5568" stroke-width="10"/>
      <rect x="178" y="70" width="10" height="60" fill="#FF5B2E"/>
-     <text x="8" y="92" font-family="Red Hat Mono, monospace" font-size="11" fill="#9AB0BE">104.00</text>
-     <text x="8" y="146" font-family="Red Hat Mono, monospace" font-size="11" fill="#B8FFEC">72.80</text>
+     <text x="196" y="88" font-family="Red Hat Mono, monospace" font-size="12" fill="#F4F1E6">104.00</text>
+     <text x="196" y="146" font-family="Red Hat Mono, monospace" font-size="12" fill="#B8FFEC">72.80</text>
+     <path d="M182 127h10" stroke="#B8FFEC" stroke-width="2"/>
     </svg>
    </article>
    <article class="card mid">
@@ -573,7 +585,8 @@ footer p { max-width: 62ch; }
 
 <section class="who" id="who" aria-labelledby="who-h">
  <div class="wrap">
-  <h2 id="who-h">Who needs a load line</h2>
+  <p class="label">Users and model · steps 2 and 3 are plans</p>
+  <h2 id="who-h" style="margin-top:18px">Who needs a load line</h2>
   <div class="users">
    <p><b>The first issuer of a dollar on Portaldot</b>, who needs a safety layer it can show, and that the ecosystem can require of any issuer.</p>
    <p><b>The dApp builder</b> deciding whether checkout may accept that dollar, who must tell users why it is safe.</p>
@@ -583,16 +596,16 @@ footer p { max-width: 62ch; }
    <li><b>Sepolia reserve</b><span>plan</span><p><code>ReserveVault</code> with 100.00 test USDC; a watcher on separate infrastructure.</p></li>
    <li><b>A real issuer</b><span>plan</span><p>Watcher and attester keys held by parties other than the issuer; community-watcher mode.</p></li>
   </ol>
-  <p class="today"><b>Funding (plan):</b> an ecosystem grant to reach a Sepolia-backed deployment with outside watchers. <b>Today:</b> no external users and no revenue.</p>
+  <dl class="ledger"><div><dt>Funding · plan</dt><dd>An ecosystem grant to reach a Sepolia-backed deployment with outside watchers.</dd></div><div><dt>Today</dt><dd>No external users and no revenue. One person holds every key.</dd></div></dl>
  </div>
 </section>
 
 <section class="arch" aria-labelledby="arch-h">
  <div class="wrap">
   <h2 id="arch-h">Where each piece runs</h2>
-  <p class="lede">Follow steps 1 to 5: the drain on the reserve chain, the watchdog reading it, the freeze through <code>M_watch</code>, and the holder's refused transfer.</p>
+  <p class="lede">Follow steps 1 to 5: the drain on the reserve chain (1), the watchdog reading it (2), W2's batch to <code>M_watch</code> (3), the freeze on asset 4401 (4), and the holder's refused transfer (5).</p>
   <figure>
-   <a href="architecture.png"><img src="architecture.png" width="2560" height="2546" loading="lazy" alt="Ballast architecture: a vault drain on local anvil is read by the watchdog, whose watcher key freezes asset 4401 through M_watch on the Portaldot V3 testnet, so the holder's transfer is refused"></a>
+   <div class="scrollx"><a href="architecture.png"><img src="architecture.png" width="2560" height="2546" loading="lazy" alt="Ballast architecture: a vault drain on local anvil is read by the watchdog, whose watcher key freezes asset 4401 through M_watch on the Portaldot V3 testnet, so the holder's transfer is refused"></a></div>
    <figcaption><span>Solid: the Portaldot V3 runtime enforces. Dashed: off-chain processes. Bottom: the reserve chain (local anvil, NOT Sepolia).</span><a href="architecture.png">Open full size ↗</a></figcaption>
   </figure>
  </div>

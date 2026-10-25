@@ -47,7 +47,7 @@ a:focus-visible { outline: 3px solid var(--crest); outline-offset: 4px; }
 /* the hull: night water, faint plate seams */
 .slide { position: absolute; inset: 0; display: none; overflow: hidden; background-color: var(--bg);
   background-image: radial-gradient(circle at 50% 50%, rgba(111,146,166,.30) 2px, transparent 2.8px),
-    linear-gradient(90deg, var(--rule) 2px, transparent 2px), linear-gradient(var(--rule) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(30,61,82,.6) 2px, transparent 2px), linear-gradient(rgba(30,61,82,.6) 2px, transparent 2px),
     radial-gradient(90% 60% at 80% 110%, rgba(63,217,181,.09), transparent 60%);
   background-size: 30px 360px, 480px 100%, 100% 360px, 100% 100%; background-position: 0 -54px, 168px 0, 0 -68px, 0 0;
   -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -73,7 +73,7 @@ a:focus-visible { outline: 3px solid var(--crest); outline-offset: 4px; }
 .hd { position: absolute; left: 200px; top: 104px; width: 1560px; z-index: 2; }
 .eb { font: 600 20px/1 var(--font-body); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
 h2 { margin-top: 22px; white-space: nowrap; font: 700 88px/1 var(--font-display); text-transform: uppercase; letter-spacing: .01em; color: var(--ink); }
-.lede { font: 400 30px/1.4 var(--font-body); color: var(--ink); }
+.lede { font: 400 30px/1.4 var(--font-body); color: var(--ink); text-wrap: pretty; }
 .small { font: 400 20px/1.45 var(--font-body); color: var(--muted); }
 code, .mono { font-family: var(--font-data); font-weight: 500; }
 .lvl { color: var(--before); }
@@ -166,15 +166,15 @@ h2 em.lv { color: var(--crest); text-shadow: 0 0 30px rgba(184,255,236,.22); }
 .s6 .band { position: absolute; left: 200px; width: 1620px; }
 .s6 .band > .eb { position: absolute; left: 0; top: 0; font-size: 17px; }
 .s6 .box { position: absolute; padding: 12px 16px 12px; border: 2px solid var(--hull); background: var(--bg); }
-.s6 .box b { display: block; font: 600 22px/1.2 var(--font-body); color: var(--ink); }
-.s6 .box span { display: block; margin-top: 5px; font: 400 18px/1.3 var(--font-body); color: var(--muted); }
+.s6 .box b { display: block; font: 600 23px/1.2 var(--font-body); color: var(--ink); }
+.s6 .box span { display: block; margin-top: 5px; font: 400 18px/1.3 var(--font-body); color: var(--prose); }
 .s6 .box code { font-size: 17px; color: var(--ink); }
 .s6 .box.asset { border-color: var(--ink); border-width: 3px; }
 .s6 .box.watch { border-left: 8px solid var(--ink); }
 .s6 .box.off { border-style: dashed; }
 .s6 .wire { position: absolute; width: 0; border-left: 3px solid var(--hull); }
 .s6 .wire.dash { border-left-style: dashed; }
-.s6 .wire em { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 500 17px/1.2 var(--font-data); font-style: normal; color: var(--muted); }
+.s6 .wire em { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 500 18px/1.2 var(--font-data); font-style: normal; color: var(--prose); }
 .s6 .legend { position: absolute; right: 0; top: 0; font: 400 17px/1 var(--font-body); color: var(--muted); }
 .s6 .sea { position: absolute; left: 200px; width: 1620px; top: 836px; height: 0; border-top: 3px dashed var(--hull); }
 .s6 .sea span { position: absolute; right: 0; top: -30px; font: 500 15px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -375,7 +375,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <li class="hot"><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a><small>V3 · watcher W2</small></span><span class="ev"><code>M_watch</code> freezes asset 4401 <span class="out">(<code>Assets.freeze_asset</code>, Ok)</span>. The reason rides in the same extrinsic:
       <span class="remark">BALLAST/1|<wbr>freeze|<wbr>a=4401|<wbr>reason=deficit|<wbr>s=104000000|<wbr>r=72800000|<wbr>p=anvil|<wbr>eb=1622|<wbr>eh=0x3987686a…</span></span></li>
     <li class="hot"><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xe6ca737bce559f4a85450656e1d6ef9e315526bb3258202fd7d28c9107f21bb2">170114-1</a><small>V3 · a holder</small></span><span class="ev"><code>Assets.transfer</code> 1.00 → <code class="out">Err(Assets.AssetNotLive)</code></span></li>
-    <li><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">170115-1</a><small>V3 · watcher W1</small></span><span class="ev">A watcher tries <code>thaw_asset</code> → <code>Err(Assets.NoPermission)</code>: the freezer cannot undo its own freeze.</span></li>
+    <li><span class="id"><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x4fabb599f4c828fdd8055d3e1a904ea08a70d29a7b0593201bee1a46374f341d">170115-1</a><small>V3 · watcher W1</small></span><span class="ev">A watcher tries <code>thaw_asset</code> → <code>Err(Assets.NoPermission)</code>: the freezer role cannot thaw what it froze.</span></li>
   </ol>
   <aside class="speaker-notes">This is the moment. The custodian pulled 31.20 out of the 104.00 in the vault. Watcher W2 saw the deficit and froze asset 4401 on V3, and wrote why into the same extrinsic. Two blocks later a holder's transfer was refused by the runtime, and the other watcher could not thaw it.</aside>
 </section>
@@ -411,7 +411,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xb82d68a566fac58fefe36d0c30638a84f00bb353499b65316d05c01f87057724">170156-1</a><span>safe <code>set_team</code>, co-signed</span></li>
   </ul>
   <div class="tot">
-    <div><b>79/79</b><span>V3 extrinsics in 8 runs (4 ERROR runs kept as history), all final ≤ #170291</span></div>
+    <div><b>79/79</b><span>V3 extrinsics in 8 runs (4 ERROR runs kept as history), all final ≤ #170291 on 2026-10-24</span></div>
     <div><b>22/22</b><span>role drill steps, 20/20 state checks</span></div>
     <div><b>15/15</b><span>attestation drill steps, 6/6 checks</span></div>
     <div><b>16/16</b><span>role setup steps, 6/6 checks</span></div>
@@ -481,7 +481,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <li><b>Multisig</b><div><code>as_multi</code> · <code>as_multi_threshold_1</code> · <code>cancel_as_multi</code><span>three role multisigs: 2-of-2, 2-of-3, 1-of-2</span></div></li>
     <li><b>Utility</b><div><code>batch_all</code><span>the freeze and its reason remark land as one extrinsic</span></div></li>
     <li><b>System</b><div><code>remark_with_event</code><span><code>BALLAST/1</code> attestations, heartbeats, freeze reasons</span></div></li>
-    <li><b>Revive</b><div><code>instantiate_with_code</code> · <code>call</code><span><code>ReserveOracle</code> on V3 (deployed in 169960-1) exposes <code>isBacked(maxAge)</code> to EVM dApps; called on the stand-in, not yet on V3</span></div></li>
+    <li><b>Revive</b><div><code>instantiate_with_code</code> · <code>call</code><span><code>ReserveOracle</code> on V3 (deployed in 169960-1) exposes <code>isBacked(maxAge)</code> to EVM dApps; <code>post()</code> mirrors ran on V3, the <code>isBacked</code> read only on the stand-in</span></div></li>
   </ul>
   <div class="pin">
     <span class="label">Pinned to the live chain</span>

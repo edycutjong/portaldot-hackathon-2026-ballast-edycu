@@ -70,6 +70,10 @@ a:focus-visible { outline: 3px solid var(--crest); outline-offset: 4px; }
 .tb .name { font: 700 22px/1 var(--font-display); color: var(--ink); letter-spacing: .06em; }
 .tb .grow { flex: 1; }
 .tb .ver { font-family: var(--font-data); font-size: 16px; }
+.tb a.rel { border-bottom: 0; display: inline-block; padding: 3px 10px 2px; border: 1px solid var(--hull); border-radius: 999px; margin-right: 6px; line-height: 1.2; }
+.tb a.rel:hover, .tb a.rel:focus-visible { color: var(--crest); }
+.s1 a.rel { display: inline-block; margin-left: 14px; padding: 6px 12px 5px; border: 2px solid var(--hull); border-radius: 999px; font: 500 16px/1 var(--font-data); color: var(--ink); vertical-align: top; }
+.s1 a.rel:hover, .s1 a.rel:focus-visible { border-color: var(--crest); color: var(--crest); }
 
 /* type */
 .hd { position: absolute; left: 200px; top: 104px; width: 1560px; z-index: 2; }
@@ -278,7 +282,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
 <!-- 1 · COVER: the frozen moment (design.md §2), the tripped load-line gauge (§5) -->
 <section class="slide s1" data-title="Cover" data-noline>
   <div class="title">
-    <span class="label">Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span>
+    <span class="label">Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span><a class="rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.0.1</a>
     <h1><span class="ln">When the vault</span> <span class="ln">runs short,</span> <span class="ln">the test dollar</span> <span class="ln"><em>stops moving.</em></span></h1>
     <p class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><clipPath id="bl-c"><circle cx="226" cy="256" r="156"/></clipPath></defs><rect x="8" y="8" width="496" height="496" rx="104" fill="#0C2536"/><rect x="40" y="318" width="380" height="200" fill="#3FD9B5" clip-path="url(#bl-c)"/><rect x="40" y="318" width="380" height="8" fill="#B8FFEC" clip-path="url(#bl-c)"/><circle cx="226" cy="256" r="156" fill="none" stroke="#6F92A6" stroke-width="40"/><rect x="36" y="236" width="316" height="40" fill="#F4F1E6"/><rect x="398" y="236" width="80" height="40" fill="#3E5A6C"/><rect x="354" y="150" width="40" height="212" rx="6" fill="#FF5B2E"/></svg><span><b>BALLAST</b> a reserve-gated circuit breaker for a custodial test dollar on Portaldot.</span></p>
   </div>
@@ -287,7 +291,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
 [v3] 79/79 receipts confirmed from 8 run(s)
 [v3] all confirmed rows at or below the finalized head #182414</pre></div>
   <p class="proof">On the Portaldot V3 testnet, 2026-10-24: watcher W2 froze asset 4401 in extrinsic
-    <a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a>. Reserve: local anvil chain, NOT Sepolia. Deck 2026-10-25 · <span class="mono">v0.0.1</span></p>
+    <a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a>. Reserve: local anvil chain, NOT Sepolia. Deck 2026-10-25.</p>
   <svg class="gauge" viewBox="0 0 900 760" role="img" aria-label="Ballast — the load-line gauge tripped: reserves sunk below the supply line, the gate shut, block 170,112">
     <defs><clipPath id="c1"><circle cx="340" cy="380" r="250"/></clipPath></defs>
     <rect x="60" y="476" width="600" height="420" fill="var(--before)" clip-path="url(#c1)"/>
@@ -583,7 +587,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     tb.className = 'tb';
     tb.innerHTML = '<span class="name">BALLAST</span><span>' + s.dataset.title + '</span><span>' + pad(i + 1) + ' / ' + pad(N) + '</span>' +
       '<span class="grow"></span><span>Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span>' +
-      '<span><span class="ver">v0.0.1</span> · facts at build <span class="ver">0071879</span> · cover re-run 2026-10-25</span>';
+      '<span><a class="ver rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.0.1</a> · facts at build <span class="ver">0071879</span> · cover re-run 2026-10-25</span>';
     s.appendChild(tb);
   });
   let cur = 0, overview = false;
@@ -644,6 +648,17 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
   });
   fit();
   show(fromHash());
+})();
+</script>
+<script>
+/* release chip: vS is baked in as text (no-JS, print and PDF show it); the live tag replaces it when the API answers */
+(function () {
+  var els = document.querySelectorAll('.rel');
+  if (!els.length || !window.fetch) return;
+  fetch('https://api.github.com/repos/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j && j.tag_name) els.forEach(function (e) { e.textContent = j.tag_name; }); })
+    .catch(function () {});
 })();
 </script>
 </body>

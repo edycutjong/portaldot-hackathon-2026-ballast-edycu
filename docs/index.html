@@ -298,6 +298,8 @@ footer { background: var(--deep); padding: 40px 0 48px; color: var(--muted); fon
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px 32px; }
 footer ul { display: flex; flex-wrap: wrap; gap: 10px 24px; list-style: none; }
 footer p { max-width: 62ch; }
+footer .rel { display: inline-block; padding: 3px 10px; border: 1px solid var(--hull); border-radius: 999px; font: 500 13px/1.3 var(--font-data); color: var(--ink); transition: border-color .15s, color .15s; }
+footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color: var(--crest); }
 
 @media (max-width: 1180px) {
   .rx { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 24px; }
@@ -669,6 +671,7 @@ footer p { max-width: 62ch; }
    <li><a href="https://ballast.edycu.dev/deck/">Deck (HTML)</a></li>
    <li><a href="https://youtu.be/jV5dCy1o3O8">Demo video</a></li>
    <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/LICENSE">MIT license</a></li>
+   <li><a class="rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.0.1</a></li>
   </ul>
   <p>Built for Portaldot Hacker House 2026 with Claude Code (Anthropic); the code, tests and prose were reviewed by the author. Testnet only: pUSDC-test is not money.</p>
  </div>
@@ -755,6 +758,17 @@ footer p { max-width: 62ch; }
     v.classList.add('on');
     v.replaceChildren(f);
   });
+})();
+</script>
+<script>
+/* release chip: vS is baked in as text (no-JS, print and PDF show it); the live tag replaces it when the API answers */
+(function () {
+  var els = document.querySelectorAll('.rel');
+  if (!els.length || !window.fetch) return;
+  fetch('https://api.github.com/repos/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j && j.tag_name) els.forEach(function (e) { e.textContent = j.tag_name; }); })
+    .catch(function () {});
 })();
 </script>
 </body>

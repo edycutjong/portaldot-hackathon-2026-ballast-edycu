@@ -105,6 +105,9 @@ State checks (storage/events read at the step's block):
 - ✅ asset 4401 team unchanged (ARMED): expected `[]`, observed `[]` at block `head`
 - ✅ all 4 Sepolia txs re-read from both providers: status 1, same block, <= finalized {'publicnode': 12029068, 'tenderly': 12029068}: expected `True`, observed `True` at block `sepolia finalized`
 
+Other runs, newest first, any verdict (full tables in the JSON):
+
+- asset 4401 — 2026-10-30T20:46:14Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `1328f88` (clean) — [`evidence/sepolia-drill-20261030T204614Z.json`](../evidence/sepolia-drill-20261030T204614Z.json) — failed: owner holds >= 100.00 test USDC and gas
 
 ### Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw — 2026-10-24T04:55:14Z
 

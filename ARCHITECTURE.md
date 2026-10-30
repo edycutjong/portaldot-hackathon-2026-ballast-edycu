@@ -116,9 +116,9 @@ Asset 2 (`pUSDC-ctl`, control supply S2 = 50.00) is minted once; owner, issuer, 
 | I3 | breaker: reserves short on either provider freezes the asset | `watchdog.py:123` `decide` (deficit branch at `:140`) | `tests/test_watchdog.py` (multi-provider logic); drain drills (one local anvil provider) |
 | I4 | thaw is gated on finalized reserves past the drain | `bot.py:160` `thaw_gate`; `verify.py` flags a thaw without the bot or an override remark | role drill steps 10-11 (refused until anvil finality passed the drain block, then co-signed) |
 | I5 | remark signers fixed per type; others REJECTED, never counted | `verify.py:78` `signer_verdict` | `tests/test_verify.py`; attest drill step 12 (forged remark REJECTED) |
-| I6 | all providers unreachable for > 300 s freezes (operator watcher) | `watchdog.py:55,161` | `tests/test_watchdog.py`; outage drill (providers pointed at dead URLs, 15 s drill override, labelled) |
+| I6 | all providers unreachable for > 300 s freezes (operator watcher) | `watchdog.py:55,161` | `tests/test_watchdog.py`; outage drill (providers pointed at dead URLs, 15 s drill override, labelled; also on V3: asset 4501, freeze `258720-1`) |
 | I7 | no mint while the asset is frozen | `bot.py:147` | role drill step 8 (refused live) |
-| I8 | no bot activity for K = 3H blocks freezes | `watchdog.py:152` (bot nonce unchanged) | heartbeat drill (K = 10 drill override, labelled) |
+| I8 | no bot activity for K = 3H blocks freezes | `watchdog.py:152` (bot nonce unchanged) | heartbeat drill (K = 10 drill override, labelled; also on V3: asset 4503, freeze `258745-1`) |
 | I9 | outer `Ok` is not inner `Ok` | `dispatch.py`, `multisig_ops.py:77`, `verify.py` | every executing multisig receipt in `docs/RECEIPTS.md` carries the inner result |
 | I10 | the oracle mirror never leads the remark | `attest.py:119`; `verify.py` flags a `Posted` with no matching remark | attest drill (4 mirrors, all matched) |
 
@@ -155,4 +155,4 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 Community-watcher mode (the "both providers short at the same block" rule); `ReserveOracle.trip()`; watcher-set rotation (K-block announcement);
 `M_admin` rotation; the wind-down branch (per-account freezes, `final` and `redeem` remarks are parsed by `verify` but no flow posts them); the
 reserves web page; the status HTTP endpoint; a Sepolia `ReserveVault` deployment (the deployer wallet holds 80.00 test USDC on 2026-10-24, below the 100.00 the
-plan needs); a watcher on separate infrastructure; the scratch-asset outage and heartbeat drills on Portaldot V3.
+plan needs); a watcher on separate infrastructure.

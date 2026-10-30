@@ -232,6 +232,7 @@ python scripts/spike_assets.py              # Assets + Multisig spike: freeze, r
 ballast drill --scenario drain              # drain a local vault -> a watcher freezes -> the judge's transfer is refused
 ballast drill --scenario outage             # every provider unreachable -> fail-closed freeze (15 s drill override)
 ballast drill --scenario heartbeat          # the bot goes silent -> freeze (K = 10 blocks, drill override)
+ballast --profile v3 drill --scenario outage     # the same drills on V3 scratch assets (seed-file keys; reserve stays the local anvil)
 
 rm deployments/standin-upstream.json        # only on a NEW chain: the committed manifest is from the author's chain, setup_roles refuses to overwrite it
 python scripts/setup_roles.py               # ONCE per chain: role split, control asset, vault, oracle -> deployments/<profile>.json
@@ -271,6 +272,14 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - **On V3** (6000 ms blocks, local anvil reserve, wall clock, one machine): drain to freeze included took 12.22 s in the passing V3 role drill
   ([`evidence/roles-drill-v3-20261024T045513Z.json`](evidence/roles-drill-v3-20261024T045513Z.json); that file's note label still says "stand-in",
   a labelling bug fixed after the run; the run's chain is `v3`).
+- **The outage and heartbeat drills on V3** (6000 ms blocks, scratch assets, local anvil reserve, wall clock, one machine; both
+  freezes are by a watcher through `M_watch`, each followed by a refused judge transfer, `Err(Assets.AssetNotLive)`): the **outage**
+  drill (every provider unreachable, 15 s fail-closed drill override, production default 300 s) froze asset 4501 at extrinsic `258720-1` with
+  `reason=providers-down`, 26.42 s after the first outage was seen
+  ([`evidence/drill-outage-v3-asset4501.json`](evidence/drill-outage-v3-asset4501.json), 13/13 steps, 8/8 state checks); the **heartbeat**
+  drill (reserves level, the bot never signs, K = 10 blocks drill override, production K = 300) froze asset 4503 at extrinsic `258745-1`
+  with `reason=no-heartbeat`, 11 blocks after the bot's nonce was first seen unchanged
+  ([`evidence/drill-heartbeat-v3-asset4503.json`](evidence/drill-heartbeat-v3-asset4503.json), 13/13 steps, 9/9 state checks).
 - **The drill in numbers on the stand-in** (wall clock, one machine, local anvil + stand-in, so not a V3 or Sepolia figure):
   drain to freeze included took 5.48 s in the latest role-split drill (the five role-split drills ranged 5.5 to 8.4 s; the earlier four took 7.9 to 8.4 s, one of them on uncommitted code and one on the same `ballast/` code as the latest, so the spread is run-to-run variance on one machine) and 6.33 s in the latest
   scratch-asset drill (the eight passing scratch drills: 6.3 to 6.8 s; in the latest, 3 Portaldot blocks from the head before the drain to the freeze). `ballast verify` over blocks #4076 to #7035 (role-split setup to just after the ReserveOracle run): 25/25 bot attestations pass on both chains, 6 forged
@@ -295,7 +304,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 
 **Next phase**
 - [x] `ReserveVault` on Sepolia with 100.00 test USDC and the drill against it, including the real finality wait (2026-10-30 UTC, [`docs/PROOF.md`](docs/PROOF.md))
-- [ ] The scratch-asset outage and heartbeat drills on V3 (`ballast drill` targets the stand-in; the role and attestation drills ran on V3)
+- [x] The scratch-asset outage and heartbeat drills on V3 (2026-10-30 UTC, assets 4501/4503, local anvil reserve; [`docs/PROOF.md`](docs/PROOF.md))
 - [ ] A watcher on separate infrastructure (today both watchers run on one machine)
 - [ ] Community-watcher mode, watcher-set rotation, `M_admin` rotation, wind-down branch, `ReserveOracle.trip()`
 - [ ] Benchmarks over many drills, reserves page

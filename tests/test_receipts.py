@@ -184,3 +184,23 @@ def test_proof_md_lists_only_v3_receipts_with_console_links():
     assert md.count("| v3 |") == 3 and f"{V3_CONSOLE}0x{'01' * 32}" in md
     assert "local anvil chain, NOT Sepolia" in md and "0x" + "ee" * 20 in md
     assert "No V3 transaction yet." in render_proof_md([standin])
+
+
+def test_sepolia_drill_rows_are_labelled_and_linked_to_etherscan():
+    from ballast.receipts import render_proof_md, render_roles_section
+
+    tx = "0x" + "ab" * 32
+    run = _run("v3", is_standin=False) | {
+        "_file": "sepolia-drill-x.json", "kind": "sepolia-drill", "source": {"dirty": False},
+        "reserve": {"label": "Sepolia", "vault": "0x" + "12" * 20},
+        "evm_steps": [{"name": "deposit", "block_number": 7, "tx_hash": tx, "as_expected": True, "status": 1,
+                       "chain": "Sepolia"}]}
+    run["chain"]["label"] = "Portaldot V3 testnet"
+    run["steps"][0]["receipt"] = _receipt() | {"profile": "v3", "block_number": 11, "block_hash": "0x" + "01" * 32,
+                                               "extrinsic_hash": "0x" + "02" * 32}
+    run["steps"][1]["receipt"] = run["steps"][0]["receipt"]
+    summarize(run)
+    section = "\n".join(render_roles_section(run))
+    assert f"https://sepolia.etherscan.io/tx/{tx}" in section and "reserve: **Sepolia**" in section
+    md = render_proof_md([run])
+    assert "Reserve chain: **Sepolia**" in md and "sepolia-drill-x.json" in md

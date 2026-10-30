@@ -1,0 +1,75 @@
+{
+  "profile": "v3",
+  "genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "breaker": 4401,
+  "control": 4402,
+  "decimals": 6,
+  "s2": 50000000,
+  "roles": {
+    "A": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+    "A2": "5FRBEpK4dqqaRquHta3jB1aJHpgi7Y3nhjKRqJDdwhih8e7z",
+    "B": "5DLftfqommHyxsuNaH5wpA9imFJ6AoB9MXFrFu5BRLiNRv2R",
+    "watchers": [
+      "5DG4akHnFL58yotBXtZ1tiqXeWASRh5em1iJSS3qQa6ssgU6",
+      "5HmYD3NyvhBGBGcjhfDPS4bCW2mFYP54KY874jSgHPE2Sf39"
+    ],
+    "ss58_format": 42,
+    "M_mint": {
+      "address": "5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "B"
+      ]
+    },
+    "M_admin": {
+      "address": "5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "A2",
+        "B"
+      ]
+    },
+    "M_watch": {
+      "address": "5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c",
+      "threshold": 1,
+      "signatories": [
+        "W1",
+        "W2"
+      ]
+    },
+    "control_keyless": {
+      "owner": {
+        "address": "5Hd3Ex8NE9DN1YKfL7GT596izJPzzFCDbqzdNYTmKTzyhC35",
+        "derivation": "blake2_256(\"ballast:a2-owner:v1\")"
+      },
+      "issuer": {
+        "address": "5CFqicciCJqSLxpruCpZCFSav78UQqE1zaoQ3YT3VRz6Sd63",
+        "derivation": "blake2_256(\"ballast:a2-issuer:v1\")"
+      },
+      "admin": {
+        "address": "5HWsvYp1arXWVsVoEMpCcKCNfivhkoQtYTTfpN9Hh7YxQFNS",
+        "derivation": "blake2_256(\"ballast:a2-admin:v1\")"
+      },
+      "freezer": {
+        "address": "5C86CJba7bqEntLPbWYXMVasmKDodYs5ueMaCBrLiHgdWqDw",
+        "derivation": "blake2_256(\"ballast:a2-freezer:v1\")"
+      }
+    }
+  },
+  "reserve": {
+    "label": "Sepolia",
+    "evm_chain_id": 11155111,
+    "vault": "0x7ceB7c3EBDBCC75e585599e5dd944286F009357b",
+    "erc20": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    "custodian": "0xDEf7Cd11f524C2246571654110b43476C2BD9300"
+  },
+  "oracle": {
+    "address": "0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e",
+    "attester": "0xc81ab822279e828b16a2be9a55520e475fa98678",
+    "chain": "Portaldot V3 testnet"
+  },
+  "created_at": "2026-10-30T20:24:07Z",
+  "setup_evidence": "sepolia-drill-20261030T200923Z.json"
+}

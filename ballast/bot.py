@@ -12,7 +12,7 @@ Pending mints: the bot's approval is always the LAST one (2-of-2 / 2-of-3 with t
 mint executes in the same extrinsic — there is no "approved but not yet executed" supply to add. Co-signing holds
 a file lock next to the decision log, so two bot processes can't both pass the gate on the same S1.
 
-The reserve view asks EVERY provider (drpc first on Sepolia: archive depth) for its `finalized` and its `latest`
+The reserve view asks EVERY provider (tenderly first on Sepolia: archive depth) for its `finalized` and its `latest`
 block. Any provider down or disagreeing on a block's hash or balance, a finalized block older than
 `max_finalized_age_s`, a latest block older than `max_latest_age_s`, or a latest block below the finalized one is a
 refusal — the bot never signs on a reading it cannot pin. `latest` only ever LOWERS the number used (a drain not yet

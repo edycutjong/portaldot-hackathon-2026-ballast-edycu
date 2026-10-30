@@ -281,7 +281,7 @@ def _providers(args: argparse.Namespace, dep, bot_order: bool = False):
     from .sepolia import SEPOLIA_PROVIDERS, providers_from
 
     specs = args.provider or dep.reserve.get("providers")
-    if not specs:  # Sepolia; the bot reads drpc first (archive depth for finalized / old block hashes)
+    if not specs:  # Sepolia; the bot reads tenderly first (archive depth for finalized / old block hashes)
         specs = list(reversed(SEPOLIA_PROVIDERS)) if bot_order else list(SEPOLIA_PROVIDERS)
     return providers_from(specs, timeout=args.timeout)
 
@@ -552,7 +552,7 @@ def build_parser() -> argparse.ArgumentParser:
     res.add_argument("holder", help="address whose token balance is the reserve (the vault)")
     res.add_argument("--token", default=SEPOLIA_USDC, help="reserve token (default: Circle test USDC on Sepolia)")
     res.add_argument("--provider", action="append", metavar="NAME=URL",
-                     help="EVM JSON-RPC provider, repeatable (default: Sepolia publicnode + drpc)")
+                     help="EVM JSON-RPC provider, repeatable (default: Sepolia publicnode + tenderly)")
     res.add_argument("--tag", action="append", choices=("latest", "safe", "finalized"),
                      help="block tag(s) to read (default: latest and finalized)")
     res.add_argument("--cross-check", nargs="?", const="finalized", choices=("latest", "safe", "finalized"),
@@ -572,7 +572,7 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--holder", required=True, help="vault address (holder of the reserve token)")
     w.add_argument("--token", default=SEPOLIA_USDC, help="reserve token (default: Circle test USDC on Sepolia)")
     w.add_argument("--provider", action="append", metavar="NAME=URL",
-                   help="EVM provider, repeatable (default: Sepolia publicnode + drpc)")
+                   help="EVM provider, repeatable (default: Sepolia publicnode + tenderly)")
     w.add_argument("--watcher", help="this watcher's key: //Dev URI on a stand-in (default //BallastW1); "
                    "elsewhere $BALLAST_WATCHER_SURI")
     w.add_argument("--watchers", default="//BallastW1,//BallastW2",
@@ -653,7 +653,7 @@ def build_parser() -> argparse.ArgumentParser:
     for p in (bm, bsub.choices["cosign-thaw"], bt, ba):
         deployment_args(p)
         p.add_argument("--provider", action="append", metavar="NAME=URL",
-                       help="EVM provider, repeatable (default: the manifest's, else Sepolia drpc + publicnode)")
+                       help="EVM provider, repeatable (default: the manifest's, else Sepolia tenderly + publicnode)")
         p.add_argument("--timeout", type=float, default=10.0, help="per-request EVM timeout (s)")
         p.add_argument("--db", default="ballast.db", help="SQLite decision log (default ballast.db)")
     b.set_defaults(func=cmd_bot)
@@ -669,7 +669,7 @@ def build_parser() -> argparse.ArgumentParser:
     v.add_argument("--from", dest="from_block", type=int, help="first block (default: the role-split setup)")
     v.add_argument("--to", dest="to_block", type=int, help="last block (default: head)")
     v.add_argument("--provider", action="append", metavar="NAME=URL",
-                   help="reserve-chain provider, repeatable (default: the manifest's, else Sepolia drpc + publicnode)")
+                   help="reserve-chain provider, repeatable (default: the manifest's, else Sepolia tenderly + publicnode)")
     v.add_argument("--timeout", type=float, default=10.0)
     v.add_argument("--json", action="store_true")
     v.add_argument("--out", metavar="FILE", help="also write the report as JSON")

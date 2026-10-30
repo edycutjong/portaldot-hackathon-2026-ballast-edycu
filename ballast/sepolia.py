@@ -23,7 +23,7 @@ ANVIL_CHAIN_ID = 31337
 SEPOLIA_USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"  # Circle test USDC on Sepolia (6 decimals)
 SEPOLIA_PROVIDERS = (
     ("publicnode", "https://ethereum-sepolia-rpc.publicnode.com"),  # pruned: ~1.4 days of state
-    ("drpc", "https://sepolia.drpc.org"),  # serves eth_call at weeks-old block hashes
+    ("tenderly", "https://sepolia.gateway.tenderly.co"),  # archive depth: eth_call at weeks-old block hashes (drpc left its free plan)
 )
 SELECTOR_BALANCE_OF = "0x70a08231"  # balanceOf(address)
 SELECTOR_DECIMALS = "0x313ce567"  # decimals()

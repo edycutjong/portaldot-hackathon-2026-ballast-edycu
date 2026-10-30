@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The breaker drill against a REAL Sepolia ReserveVault, with the real finality wait.
 
-  python scripts/sepolia_drill.py [--vault 0x…] [--drain-pct 30]
+  python scripts/sepolia_drill.py [--vault 0x…] [--drain-pct 30] [--w2-actions]
 
 Chain side: the v3 role-split deployment (deployments/v3.json; asset 4401 breaker + 4402 control). Reserve side:
 Ethereum Sepolia — a ReserveVault deployed here, holding exactly 100.00 Circle test USDC. The Sepolia key is read from
@@ -16,6 +16,10 @@ $SEPOLIA_DEPLOYER_KEY (a testnet-only key, ~/.config/ballast/sepolia.env) and is
   6. owner re-deposits -> A proposes thaw (M_admin) -> bot refuses: finality has not reached the drain / re-deposit
   7. wait for Sepolia finality past the re-deposit -> bot co-signs -> AssetThawed -> judge transfer succeeds
   8. every Sepolia tx is re-read from BOTH providers at / below the finalized head
+
+--w2-actions: steps 3-4 change. No watcher process runs on this machine (W1 is OFF — checked, logged); after the drain
+the drill dispatches .github/workflows/watcher-w2.yml and the freeze must come from W2 running on GitHub Actions. The
+Actions run URL and its downloaded log go into the evidence; the freeze extrinsic is read back from the V3 chain.
 """
 
 from __future__ import annotations
@@ -50,6 +54,7 @@ PROFILE = "v3"
 ONE = 10 ** 6  # Circle test USDC, 6 decimals; the V3 assets use 6 as well
 DEPOSIT = 100 * ONE
 MANIFEST = "deployments/v3-sepolia.json"
+REPO = "edycutjong/portaldot-hackathon-2026-ballast-edycu"
 FINALITY_TIMEOUT = 45 * 60
 
 
@@ -58,6 +63,8 @@ def main() -> int:
     ap.add_argument("--vault", help="reuse an already deployed + funded Sepolia vault (resume)")
     ap.add_argument("--drain-pct", type=int, default=30)
     ap.add_argument("--timeout", type=float, default=240.0, help="max seconds to wait for the freeze")
+    ap.add_argument("--w2-actions", action="store_true",
+                    help="no local watcher: the freeze must come from W2 on GitHub Actions (W1 stays off)")
     args = ap.parse_args()
     from eth_account import Account
     from web3 import HTTPProvider, Web3
@@ -105,7 +112,8 @@ def main() -> int:
               assets={"breaker": v3.breaker, "control": v3.control, "decimals": v3.decimals}, roles=v3.roles,
               reserve={"label": "Sepolia", "evm_chain_id": SEPOLIA_CHAIN_ID, "erc20": SEPOLIA_USDC, "owner": owner,
                        "providers": names}, deployment=MANIFEST, decisions=[], source=source_pin(),
-              watchers_note="W1 and W2 run as two processes on ONE machine (W2 on GitHub Actions is a later phase)")
+              watchers_note=("W1 is OFF; W2 runs on GitHub Actions (.github/workflows/watcher-w2.yml)" if args.w2_actions
+                             else "W1 and W2 run as two processes on ONE machine"))
     base = [sys.executable, "-m", "ballast.cli", "--profile", PROFILE, "--url", cfg.url]
     db = Path(tempfile.gettempdir()) / f"ballast-{stem}.db"
     tx_log: list[dict] = []
@@ -170,6 +178,54 @@ def main() -> int:
         run.data.setdefault("finality_waits", []).append(rec)
         print(f"     finality: {why}: target #{block}, finalized {rec['finalized_heads']} after {rec['waited_s']} s")
         return rec
+
+    def local_watchers() -> list[str]:
+        out = subprocess.run(["ps", "-axo", "pid,command"], capture_output=True, text=True).stdout
+        return [ln.split(None, 1)[1][:80] for ln in out.splitlines()[1:]
+                if "ballast.cli" in ln and " watch " in ln and "ps -axo" not in ln]
+
+    def gh(*argv: str) -> str:
+        p = subprocess.run(["gh", *argv, "-R", REPO], capture_output=True, text=True, timeout=120)
+        if p.returncode:
+            raise RuntimeError(f"gh {' '.join(argv[:2])}: {p.stderr.strip()[-300:]}")
+        return p.stdout
+
+    def actions_freeze(drained: float, stem_: str, timeout: float) -> tuple[list[list[dict]], dict]:
+        """Dispatch watcher-w2.yml, wait for the V3 freeze, then fetch the log of the run that made it."""
+        since = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(drained - 30))
+        gh("workflow", "run", "watcher-w2.yml", "-f", "max_seconds=240")
+        dispatched = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        deadline = time.time() + timeout + 900  # a scheduled run may be in flight: the dispatch queues behind it
+        while not state()["frozen"]:
+            if time.time() > deadline:
+                raise RuntimeError("asset 4401 never froze: W2 on Actions did not act")
+            time.sleep(10)
+        found = None
+        while time.time() < deadline + 300 and not found:
+            runs = json.loads(gh("run", "list", "--workflow", "watcher-w2.yml", "--limit", "10", "--json",
+                                 "databaseId,createdAt,event,status,conclusion,url"))
+            for rn in sorted((r for r in runs if r["createdAt"] >= since and r["status"] == "completed"),
+                             key=lambda r: r["createdAt"]):
+                with tempfile.TemporaryDirectory() as d:
+                    pr = subprocess.run(["gh", "run", "download", str(rn["databaseId"]), "-R", REPO, "-n",
+                                         "w2-actions-log", "-D", d], capture_output=True, text=True)
+                    f = Path(d) / "w2-actions.jsonl"
+                    if pr.returncode or not f.exists():
+                        continue
+                    rows = read_log(f)
+                    if any(r["event"] == "freeze" for r in rows):
+                        out = ROOT / "evidence" / f"{stem_}.w2-actions.jsonl"
+                        out.write_text(f.read_text())
+                        found = (rn, rows, out)
+                        break
+            if not found:
+                time.sleep(15)
+        if not found:
+            raise RuntimeError("the asset froze but no Actions run log carries the freeze")
+        rn, rows, out = found
+        return [[], rows], {"run_url": rn["url"], "run_id": rn["databaseId"], "event": rn["event"],
+                            "conclusion": rn["conclusion"], "dispatched_at": dispatched, "log": out.name,
+                            "workflow": ".github/workflows/watcher-w2.yml"}
 
     watchers: list[subprocess.Popen] = []
     try:
@@ -247,27 +303,33 @@ def main() -> int:
         if not (ROOT / MANIFEST).exists() or json.loads((ROOT / MANIFEST).read_text())["reserve"]["vault"] != vault_addr:
             sep.save(ROOT / MANIFEST)
 
-        # 3. Two watcher processes against Sepolia.
-        for i, uri in ((1, "//BallastW1"), (2, "//BallastW2")):
-            log = ROOT / "evidence" / f"{stem}.w{i}.jsonl"
-            cmd = base + ["watch", "--breaker", str(v3.breaker), "--supply-assets", f"{v3.breaker},{v3.control}",
-                          "--holder", vault_addr, "--token", SEPOLIA_USDC, "--watcher", uri,
-                          "--watchers", "//BallastW1,//BallastW2", "--until-frozen",
-                          "--max-seconds", str(args.timeout + 180), "--log", str(log.relative_to(ROOT))]
-            watchers.append(subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
-        logs = [ROOT / "evidence" / f"{stem}.w{i}.jsonl" for i in (1, 2)]
-        run["watchdog_logs"] = [p.name for p in logs]
-        deadline = time.time() + 180
-        while time.time() < deadline:
-            recs = [read_log(p) for p in logs]
-            if any(r["event"] == "not-armed" for rs in recs for r in rs) or any(w.poll() is not None for w in watchers):
-                raise RuntimeError(f"a watcher exited early: {[[r for r in rs if r['event'] in ('not-armed', 'stop')] for rs in recs]}")
-            if all(any(r["event"] == "check" and r["decision"]["action"] == "level" for r in rs) for rs in recs):
-                break
-            time.sleep(1)
+        # 3. Two watcher processes against Sepolia (or, with --w2-actions, none: W2 runs on GitHub Actions).
+        if args.w2_actions:
+            procs = local_watchers()
+            run.check("W1 is OFF: no `ballast watch` process on this machine", procs, [], "ps")
+            logs = []
+            run["watchdog_logs"] = []
         else:
-            raise RuntimeError("watchers never both reported level")
-        run.check("both watchers armed and level on the Sepolia reserve (W1, W2 processes)", True, True, "watchdog logs")
+            for i, uri in ((1, "//BallastW1"), (2, "//BallastW2")):
+                log = ROOT / "evidence" / f"{stem}.w{i}.jsonl"
+                cmd = base + ["watch", "--breaker", str(v3.breaker), "--supply-assets", f"{v3.breaker},{v3.control}",
+                              "--holder", vault_addr, "--token", SEPOLIA_USDC, "--watcher", uri,
+                              "--watchers", "//BallastW1,//BallastW2", "--until-frozen",
+                              "--max-seconds", str(args.timeout + 180), "--log", str(log.relative_to(ROOT))]
+                watchers.append(subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+            logs = [ROOT / "evidence" / f"{stem}.w{i}.jsonl" for i in (1, 2)]
+            run["watchdog_logs"] = [p.name for p in logs]
+            deadline = time.time() + 180
+            while time.time() < deadline:
+                recs = [read_log(p) for p in logs]
+                if any(r["event"] == "not-armed" for rs in recs for r in rs) or any(w.poll() is not None for w in watchers):
+                    raise RuntimeError(f"a watcher exited early: {[[r for r in rs if r['event'] in ('not-armed', 'stop')] for rs in recs]}")
+                if all(any(r["event"] == "check" and r["decision"]["action"] == "level" for r in rs) for rs in recs):
+                    break
+                time.sleep(1)
+            else:
+                raise RuntimeError("watchers never both reported level")
+            run.check("both watchers armed and level on the Sepolia reserve (W1, W2 processes)", True, True, "watchdog logs")
 
         # 4. Drain: the vault owner releases N% to itself.
         total = state()["s1"] + state()["s2"]
@@ -276,13 +338,19 @@ def main() -> int:
         drain = send(f"vault owner drains {args.drain_pct}% ({amount / ONE:.2f}) — release()",
                      vault.functions.release(owner, amount, Web3.keccak(text=stem)), amount=amount)
         drained_at = time.time()
-        for w in watchers:
-            try:
-                w.wait(timeout=args.timeout + 200)
-            except subprocess.TimeoutExpired:
-                w.kill()
-        recs = [read_log(p) for p in logs]
-        freezes = [(i, r) for i, rs in enumerate(recs, 1) for r in rs if r["event"] == "freeze"]
+        if args.w2_actions:
+            recs, actions = actions_freeze(drain_sent, stem, args.timeout)
+            run["actions"] = actions
+            run["watchdog_logs"] = [actions["log"]]
+            freezes = [(2, r) for r in recs[1] if r["event"] == "freeze"]
+        else:
+            for w in watchers:
+                try:
+                    w.wait(timeout=args.timeout + 200)
+                except subprocess.TimeoutExpired:
+                    w.kill()
+            recs = [read_log(p) for p in logs]
+            freezes = [(i, r) for i, rs in enumerate(recs, 1) for r in rs if r["event"] == "freeze"]
         if not freezes:
             raise RuntimeError("no watcher froze asset 4401")
         who, freeze = freezes[0]
@@ -293,14 +361,19 @@ def main() -> int:
                  fr["outcome"]["ok"] and all(o["ok"] for o in fr["inner"]) and remark.get("reason") == "deficit"
                  and int(remark.get("eb", -1)) == drain["block_number"],
                  ("Assets.AssetFrozen", "System.Remarked", "Multisig.MultisigExecuted"))
-        others = [r for i, rs in enumerate(recs, 1) if i != who for r in rs
+        if args.w2_actions:
+            run.note("W1", "OFF for the whole drill (no `ballast watch` process before the drain; the freeze is W2's, from GitHub Actions)")
+            run.note("W2 on Actions", f"run {actions['run_url']} (dispatched {actions['dispatched_at']})")
+        others = [] if args.w2_actions else [r for i, rs in enumerate(recs, 1) if i != who for r in rs
                   if r["event"] in ("freeze", "freeze-raced", "freeze-failed")
                   or (r["event"] == "check" and r["decision"]["action"] == "already-frozen")]
-        run.note("other watcher", f"W{3 - who} " + (
-            f"saw asset {v3.breaker} already frozen at #{others[-1].get('head')} and stood down"
-            if others and others[-1]["event"] == "check" else
-            (f"{others[-1]['event']} at #{others[-1].get('head')}" if others else "no freeze-related record after the drain")))
-        run.note("drain -> freeze included (wall clock, one machine; Sepolia reserve + V3)",
+        if not args.w2_actions:
+            run.note("other watcher", f"W{3 - who} " + (
+                f"saw asset {v3.breaker} already frozen at #{others[-1].get('head')} and stood down"
+                if others and others[-1]["event"] == "check" else
+                (f"{others[-1]['event']} at #{others[-1].get('head')}" if others else "no freeze-related record after the drain")))
+        run.note("drain -> freeze included (wall clock: " + ("this machine's drain, the Actions runner's clock; "
+                 "includes workflow queue + runner start" if args.w2_actions else "one machine; ") + "Sepolia reserve + V3)",
                  f"{freeze['included_at'] - drained_at:.2f} s")
         run.check("freeze remark eb == the drain's Sepolia block", remark.get("eb"), str(drain["block_number"]),
                   fr["block_hash"])

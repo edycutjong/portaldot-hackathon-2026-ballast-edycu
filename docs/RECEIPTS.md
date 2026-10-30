@@ -20,7 +20,9 @@ extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** 
 | Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless | v3 | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 6/6 state checks) · ran from uncommitted changes | [`roles-setup-v3.json`](../evidence/roles-setup-v3.json) |
 | Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (16/16 steps as expected, 5/5 state checks) | [`roles-setup-standin-upstream.json`](../evidence/roles-setup-standin-upstream.json) |
 | Breaker drill, scratch asset: drain -> freeze | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (14/14 steps as expected, 11/11 state checks) | [`drill-drain-standin-upstream-asset2039.json`](../evidence/drill-drain-standin-upstream-asset2039.json) |
+| Breaker drill, scratch asset: every provider down -> fail-closed freeze (I6) | v3 | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 8/8 state checks) | [`drill-outage-v3-asset4501.json`](../evidence/drill-outage-v3-asset4501.json) |
 | Breaker drill, scratch asset: every provider down -> fail-closed freeze (I6) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 8/8 state checks) | [`drill-outage-standin-upstream-asset2041.json`](../evidence/drill-outage-standin-upstream-asset2041.json) |
+| Breaker drill, scratch asset: bot silent for K blocks -> freeze (I8) | v3 | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 9/9 state checks) | [`drill-heartbeat-v3-asset4503.json`](../evidence/drill-heartbeat-v3-asset4503.json) |
 | Breaker drill, scratch asset: bot silent for K blocks -> freeze (I8) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (13/13 steps as expected, 9/9 state checks) | [`drill-heartbeat-standin-upstream-asset2043.json`](../evidence/drill-heartbeat-standin-upstream-asset2043.json) |
 | ReserveOracle on Revive, mirroring a drill | standin-upstream (stand-in, NOT V3) | — | PASS (5/5 steps as expected, 6/6 state checks) | [`oracle-revive-standin-upstream-20261014T150859Z.json`](../evidence/oracle-revive-standin-upstream-20261014T150859Z.json) |
 | Assets spike: watcher-set freeze, freezer thaw refused | standin-upstream (stand-in, NOT V3) | — | PASS (11/11 steps as expected + 1 observation, 10/10 state checks) | [`spike-assets-standin-upstream-asset1010.json`](../evidence/spike-assets-standin-upstream-asset1010.json) |
@@ -322,6 +324,149 @@ State checks (storage/events read at the step's block):
 - ✅ asset 4402 team == keyless accounts (S2 can never change): expected `[]`, observed `[]` at block `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3`
 - ✅ supply S1 (asset 4401) before the gated mint: expected `0`, observed `0` at block `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3`
 - ✅ supply S2 (asset 4402): expected `50000000`, observed `50000000` at block `0x9bcca0a7841dc7c33a66e443e163e2519e83789f47d0b3f7e6944de5564600c3`
+
+
+### Breaker drill (outage: every provider down -> fail-closed freeze) — asset 4501 — 2026-10-30T22:47:55Z
+
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/drill-outage-v3-asset4501.json`](../evidence/drill-outage-v3-asset4501.json) · watchdog log: [`evidence/drill-outage-v3-asset4501.watchdog.jsonl`](../evidence/drill-outage-v3-asset4501.watchdog.jsonl) · result: **PASS** (13/13 steps as expected, 8/8 state checks) · source: `15d40cd` (clean)
+
+Deployed initcode sha256: ReserveVault `2b03363cd765b37e0cf9a1a81ed60ec0a6ef8c4c91a0c03eadd56f8247a4c911`, MockUSDC `ca848fc1870c675c7a4fbd40a0a43439e013cb21268dc3b770d3b22745879753`.
+
+Watcher reserve reads: none: the watcher's providers are unreachable by design (down-1=http://127.0.0.1:9, down-2=http://127.0.0.1:10); the vault was never read.
+
+Watcher parameters: `--timeout 3`, `--fail-closed-after 15.0`, `--max-block-age 0 (stale-block check off: anvil mines only when a tx lands)`.
+
+Reason remark (in the freeze extrinsic): `BALLAST/1|freeze|a=4501|reason=providers-down|s=100000000|down=20s|p=down-1,down-2`
+
+Timing (wall-clock on one machine; Portaldot V3 testnet + local anvil reserve (not Sepolia)):
+
+- `trigger_head`: 258719
+- `freeze_block`: 258720
+- `freeze_block_timestamp_ms`: 1793400570000
+- `submit_to_inclusion_s`: 5.64
+- `fail_closed_after_s (drill override; production default 300)`: 15.0
+- `first_outage_seen_to_freeze_included_s`: 26.42
+- `down_for_s_in_remark`: 20s
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x40918Ba7f132E0aCba2CE4de4c4baF9BD2D7D849`, token `0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8`):
+
+| # | Step | Block | Tx hash | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 1824 | `0x98e94ae1321d3b8e04ae15df249e8c9756d4cda09ac83427b96def0f7b47d724` | status 1 | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc) — owner = custodian | 1825 | `0x71bc9611ce77ce454890f2ad4d7ff005bafcc189edc4cb2c9d76feedaceed6ad` | status 1 | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 into the vault | 1826 | `0xa4996647b58f0393e389cf5e0fc62756552a19417d842ad143b9f70e42c36dae` | status 1 | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund the accounts below their working balance (A, W1, W2, judge, peer, M_watch) | `Utility.batch_all[2 x Balances.transfer_keep_alive]` (funder (Alice on a stand-in)) | `258706-1` | Ok | ✅ Ok |
+| 2 | create asset 4501 | `Assets.create` (A) | `258707-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-test (6 decimals) | `Assets.set_metadata` (A) | `258708-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | create asset 4502 | `Assets.create` (A) | `258709-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 5 | set_metadata pUSDC-ctl (6 decimals) | `Assets.set_metadata` (A) | `258710-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 6 | set_team asset 4501: freezer = M_watch (1-of-2 watchers) | `Assets.set_team` (A) | `258711-1` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | mint S1 = 50.00 of asset 4501 to the judge | `Assets.mint` (A) | `258712-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 8 | mint S2 = 50.00 of control asset 4502 to the peer | `Assets.mint` (A) | `258713-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 9 | watchdog (W2) freezes asset 4501 via M_watch, reason on chain (reason=providers-down) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2) | `258720-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 10 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `258721-1` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+
+Block and transaction hashes (full):
+
+```
+ 1  258706-1 block 0x0e43dff970c683280c3e63950402350cd5711cddb781152be7abaf89a9189780  tx 0xb9e27cf830ac38165c15e6e61b015fbd5d71e3f18034af7a568f1cd232389ac5
+ 2  258707-1 block 0x67c678637d4dea7eabc6b4a6cf46d8561006d92146b66ece396f2b8438781e0b  tx 0xd78a24326a66e00feb5a00049c7cb7c281c420def6709a3c986d8a6617ff8368
+ 3  258708-1 block 0xc9e8f8302c89bc4e1a994018633b0d6fd2fe57170c93c7936ded9ad7dc86486d  tx 0x56d7a745a50eef46206a4370c81c3999fe6bec0fc881bb025dbe52b23b34ffb6
+ 4  258709-1 block 0x9063938ba249d494d04cd4d311315765a509f63622dfecf158be251bac3d1b54  tx 0x5931607e13934af799087ff97e227a4228064237a621e4d1119c3bd181e1359c
+ 5  258710-1 block 0xc35b231803a12f1fd362022e1d7ba10cd990dfa93351f5844506d5dfa881283b  tx 0xe72b4212d7616c7071c8e86dbef433ff6955688241a75275b41413b9cc363cd1
+ 6  258711-1 block 0xb6e89d8349349d4fd06cd097a3077ae401c4e327db83a6959cacfe8e89a5cac3  tx 0x046f81185bfd7ba18d7612647e6ddaf935dda626e3699d2056b9bac43328067f
+ 7  258712-1 block 0x935de390b07150d0b44ba8cbea96372306069ef5361e0f0ff1453e285bdc8bf8  tx 0x6a7663349901517353d5e38af08afbea30c13bfb52be43c13a4d22e83562dedd
+ 8  258713-1 block 0xeb2e493d6a0f797ff04641873c1e98ceb7ce80437213cde823dfb39cef163951  tx 0x576ac822aff509221699da0fb54032bfb7173f8f38d29afde2dbe1974204da2e
+ 9  258720-1 block 0x73189b2a2d4ba18f33cfc526af0a0780214bd821e3fa8a5ad3a860280a525d7c  tx 0xd21e2d8ad22305bd6f63b883e5cd5de473dd8dffb57ab8eeaa8df69474bb65a8
+10  258721-1 block 0xcb0cd004500b5dc128f57ed3acf06adbb713ec44c7d3332755696732ab054a97  tx 0xa079bad02d1b9f40b045e83293b567174d46f513f081cafba59def9951263c81
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ vault reserves() after deposit: expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ supply S1 + S2 == vault reserves (level): expected `100000000`, observed `100000000` at block `0xeb2e493d6a0f797ff04641873c1e98ceb7ce80437213cde823dfb39cef163951`
+- ✅ watchdog armed: its M_watch == the breaker's freezer: expected `True`, observed `True` at block `watchdog start record`
+- ✅ every watcher reading failed (providers unreachable by design): expected `True`, observed `True` at block `watchdog log`
+- ✅ Asset(4501).status after the freeze: expected `Frozen`, observed `Frozen` at block `0x73189b2a2d4ba18f33cfc526af0a0780214bd821e3fa8a5ad3a860280a525d7c`
+- ✅ System.Remarked hash == blake2_256(the reason remark): expected `0x388e7b8238abc434264932518ae8d105ca5cd879f5c8024baea3dba28c37420d`, observed `0x388e7b8238abc434264932518ae8d105ca5cd879f5c8024baea3dba28c37420d` at block `0x73189b2a2d4ba18f33cfc526af0a0780214bd821e3fa8a5ad3a860280a525d7c`
+- ✅ control asset 4502 untouched (Live): expected `Live`, observed `Live` at block `0x73189b2a2d4ba18f33cfc526af0a0780214bd821e3fa8a5ad3a860280a525d7c`
+- ✅ judge balance unchanged after the refused transfer: expected `50000000`, observed `50000000` at block `0xcb0cd004500b5dc128f57ed3acf06adbb713ec44c7d3332755696732ab054a97`
+
+
+### Breaker drill (heartbeat: no bot heartbeat for K blocks -> freeze (I8)) — asset 4503 — 2026-10-30T22:49:54Z
+
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/drill-heartbeat-v3-asset4503.json`](../evidence/drill-heartbeat-v3-asset4503.json) · watchdog log: [`evidence/drill-heartbeat-v3-asset4503.watchdog.jsonl`](../evidence/drill-heartbeat-v3-asset4503.watchdog.jsonl) · result: **PASS** (13/13 steps as expected, 9/9 state checks) · source: `15d40cd` (clean)
+
+Deployed initcode sha256: ReserveVault `2b03363cd765b37e0cf9a1a81ed60ec0a6ef8c4c91a0c03eadd56f8247a4c911`, MockUSDC `ca848fc1870c675c7a4fbd40a0a43439e013cb21268dc3b770d3b22745879753`.
+
+Watcher parameters: `--timeout 3`, `--fail-closed-after 300`, `--max-block-age 0 (stale-block check off: anvil mines only when a tx lands)`, `--heartbeat-k 10`.
+
+Reason remark (in the freeze extrinsic): `BALLAST/1|freeze|a=4503|reason=no-heartbeat|s=100000000|b=5FepBwxQ2eEeXht8594bJkVep9CTEBua3Abf4rgph7FMjjtg|n=0|since=258734|k=10`
+
+Timing (wall-clock on one machine; Portaldot V3 testnet + local anvil reserve (not Sepolia)):
+
+- `trigger_head`: 258744
+- `freeze_block`: 258745
+- `freeze_block_timestamp_ms`: 1793400720004
+- `submit_to_inclusion_s`: 4.95
+- `heartbeat_k (drill override; production K = 300 on this profile)`: 10
+- `nonce_first_seen_block`: 258734
+- `blocks_nonce_still_to_freeze_included`: 11
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f`, token `0xd6e1afe5cA8D00A2EFC01B89997abE2De47fdfAf`):
+
+| # | Step | Block | Tx hash | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 1827 | `0xdc102b390e9746061dfe5620168a911da3277295bca5147f8ff7e1c8efe454ee` | status 1 | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc) — owner = custodian | 1828 | `0xe4c0347b26657f8ff41def740d52ca6113c747506da1cfa1cc7391837a9cfdaa` | status 1 | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 into the vault | 1829 | `0x5b579ade4470bc111748bf88b4ed0f2c0e4ff5b4a0f91bac3147842fae4ee67f` | status 1 | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | fund the accounts below their working balance (A, W1, W2, judge, peer, M_watch) | `Utility.batch_all[2 x Balances.transfer_keep_alive]` (funder (Alice on a stand-in)) | `258725-1` | Ok | ✅ Ok |
+| 2 | create asset 4503 | `Assets.create` (A) | `258726-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-test (6 decimals) | `Assets.set_metadata` (A) | `258727-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | create asset 4504 | `Assets.create` (A) | `258728-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 5 | set_metadata pUSDC-ctl (6 decimals) | `Assets.set_metadata` (A) | `258729-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 6 | set_team asset 4503: freezer = M_watch (1-of-2 watchers) | `Assets.set_team` (A) | `258730-1` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | mint S1 = 50.00 of asset 4503 to the judge | `Assets.mint` (A) | `258731-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 8 | mint S2 = 50.00 of control asset 4504 to the peer | `Assets.mint` (A) | `258732-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 9 | watchdog (W2) freezes asset 4503 via M_watch, reason on chain (reason=no-heartbeat) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2) | `258745-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 10 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `258746-1` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+
+Block and transaction hashes (full):
+
+```
+ 1  258725-1 block 0xa4f7698fa9114133de78b1efec4149a21c8b19bd3236ce7b911785870e96c596  tx 0xbb8255872f98ec108af20dc3f800797b0c51021fb0374d484eab793e5ae9c277
+ 2  258726-1 block 0xc05b9a96827fda3291fb1fa3f17d97f72e9d10dd453c66303870e86619a8b803  tx 0x65331727feb169853f727bf9b689b13c02d8a56a6e893cd50a95c9919a3aea1a
+ 3  258727-1 block 0xa6f135545e47505a4935b59c0983bf3c1d3f7752b3cdf47754eda5da6260ff21  tx 0x31e1cfff29b741240b700aa093f7e3602a75083bd0e1f1e90c6ba1b590a14f50
+ 4  258728-1 block 0x6490f88c48a273d329f928cd9e2bfbb1b88a98215e8c06f481a71d68d8bb157c  tx 0x61d20055979d7bca119c38ced921d5cbda8a7b1cb7720de5c826762a8555c787
+ 5  258729-1 block 0x41d1cdb71463f2faee0150af94b0854a3208923a267ceb48b8615c703d81693b  tx 0xa261f31a598144e157e0b0f35a3f1d08a8ac963d5d27e709554376d3e17197a1
+ 6  258730-1 block 0x598985bd794b4f8f26c260dff8a2ca99ade3b2653fd857e6dbd81c1ab19d3c34  tx 0x8712809721d9e33f43fda8d7b7b773b6d4c3ee6b237399858ad0e36d5b3d34f4
+ 7  258731-1 block 0x04234e67ddeaebe6efb3d7583973842c63fd87109ce5cd39b0ce98d29f62dd12  tx 0x7734e77ffdfbbc632cfa1aca79e450f7636e8b13013467d18598eff1de2adb8f
+ 8  258732-1 block 0x97b7732ba768dfa846b5401c7d38e425cf26f888055089b34e3dfea410485fe3  tx 0x75a90709a50c7d032b49bfebd6edeeb0f1293ce0a219ba0f882f34460d68df79
+ 9  258745-1 block 0xd517a2e9f9d75bbd0aef5673e04cf7c83a1e931c02d71ffb7dcae699ec42346d  tx 0x9e3d2d078aa7e270c9dd8fd31b91769fe7666b49a7d4f2d007380d7d9b56535d
+10  258746-1 block 0x7a74bead3a76815fc03101511fd55fcd0285737060e2fc825d9b19b664b25e54  tx 0xeb76558759ae4019a88bffb48ad70baf1aafa8d5236efc2a1497492f8cbad18d
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ vault reserves() after deposit: expected `100000000`, observed `100000000` at block `evm latest`
+- ✅ supply S1 + S2 == vault reserves (level): expected `100000000`, observed `100000000` at block `0x97b7732ba768dfa846b5401c7d38e425cf26f888055089b34e3dfea410485fe3`
+- ✅ watchdog armed: its M_watch == the breaker's freezer: expected `True`, observed `True` at block `watchdog start record`
+- ✅ Asset(4503).status after the freeze: expected `Frozen`, observed `Frozen` at block `0xd517a2e9f9d75bbd0aef5673e04cf7c83a1e931c02d71ffb7dcae699ec42346d`
+- ✅ System.Remarked hash == blake2_256(the reason remark): expected `0x9763564d95f5f31100b81512a28eccdc5c37f82afb32e4f7f0ab94bc19511473`, observed `0x9763564d95f5f31100b81512a28eccdc5c37f82afb32e4f7f0ab94bc19511473` at block `0xd517a2e9f9d75bbd0aef5673e04cf7c83a1e931c02d71ffb7dcae699ec42346d`
+- ✅ control asset 4504 untouched (Live): expected `Live`, observed `Live` at block `0xd517a2e9f9d75bbd0aef5673e04cf7c83a1e931c02d71ffb7dcae699ec42346d`
+- ✅ judge balance unchanged after the refused transfer: expected `50000000`, observed `50000000` at block `0x7a74bead3a76815fc03101511fd55fcd0285737060e2fc825d9b19b664b25e54`
+- ✅ the triggering check saw the bot nonce unchanged for >= K blocks: expected `True`, observed `True` at block `watchdog log`
+- ✅ reserves were level at the trigger (the freeze is the heartbeat rule alone): expected `[]`, observed `[]` at block `watchdog log`
 
 
 ## Stand-in receipts — standin-upstream (not V3)

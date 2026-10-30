@@ -33,14 +33,14 @@
   <br/><sub>B-roll: the V3 freeze run (1.6× speed) · <a href="https://youtu.be/jV5dCy1o3O8">full demo video</a></sub>
 </div>
 
-**On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia. On 2026-10-31 the drill also ran against a real Sepolia `ReserveVault` (below).**
+**On 2026-10-24 it ran on the Portaldot V3 testnet: role split, watcher freeze, bot-gated thaw and attestations, every V3 extrinsic listed in `docs/PROOF.md`. The reserve in those runs is a local anvil chain, not Sepolia. On 2026-10-30 (UTC) the drill also ran against a real Sepolia `ReserveVault` (below).**
 
 *Portaldot Hacker House 2026 · check-in build. On 2026-10-24 the breaker ran on the Portaldot V3 testnet (`wss://test-node-v3.portaldot.dev`;
 genesis, runtime `:code` hash and spec `portaldot-v3`/3002 pinned by the read-only day-0 check of 2026-10-20,
 [`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)): the role split on assets 4401/4402, `ReserveOracle` deployed
 through Revive, a watcher freeze, a refused freezer thaw, a bot-gated thaw and `BALLAST/1` attestations. That is 79 V3 extrinsics across 8 runs
 (4 ERROR runs kept as history), each re-queried at or below the finalized head, in [`docs/PROOF.md`](docs/PROOF.md). The reserve in those runs is a
-**local anvil chain, NOT Sepolia**. On 2026-10-31 a `ReserveVault` was deployed on Ethereum Sepolia with 100.00 Circle test USDC and the drill ran against it, including the real finality wait (see the Sepolia paragraph below). Earlier drills ran on a labelled local stand-in chain (`standin-upstream`,
+**local anvil chain, NOT Sepolia**. On 2026-10-30 (UTC) a `ReserveVault` was deployed on Ethereum Sepolia with 100.00 Circle test USDC and the drill ran against it, including the real finality wait (see the Sepolia paragraph below). Earlier drills ran on a labelled local stand-in chain (`standin-upstream`,
 not V3). Every receipt says which chain it came from.*
 
 <a id="project-name"></a>
@@ -152,7 +152,7 @@ flowchart LR
 | Chains used | `v3` (the 2026-10-24 runs); `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** (the earlier drills) | V3 public; stand-in local |
 | Runtime modules | Assets, Multisig, Utility, System, Revive (pallet-native) | used by the code and the drills |
 | Client | Python 3.11+, `substrate-interface` 1.8.1, `scalecodec` 1.2.12, `web3` 7 | built |
-| Contract language | Solidity 0.8.24: `ReserveVault` (Foundry), `ReserveOracle` (Hardhat) | built; vault on local anvil only, oracle on V3 Revive and the stand-in's Revive |
+| Contract language | Solidity 0.8.24: `ReserveVault` (Foundry), `ReserveOracle` (Hardhat) | built; vault on local anvil (role drills) and on Ethereum Sepolia (Sepolia drill), oracle on V3 Revive and the stand-in's Revive |
 | Reserve chain | local anvil (role drills); Ethereum Sepolia + Circle test USDC (Sepolia drill) | one vault on Sepolia, 100.00 test USDC |
 | Frontend | none | not built |
 
@@ -182,7 +182,7 @@ Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are 
 
 | Contract | Key functions | Tests | Where it has been deployed |
 |---|---|---|---|
-| [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) only. **Not on Sepolia** |
+| [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) in the role drills; Ethereum Sepolia `0x7ceB…357b` in the Sepolia drill (Sourcify `exact_match`) |
 | [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | V3 Revive (`0x4832…155e`, 2026-10-24) and the stand-in's Revive pallet |
 
 A multisig can report `MultisigExecuted` while the call inside it failed, so every executing multisig receipt records the *inner* result (the
@@ -199,7 +199,7 @@ chains that recorded them: **486/486 stand-in extrinsics and 111/111 anvil trans
 a block that lost a fork; the same extrinsic is in the canonical block at the same height, and PROOF.md links that block. V3 IDs: assets 4401
 (breaker) and 4402 (control), `ReserveOracle` `0x4832…155e`, role addresses in [`deployments/v3.json`](deployments/v3.json).
 
-**Sepolia.** On 2026-10-31 `ReserveVault` was deployed on Ethereum Sepolia at `0x7ceB7c3EBDBCC75e585599e5dd944286F009357b` (owner: the testnet deployer `0xDEf7…9300`, token: Circle test USDC `0x1c7D…7238`), source-verified on Sourcify (`exact_match`, no Etherscan key), and funded with exactly 100.00 test USDC (deploy tx `0x6e3fc886…479a`, deposit `0x28d963c4…b245`, both final on publicnode and Tenderly after an 842 s wait). The V3 supply was levelled to S1 50.00 + S2 50.00 first (the judge account's 6.00 surplus was burned through `M_admin`, A + A2). The drill then ran against that vault with the real finality wait: the vault owner released 30.00, W1/W2 (two processes, one machine) froze asset 4401 on V3 about 10 s later, the judge transfer was refused (`AssetNotLive`), W1's thaw was refused (`NoPermission`), the owner re-deposited 30.00, and the bot refused the thaw until both providers' finalized head passed the drain (the wait was 1,026 s; finalized `12029641` on both) and only then co-signed it. Clean-pinned PASS: [`evidence/sepolia-drill-20261030T220145Z.json`](evidence/sepolia-drill-20261030T220145Z.json) (8/8 steps, 18/18 state checks; freeze `258434-1`, thaw `258627-1`); the first run, the Sepolia deploy and deposit are in [`evidence/sepolia-drill-20261030T200923Z.json`](evidence/sepolia-drill-20261030T200923Z.json); two `--vault` re-runs between them failed one harness precheck (product steps 8/8) and are kept as history. Every Sepolia transaction was re-read from both providers at or below the finalized head ([`evidence/sepolia-drill-reread-20261030T224700Z.txt`](evidence/sepolia-drill-reread-20261030T224700Z.txt), 20/20). Rows are labelled `Sepolia` in [`docs/PROOF.md`](docs/PROOF.md). The second keyless provider is now Tenderly's public gateway because drpc.org removed Sepolia from its free plan on 2026-10-31.
+**Sepolia.** On 2026-10-30 (UTC) `ReserveVault` was deployed on Ethereum Sepolia at `0x7ceB7c3EBDBCC75e585599e5dd944286F009357b` (owner: the testnet deployer `0xDEf7…9300`, token: Circle test USDC `0x1c7D…7238`), source-verified on Sourcify (`exact_match`; not verified on Etherscan), and funded with exactly 100.00 test USDC (deploy tx `0x6e3fc886…479a`, deposit `0x28d963c4…b245`, both final on publicnode and Tenderly after a wait of about 842 s). The V3 supply was levelled to S1 50.00 + S2 50.00 first (the judge account's 6.00 surplus was burned through `M_admin`, A + A2). The drill then ran against that vault with the real finality wait: the vault owner released 30.00, W1/W2 (two processes, one machine) froze asset 4401 on V3 about 10 s later, the judge transfer was refused (`AssetNotLive`), W1's thaw was refused (`NoPermission`), the owner re-deposited 30.00, and the bot refused the thaw until both providers' finalized head passed the drain (the wait was 1,026 s; finalized `12029641` on both) and only then co-signed it. Clean-pinned PASS: [`evidence/sepolia-drill-20261030T220145Z.json`](evidence/sepolia-drill-20261030T220145Z.json) (8/8 steps, 18/18 state checks; freeze `258434-1`, thaw `258627-1`); the first run, the Sepolia deploy and deposit are in [`evidence/sepolia-drill-20261030T200923Z.json`](evidence/sepolia-drill-20261030T200923Z.json); two `--vault` re-runs between them failed one harness precheck (product steps 8/8) and are kept as history. Every Sepolia transaction was re-read from both providers at or below the finalized head ([`evidence/sepolia-drill-reread-20261030T224700Z.txt`](evidence/sepolia-drill-reread-20261030T224700Z.txt), 20/20). Rows are labelled `Sepolia` in [`docs/PROOF.md`](docs/PROOF.md). The second keyless provider is now Tenderly's public gateway because drpc.org's free plan stopped serving Sepolia (error 35, first seen 2026-10-30 UTC).
 
 Reproduce: load the Sepolia key file into the environment (`set -a; . ~/.config/ballast/sepolia.env; set +a`), then `python scripts/sepolia_drill.py [--vault <address>]`; it needs the v3 role seeds and about 35 minutes for the two finality waits.
 
@@ -294,7 +294,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - [x] 274 automated tests (239 pytest + 20 forge + 15 Hardhat, [`evidence/test-run-2026-10-24-p12.txt`](evidence/test-run-2026-10-24-p12.txt))
 
 **Next phase**
-- [x] `ReserveVault` on Sepolia with 100.00 test USDC and the drill against it, including the real finality wait (2026-10-31, [`docs/PROOF.md`](docs/PROOF.md))
+- [x] `ReserveVault` on Sepolia with 100.00 test USDC and the drill against it, including the real finality wait (2026-10-30 UTC, [`docs/PROOF.md`](docs/PROOF.md))
 - [ ] The scratch-asset outage and heartbeat drills on V3 (`ballast drill` targets the stand-in; the role and attestation drills ran on V3)
 - [ ] A watcher on separate infrastructure (today both watchers run on one machine)
 - [ ] Community-watcher mode, watcher-set rotation, `M_admin` rotation, wind-down branch, `ReserveOracle.trip()`
@@ -311,7 +311,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
   bot visible by freezing, but only if a watcher is running.
 - `ReserveOracle` is as fresh as the bot's last post; `isBacked(maxAge)` reads `false` when stale, never "backed" by default.
 - The drills use drill overrides where noted (fail-closed 15 s instead of 300 s, K = 10 instead of 600) and a mock token on a local anvil
-  chain in the role drills, whose finality is emulated by mining 65 blocks; the Sepolia drill waited out real finality (842-1,050 s per wait on 2026-10-31). Both watchers there ran on one machine.
+  chain in the role drills, whose finality is emulated by mining 65 blocks; the Sepolia drill waited out real finality (842-1,050 s per wait on 2026-10-30 UTC). Both watchers there ran on one machine.
 
 <a id="team"></a>
 

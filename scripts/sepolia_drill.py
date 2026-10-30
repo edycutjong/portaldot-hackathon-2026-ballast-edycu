@@ -180,7 +180,15 @@ def main() -> int:
         eth0 = w3.eth.get_balance(owner)
         usdc0 = usdc.functions.balanceOf(owner).call()
         run.note("owner before", {"address": owner, "eth_wei": eth0, "usdc": usdc0})
-        run.check("owner holds >= 100.00 test USDC and gas", usdc0 >= DEPOSIT and eth0 > 10 ** 16, True, "sepolia latest")
+        if args.vault:  # resume: the 100.00 already sits in the vault; the owner needs gas and the drain amount for the refill
+            vault_reserves0 = w3.eth.contract(address=Web3.to_checksum_address(args.vault), abi=vault_abi) \
+                .functions.reserves().call()
+            run.check("vault holds the 100.00 deposit; owner holds gas and >= the refill (30%)",
+                      vault_reserves0 == DEPOSIT and eth0 > 10 ** 16 and usdc0 >= DEPOSIT * args.drain_pct // 100, True,
+                      "sepolia latest")
+        else:
+            run.check("owner holds >= 100.00 test USDC and gas", usdc0 >= DEPOSIT and eth0 > 10 ** 16, True,
+                      "sepolia latest")
 
         # 0. Level S1 + S2 to the 100.00 deposit.
         surplus = st0["s1"] + st0["s2"] - DEPOSIT
@@ -237,7 +245,8 @@ def main() -> int:
                                   "erc20": SEPOLIA_USDC, "custodian": owner},
                          oracle=v3.oracle, created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                          setup_evidence=f"{stem}.json")
-        sep.save(ROOT / MANIFEST)
+        if not (ROOT / MANIFEST).exists() or json.loads((ROOT / MANIFEST).read_text())["reserve"]["vault"] != vault_addr:
+            sep.save(ROOT / MANIFEST)
 
         # 3. Two watcher processes against Sepolia.
         for i, uri in ((1, "//BallastW1"), (2, "//BallastW2")):

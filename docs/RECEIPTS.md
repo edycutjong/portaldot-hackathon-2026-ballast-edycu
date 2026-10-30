@@ -12,7 +12,7 @@ extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** 
 
 | Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |
 |---|---|---|---|---|
-| Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality | v3 | Sepolia | PASS (12/12 steps as expected, 18/18 state checks) · ran from uncommitted changes | [`sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json) |
+| Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality | v3 | Sepolia | PASS (8/8 steps as expected, 18/18 state checks) | [`sepolia-drill-20261030T220145Z.json`](../evidence/sepolia-drill-20261030T220145Z.json) |
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | v3 | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-v3-20261024T045513Z.json`](../evidence/roles-drill-v3-20261024T045513Z.json) |
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-standin-upstream-20261014T150211Z.json`](../evidence/roles-drill-standin-upstream-20261014T150211Z.json) |
 | Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | v3 | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-v3-20261024T050653Z.json`](../evidence/roles-attest-v3-20261024T050653Z.json) |
@@ -37,78 +37,74 @@ The Sepolia `ReserveVault` deploy, its 100.00 USDC deposit and the real-Sepolia 
 
 Chain label: Portaldot V3 testnet
 
-### Sepolia drill — real ReserveVault + 100.00 test USDC, drain -> freeze on V3, thaw only after Sepolia finality — 2026-10-30T20:09:23Z
+### Sepolia drill — real ReserveVault + 100.00 test USDC, drain -> freeze on V3, thaw only after Sepolia finality — 2026-10-30T22:01:45Z
 
-Chain: **Portaldot V3 testnet** · reserve: **Sepolia** · raw JSON: [`evidence/sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json) · result: **PASS** (12/12 steps as expected, 18/18 state checks) · source: `cff62bc` (UNCOMMITTED CHANGES)
+Chain: **Portaldot V3 testnet** · reserve: **Sepolia** · raw JSON: [`evidence/sepolia-drill-20261030T220145Z.json`](../evidence/sepolia-drill-20261030T220145Z.json) · result: **PASS** (8/8 steps as expected, 18/18 state checks) · source: `2dbd35c` (clean)
 
 Role map: `M_mint` 5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb (2-of-2 A, B) · `M_admin` 5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg (2-of-3 A, A2, B) · `M_watch` 5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c (1-of-2 watchers).
 
-- owner before: {'address': '0xDEf7Cd11f524C2246571654110b43476C2BD9300', 'eth_wei': 199749845243369182, 'usdc': 119896195}
-- other watcher: W1 saw asset 4401 already frozen at #257295 and stood down
-- drain -> freeze included (wall clock, one machine; Sepolia reserve + V3): 11.25 s
-- re-deposit sent -> finalized (wall clock, both providers): 1052 s
-- owner after: {'eth_wei': 199749845194641295, 'usdc': 19896195, 'vault_reserves': 100000000}
+- owner before: {'address': '0xDEf7Cd11f524C2246571654110b43476C2BD9300', 'eth_wei': 199749845188377967, 'usdc': 19896195}
+- vault: resumed 0x7ceB7c3EBDBCC75e585599e5dd944286F009357b
+- other watcher: W2 saw asset 4401 already frozen at #258435 and stood down
+- drain -> freeze included (wall clock, one machine; Sepolia reserve + V3): 10.26 s
+- re-deposit sent -> finalized (wall clock, both providers): 1067 s
+- owner after: {'eth_wei': 199749845184005899, 'usdc': 19896195, 'vault_reserves': 100000000}
 
 Reserve-chain transactions (Sepolia; vault `0x7ceB7c3EBDBCC75e585599e5dd944286F009357b`):
 
 | # | Step | Block | Tx hash | Observed |
 |---|---|---|---|---|
-| 1 | deploy ReserveVault(Circle test USDC) — owner = the Sepolia deployer | 12028966 | [`0x6e3fc886d74e75277e4d3b6853c8e11102ffe4629ca966f43d8a194e422f479a`](https://sepolia.etherscan.io/tx/0x6e3fc886d74e75277e4d3b6853c8e11102ffe4629ca966f43d8a194e422f479a) | ✅ status 1 |
-| 2 | deposit 100.00 test USDC into the vault (plain ERC-20 transfer) | 12028967 | [`0x28d963c46b59d8320c69b49750fc2404c6391fd9c79b876c354011ca6c16b245`](https://sepolia.etherscan.io/tx/0x28d963c46b59d8320c69b49750fc2404c6391fd9c79b876c354011ca6c16b245) | ✅ status 1 |
-| 3 | vault owner drains 30% (30.00) — release() | 12029042 | [`0x32df160d33d39f65bb9dad7eba2b212bcacbd1e8c8a271af938075aa66e1cfde`](https://sepolia.etherscan.io/tx/0x32df160d33d39f65bb9dad7eba2b212bcacbd1e8c8a271af938075aa66e1cfde) | ✅ status 1 |
-| 4 | vault owner re-deposits 30.00 | 12029046 | [`0xa6d47f836f9b5ad3b7688ec265b8a00b3070ab9c2d63de26aa56ce256d45e454`](https://sepolia.etherscan.io/tx/0xa6d47f836f9b5ad3b7688ec265b8a00b3070ab9c2d63de26aa56ce256d45e454) | ✅ status 1 |
+| 1 | vault owner drains 30% (30.00) — release() | 12029614 | [`0x6e5f5421a52a5d999d61c25b8bf29c64563a3cd81a10e8761c0dd49424d5e256`](https://sepolia.etherscan.io/tx/0x6e5f5421a52a5d999d61c25b8bf29c64563a3cd81a10e8761c0dd49424d5e256) | ✅ status 1 |
+| 2 | vault owner re-deposits 30.00 | 12029618 | [`0xd39d7f8f72572af30521ae7cde8f6a59291c27bcf6ce7bd002a16af182d540d5`](https://sepolia.etherscan.io/tx/0xd39d7f8f72572af30521ae7cde8f6a59291c27bcf6ce7bd002a16af182d540d5) | ✅ status 1 |
 
 Portaldot extrinsics:
 
 | # | Step | Call (signer) | Extrinsic id | Expected | Observed |
 |---|---|---|---|---|---|
-| 1 | A proposes burning the 6.00 S1 surplus from the judge through M_admin (level to 100.00) | `Multisig.as_multi(Assets.burn(6.00 of the judge's S1)) — first approval` (A (operator)) | `257137-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
-| 2 | cold key A2 co-signs: the burn executes (S1 + S2 == 100.00) | `Multisig.as_multi(Assets.burn) — final approval` (A2 (cold key)) | `257138-1` | Ok + inner Ok + Assets.Burned | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.Burned |
-| 3 | watcher W2 freezes asset 4401 on V3 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `257294-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
-| 4 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `257296-1` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
-| 5 | watcher W1 tries to thaw through M_watch (freezer is inert) | `Multisig.as_multi_threshold_1(Assets.thaw_asset)` (W1 (watcher)) | `257297-1` | Err(Assets.NoPermission) | ✅ Err(Assets.NoPermission) |
-| 6 | A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `257303-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
-| 7 | bot B co-signs the thaw: finalized Sepolia reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `257483-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
-| 8 | judge transfer 1.00 after the thaw | `Assets.transfer` (Judge) | `257484-1` | Ok | ✅ Ok |
+| 1 | watcher W1 freezes asset 4401 on V3 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `258434-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 2 | judge transfer 1.00 while frozen is refused | `Assets.transfer` (Judge) | `258436-1` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+| 3 | watcher W1 tries to thaw through M_watch (freezer is inert) | `Multisig.as_multi_threshold_1(Assets.thaw_asset)` (W1 (watcher)) | `258437-1` | Err(Assets.NoPermission) | ✅ Err(Assets.NoPermission) |
+| 4 | A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `258443-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 5 | bot B co-signs the thaw: finalized Sepolia reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `258627-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 6 | judge transfer 1.00 after the thaw | `Assets.transfer` (Judge) | `258628-1` | Ok | ✅ Ok |
 
 Block and transaction hashes (full):
 
 ```
- 1  257137-1 block 0x2fac73c6552f737a4cab8d8f955577ccc9ce464fc7cc695fb6b1733b19d0394a  tx 0x4f5042fda09336c01f8e13f34486064cc3207fe7d45c96b17a39f72ac859038c
- 2  257138-1 block 0x0e650c19c3c009cf80cd8efc04f0ca8fb528d391bfa27f12f929aa929a1d0879  tx 0x66768938dcc2d281563f5419fd91962ae45c8b455115685880e4b02c5117d836
- 3  257294-1 block 0x4370db26975bc3370d07287a2d159397778d2b86611143e8008b491cc406ffd8  tx 0xbcf077d9881743ad68ca6d45a52f488cc81e8924d27165d754653b93de6816fd
- 4  257296-1 block 0xce4229646c2c57e0deb8abe7a9f531e9726f62c9da5cfeaf871b9a08d3b3a8bf  tx 0xd36a9e7f82ffc40f94df9252c4a09cdec6fd74f4b45e069227cc7d1098b53717
- 5  257297-1 block 0xc8845896e1c329f6f7b5dd9357389ae1c36470675ddd83f327a381f4c753bc75  tx 0x5bf72ff6768e23f6c28793460d0a9a55bd990a50413903a016e035959a2d95cc
- 6  257303-1 block 0x005746cb7f7b1f14ed0917fca3ecb8a5fdfe6368b083176b9c4c0d550dd3527d  tx 0xeaa9a10f70e3432eeaedb18e95851c0580332b75d219913831a3b13459bf6485
- 7  257483-1 block 0x09fca75ae61ca1f55d3ef27a7b97679d090c1acf77d26fdb303fe71ca3fe7699  tx 0x2f43a102057200ba4cfd5f0f64a88a5befc75d48e488ab32f5b0229adb2eac97
- 8  257484-1 block 0x23f63b8353b9c33273fc3d44ee1cb0ed27db6ec62aad801e4eba9a8fc89b785e  tx 0x2de3a6365f90b609e02f5aba37184282a875197a062a42f5bd5877c45f4b9408
+ 1  258434-1 block 0xce45219122924516d8e2f7ea79a3a0b88b3919f08ee8585621495db19b3ea889  tx 0xd8a3b88fc3fe186ac598f0ef7680a13446107152d5cb50c5737d893c639995cf
+ 2  258436-1 block 0x464470e6afdaad2dfa4ae75fdcff1bc001758ec9d11c54ce2ca7b1ba44ff6ae2  tx 0xe2d3d7947351e275c35ddc8f1fdfdc26ba48de8211480a7b01ae503f474cd01e
+ 3  258437-1 block 0x6e41dd3845c09604ffbf6b8d29a751c7e49b59aa8964135b2407785ec365f828  tx 0x6797da4fa957d4522887181d1b03fd1f6500e4b8d63046181f178222f8665279
+ 4  258443-1 block 0x2a56b11336dfad9928b37273c29b81ff703c84ecfeeddcf0f256296a8e2c3ac8  tx 0xdaf303f85c0f203b1aa42acb28f5738e1af9183b8cf34b4b10fb799a3583afcd
+ 5  258627-1 block 0x6d82138a1e0e6b4bf5a70188262d7cde147da3861e29e6db852ccd3bf889e582  tx 0xa81af085af7d572bbf5d274e81c13735723f81ee7dd1a63f733d84770b5ba34d
+ 6  258628-1 block 0x1a6b01d5fdf5bbc9d469dec6c32108c3e06af41ca5630dfcbf477b95decafdd0  tx 0xf7bccc7003c1f1ec919c9c866e3fd313b39b16b64a0a6af772a336bfa6183a73
 ```
 
 State checks (storage/events read at the step's block):
 
 - ✅ asset 4401 team == role map before the drill (ARMED): expected `[]`, observed `[]` at block `head`
-- ✅ owner holds >= 100.00 test USDC and gas: expected `True`, observed `True` at block `sepolia latest`
+- ✅ vault holds the 100.00 deposit and the owner holds gas (the drain pays the refill): expected `True`, observed `True` at block `sepolia latest`
 - ✅ S1 + S2 == 100.00 before the deposit: expected `100000000`, observed `100000000` at block `head`
 - ✅ vault.owner() == the Sepolia deployer: expected `0xDEf7Cd11f524C2246571654110b43476C2BD9300`, observed `0xDEf7Cd11f524C2246571654110b43476C2BD9300` at block `sepolia latest`
 - ✅ vault.usdc() == Circle test USDC: expected `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`, observed `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` at block `sepolia latest`
 - ✅ vault.reserves() == 100.00: expected `100000000`, observed `100000000` at block `sepolia latest`
-- ✅ [publicnode] vault.reserves() at the finalized head #12028972 == 100.00: expected `100000000`, observed `100000000` at block `sepolia finalized #12028972`
-- ✅ [tenderly] vault.reserves() at the finalized head #12028972 == 100.00: expected `100000000`, observed `100000000` at block `sepolia finalized #12028972`
+- ✅ [publicnode] vault.reserves() at the finalized head #12029545 == 100.00: expected `100000000`, observed `100000000` at block `sepolia finalized #12029545`
+- ✅ [tenderly] vault.reserves() at the finalized head #12029545 == 100.00: expected `100000000`, observed `100000000` at block `sepolia finalized #12029545`
 - ✅ both watchers armed and level on the Sepolia reserve (W1, W2 processes): expected `True`, observed `True` at block `watchdog logs`
-- ✅ freeze remark eb == the drain's Sepolia block: expected `12029042`, observed `12029042` at block `0x4370db26975bc3370d07287a2d159397778d2b86611143e8008b491cc406ffd8`
+- ✅ freeze remark eb == the drain's Sepolia block: expected `12029614`, observed `12029614` at block `0xce45219122924516d8e2f7ea79a3a0b88b3919f08ee8585621495db19b3ea889`
 - ✅ trigger check ran after the drain was sent: expected `True`, observed `True` at block `watchdog log`
-- ✅ asset 4401 status after the freeze: expected `Frozen`, observed `Frozen` at block `0x4370db26975bc3370d07287a2d159397778d2b86611143e8008b491cc406ffd8`
+- ✅ asset 4401 status after the freeze: expected `Frozen`, observed `Frozen` at block `0xce45219122924516d8e2f7ea79a3a0b88b3919f08ee8585621495db19b3ea889`
 - ✅ vault reserves (latest) back to >= S1 + S2: expected `True`, observed `True` at block `sepolia latest`
-- ✅ bot refuses the thaw: Sepolia finality has not reached the drain block yet: expected `['refused', 12029042]`, observed `['refused', 12029042]` at block `bot`
-- ✅ bot located the freeze (latest AssetFrozen, backward event scan) == the freeze receipt: expected `257294-1`, observed `257294-1` at block `0x4370db26975bc3370d07287a2d159397778d2b86611143e8008b491cc406ffd8`
-- ✅ asset 4401 status after the thaw: expected `Live`, observed `Live` at block `0x09fca75ae61ca1f55d3ef27a7b97679d090c1acf77d26fdb303fe71ca3fe7699`
+- ✅ bot refuses the thaw: Sepolia finality has not reached the drain block yet: expected `['refused', 12029614]`, observed `['refused', 12029614]` at block `bot`
+- ✅ bot located the freeze (latest AssetFrozen, backward event scan) == the freeze receipt: expected `258434-1`, observed `258434-1` at block `0xce45219122924516d8e2f7ea79a3a0b88b3919f08ee8585621495db19b3ea889`
+- ✅ asset 4401 status after the thaw: expected `Live`, observed `Live` at block `0x6d82138a1e0e6b4bf5a70188262d7cde147da3861e29e6db852ccd3bf889e582`
 - ✅ asset 4401 team unchanged (ARMED): expected `[]`, observed `[]` at block `head`
-- ✅ all 4 Sepolia txs re-read from both providers: status 1, same block, <= finalized {'publicnode': 12029068, 'tenderly': 12029068}: expected `True`, observed `True` at block `sepolia finalized`
+- ✅ all 2 Sepolia txs re-read from both providers: status 1, same block, <= finalized {'publicnode': 12029641, 'tenderly': 12029641}: expected `True`, observed `True` at block `sepolia finalized`
 
 Other runs, newest first, any verdict (full tables in the JSON):
 
 - asset 4401 — 2026-10-30T21:23:30Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `9c2112e` (clean) — [`evidence/sepolia-drill-20261030T212330Z.json`](../evidence/sepolia-drill-20261030T212330Z.json) — failed: vault holds the 100.00 deposit; owner holds gas and >= the refill (30%)
 - asset 4401 — 2026-10-30T20:46:14Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `1328f88` (clean) — [`evidence/sepolia-drill-20261030T204614Z.json`](../evidence/sepolia-drill-20261030T204614Z.json) — failed: owner holds >= 100.00 test USDC and gas
+- asset 4401 — 2026-10-30T20:09:23Z — PASS (12/12 steps as expected, 18/18 state checks) — source: `cff62bc` (UNCOMMITTED CHANGES) — [`evidence/sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json)
 
 ### Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw — 2026-10-24T04:55:14Z
 

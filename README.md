@@ -40,7 +40,7 @@ genesis, runtime `:code` hash and spec `portaldot-v3`/3002 pinned by the read-on
 [`evidence/v3-day0-20261020T152616Z.json`](evidence/v3-day0-20261020T152616Z.json)): the role split on assets 4401/4402, `ReserveOracle` deployed
 through Revive, a watcher freeze, a refused freezer thaw, a bot-gated thaw and `BALLAST/1` attestations. That is 79 V3 extrinsics across 8 runs
 (4 ERROR runs kept as history), each re-queried at or below the finalized head, in [`docs/PROOF.md`](docs/PROOF.md). The reserve in those runs is a
-**local anvil chain, NOT Sepolia**. On 2026-10-30 (UTC) a `ReserveVault` was deployed on Ethereum Sepolia with 100.00 Circle test USDC and the drill ran against it, including the real finality wait (see the Sepolia paragraph below). Earlier drills ran on a labelled local stand-in chain (`standin-upstream`,
+**local anvil chain, NOT Sepolia**. On 2026-10-30 (UTC) a `ReserveVault` was deployed on Ethereum Sepolia with 100.00 Circle test USDC and the drill ran against it, including the real finality wait (see the Sepolia paragraph below). On the same day the outage and heartbeat drills ran on V3 too, on scratch assets 4501 and 4503 (reserve: local anvil, NOT Sepolia). Earlier drills ran on a labelled local stand-in chain (`standin-upstream`,
 not V3). Every receipt says which chain it came from.*
 
 <a id="project-name"></a>
@@ -148,8 +148,8 @@ flowchart LR
 
 | Layer | Choice | State |
 |---|---|---|
-| Blockchain platform | **Portaldot V3 testnet** | role split, role drill and attestation drill ran on 2026-10-24 ([`docs/PROOF.md`](docs/PROOF.md)); identity pinned on 2026-10-20 (genesis, `:code`, `portaldot-v3`/3002, 14 decimals, 6000 ms blocks) |
-| Chains used | `v3` (the 2026-10-24 runs); `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** (the earlier drills) | V3 public; stand-in local |
+| Blockchain platform | **Portaldot V3 testnet** | role split, role drill and attestation drill ran on 2026-10-24, the scratch-asset outage and heartbeat drills on 2026-10-30 UTC ([`docs/PROOF.md`](docs/PROOF.md)); identity pinned on 2026-10-20 (genesis, `:code`, `portaldot-v3`/3002, 14 decimals, 6000 ms blocks) |
+| Chains used | `v3` (the 2026-10-24 and 2026-10-30 runs); `standin-upstream`: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) in `--dev` mode, **not V3** (the earlier drills) | V3 public; stand-in local |
 | Runtime modules | Assets, Multisig, Utility, System, Revive (pallet-native) | used by the code and the drills |
 | Client | Python 3.11+, `substrate-interface` 1.8.1, `scalecodec` 1.2.12, `web3` 7 | built |
 | Contract language | Solidity 0.8.24: `ReserveVault` (Foundry), `ReserveOracle` (Hardhat) | built; vault on local anvil (role drills) and on Ethereum Sepolia (Sepolia drill), oracle on V3 Revive and the stand-in's Revive |
@@ -233,6 +233,7 @@ ballast drill --scenario drain              # drain a local vault -> a watcher f
 ballast drill --scenario outage             # every provider unreachable -> fail-closed freeze (15 s drill override)
 ballast drill --scenario heartbeat          # the bot goes silent -> freeze (K = 10 blocks, drill override)
 ballast --profile v3 drill --scenario outage     # the same drills on V3 scratch assets (seed-file keys; reserve stays the local anvil)
+ballast --profile v3 drill --scenario heartbeat
 
 rm deployments/standin-upstream.json        # only on a NEW chain: the committed manifest is from the author's chain, setup_roles refuses to overwrite it
 python scripts/setup_roles.py               # ONCE per chain: role split, control asset, vault, oracle -> deployments/<profile>.json
@@ -291,7 +292,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 
 ## 🗺️ Roadmap
 
-**Completed (drills on the stand-in first, then on the Portaldot V3 testnet on 2026-10-24)**
+**Completed (drills on the stand-in first, then on the Portaldot V3 testnet on 2026-10-24 and 2026-10-30 UTC)**
 - [x] Chain profiles (`v3` pinned to the live chain, `standin-upstream`, `standin-1002`), genesis / `:code` identification, block-time-derived constants
 - [x] Assets role split + watcher-set freeze, refused freezer thaw, refused frozen transfer, admin thaw (6 spike runs, 5 PASS and 1 recorded FAIL kept as history)
 - [x] `ReserveVault` + 20 Foundry tests; reserve reader on two providers with block-hash pinning; watchdog with deficit, fail-closed and heartbeat rules

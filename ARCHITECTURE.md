@@ -3,7 +3,7 @@
 > Generated from the code on 2026-10-14 (`a4bdcfa`, the code the stand-in drills ran on); updated 2026-10-20 for the V3 profile, seed-file keys,
 > WebSocket RPC and `docs/PROOF.md`, which change no recorded stand-in result. Only components that exist in this repository are drawn; what is not built is listed
 > at the end. Updated 2026-10-24: the role split, role drill and attestation drill also ran on the **Portaldot V3 testnet** (profile `v3`,
-> every extrinsic in `docs/PROOF.md`); the scratch-asset drills and every timing before that ran on a labelled local stand-in chain
+> every extrinsic in `docs/PROOF.md`); the drain scratch drills and every timing before that ran on a labelled local stand-in chain (the outage and heartbeat scratch drills also ran on V3 on 2026-10-30 UTC)
 > (`standin-upstream`, NOT Portaldot V3). **The reserve chain in every run is a local anvil chain (NOT Sepolia).** The `resume`, fork-following
 > receipt check and websocket reconnect added on 2026-10-24 live in `scripts/setup_roles.py`, `ballast/receipts.py` and `ballast/chain.py`.
 > Nothing here is a Sepolia-vault measurement.
@@ -147,7 +147,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 | Profile | State |
 |---|---|
 | `v3` | `wss://test-node-v3.portaldot.dev`, pinned by the read-only day-0 check of 2026-10-20 (`evidence/v3-day0-20261020T152616Z.json`): genesis `0xd4f9acbc…`, `:code` `0xedc03c9d…`, `portaldot-v3`/3002, 14 decimals tPOT, 6000 ms blocks. Role split, role drill and attestation drill ran on 2026-10-24 (79 extrinsics, `docs/PROOF.md`; assets 4401/4402, `ReserveOracle` `0x4832…155e`); the old `feso-apps.xyz` names returned empty DNS on 2026-10-14 and are not used |
-| `standin-upstream` | the profile the scratch-asset drills and every timing before 2026-10-24 were measured on: polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
+| `standin-upstream` | the profile the drain scratch drills and every timing before 2026-10-24 were measured on (the outage and heartbeat drills also ran on V3): polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 
 ## Not built

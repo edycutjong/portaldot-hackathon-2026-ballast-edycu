@@ -340,7 +340,7 @@ def main() -> int:
                   (out.get("freeze") or {}).get("extrinsic_id"), fr["extrinsic_id"], fr["block_hash"])
 
         # 7. Wait for REAL Sepolia finality past the re-deposit -> co-signed thaw.
-        wait = wait_finality(refill["block_number"], "past the drain and the re-deposit")
+        wait_finality(refill["block_number"], "past the drain and the re-deposit")
         run.note("re-deposit sent -> finalized (wall clock, both providers)", f"{time.time() - refilled_at:.0f} s")
         rc, out = bot("cosign-thaw")
         if "receipt" not in out:

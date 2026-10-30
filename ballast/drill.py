@@ -1,8 +1,9 @@
-"""`ballast drill` — the breaker, end to end, on a stand-in chain against a LOCAL anvil reserve.
+"""`ballast drill` — the breaker, end to end, on a stand-in chain or on V3, against a LOCAL anvil reserve.
 
 Labelled "reserve: local-anvil (not Sepolia)" everywhere: the vault and its token live on a local anvil chain
-(chain id 31337, `scripts/anvil_local.sh`). The Portaldot side is the configured stand-in profile. Nothing here is
-a V3 or Sepolia measurement.
+(chain id 31337, `scripts/anvil_local.sh`). The Portaldot side is the configured profile: a stand-in (public dev keys)
+or `v3` (the role seed files; fresh scratch assets above 4500, never the role-split assets 4401/4402). On a stand-in
+nothing here is a V3 or Sepolia measurement; on `v3` the Portaldot side is real V3 and only the reserve is local.
 
 Scenario `drain` (the kill-rule flow):
   1. EVM: deploy MockUSDC + ReserveVault (forge artifacts), deposit S1 + S2 = 100.00 into the vault;
@@ -34,9 +35,10 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .chain import Receipt, connect, dev_keypair, submit
+from .chain import Receipt, connect, submit
 from .chain_profile import ProfileError, blake2_256, identify
 from .config import load_chain_config
+from .keys import keypair
 from .multisig import multi_address, public_key
 from .receipts import EVIDENCE, score, summarize, write_receipts_md
 from .rpc import node_rpc
@@ -46,11 +48,12 @@ from .watchdog import parse_remark, reserve_label
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out"
 DRILL_ASSET_FROM = 2001  # drill assets: ids >= 2001 (spike >= 1001; ids 1 and 2 stay for the role-split assets)
+V3_DRILL_ASSET_FROM = 4501  # on v3: scratch ids above the role-split assets 4401/4402
 DECIMALS = 6
 S1 = 50_000_000  # 50.00 of the breaker asset (6 decimals, like USDC)
 S2 = 50_000_000  # 50.00 of the control asset
 TRANSFER = 1_000_000  # 1.00
-FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)"}
+FROZEN_TRANSFER_ERRORS = {"standin-upstream": "Err(Assets.AssetNotLive)", "v3": "Err(Assets.AssetNotLive)"}
 UNREACHABLE = ("down-1=http://127.0.0.1:9", "down-2=http://127.0.0.1:10")  # nothing listens: connection refused
 
 
@@ -140,13 +143,13 @@ def run_drill(args: argparse.Namespace) -> int:
 
     substrate = connect(profile, cfg.url)
     fmt = substrate.ss58_format or 42
-    alice = dev_keypair(profile, "//Alice")
-    breaker = free_asset_id(substrate, DRILL_ASSET_FROM)
+    alice = keypair(profile, "//Alice", fmt)  # the stand-in //Alice, or the v3 funder seed
+    breaker = free_asset_id(substrate, DRILL_ASSET_FROM if profile.is_standin else V3_DRILL_ASSET_FROM)
     control = free_asset_id(substrate, breaker + 1)
-    keys = {role: dev_keypair(profile, f"//Ballast{role}") for role in ("A", "W1", "W2")}
+    keys = {role: keypair(profile, f"//Ballast{role}", fmt) for role in ("A", "W1", "W2")}
     # Holders are fresh per drill (//BallastJudge//<asset>): every non-sufficient asset an account holds costs it a
     # consumer reference, and after ~15 drills a shared judge account hits the runtime's cap (Token.CannotCreate).
-    keys |= {role: dev_keypair(profile, f"//Ballast{role}//{breaker}") for role in ("Judge", "Peer")}
+    keys |= {role: keypair(profile, f"//Ballast{role}//{breaker}", fmt) for role in ("Judge", "Peer")}
     addr = {role: kp.ss58_address for role, kp in keys.items()}
     watchers = [addr["W1"], addr["W2"]]
     m_watch = multi_address(watchers, 1, ss58_format=fmt)
@@ -170,7 +173,7 @@ def run_drill(args: argparse.Namespace) -> int:
         "evm_steps": [],
         "state_checks": [],
     }
-    role_of = {kp.ss58_address: role for role, kp in keys.items()} | {alice.ss58_address: "Alice, stand-in funder"}
+    role_of = {kp.ss58_address: role for role, kp in keys.items()} | {alice.ss58_address: "funder (Alice on a stand-in)"}
 
     def step(name: str, expected: str, r: Receipt | dict, ok: bool, events: tuple[str, ...] = ()):
         rd = r.as_dict() if isinstance(r, Receipt) else r
@@ -241,12 +244,17 @@ def run_drill(args: argparse.Namespace) -> int:
         ed = const("Balances", "ExistentialDeposit")
         per_asset = (const("Assets", "AssetDeposit") + const("Assets", "MetadataDepositBase")
                      + 2 * len("pUSDC-test") * const("Assets", "MetadataDepositPerByte"))
-        fund = [call("Balances", "transfer_keep_alive", {"dest": who, "value": amount}) for who, amount in (
-            (addr["A"], 2 * per_asset + 10 * ed), (addr["W1"], 10 * ed), (addr["W2"], 10 * ed),
-            (addr["Judge"], 10 * ed), (addr["Peer"], 10 * ed), (m_watch, 2 * ed))]
-        r = submit(substrate, profile, alice, "Utility", "batch_all", {"calls": fund}, step="fund",
-                   call_label="Utility.batch_all[6 x Balances.transfer_keep_alive]")
-        step("fund A, W1, W2, judge, peer, M_watch (>= ED)", "Ok", r, r.outcome.ok)
+        # Top-up only: on v3 the role accounts already hold tPOT, so the funder pays just the shortfall.
+        want = ((addr["A"], 2 * per_asset + 10 * ed), (addr["W1"], 10 * ed), (addr["W2"], 10 * ed),
+                (addr["Judge"], 10 * ed), (addr["Peer"], 10 * ed), (m_watch, 2 * ed))
+        free = lambda who: substrate.query("System", "Account", [who]).value["data"]["free"]  # noqa: E731
+        fund = [call("Balances", "transfer_keep_alive", {"dest": who, "value": amount - free(who)})
+                for who, amount in want if free(who) < amount]
+        if fund:
+            r = submit(substrate, profile, alice, "Utility", "batch_all", {"calls": fund}, step="fund",
+                       call_label=f"Utility.batch_all[{len(fund)} x Balances.transfer_keep_alive]")
+            step("fund the accounts below their working balance (A, W1, W2, judge, peer, M_watch)", "Ok", r,
+                 r.outcome.ok)
         for asset_id, symbol in ((breaker, "pUSDC-test"), (control, "pUSDC-ctl")):
             r = submit(substrate, profile, keys["A"], "Assets", "create",
                        {"id": asset_id, "admin": addr["A"], "min_balance": 1}, step=f"create_{asset_id}")
@@ -381,10 +389,12 @@ def run_drill(args: argparse.Namespace) -> int:
         check("judge balance unchanged after the refused transfer", balance(breaker, addr["Judge"], r.block_hash),
               S1, r.block_hash)
 
-        # Timings — local stand-in + local anvil: wall-clock on this machine, NOT a V3 or Sepolia latency.
+        # Timings — wall-clock on this machine; the reserve is the local anvil, never Sepolia.
         included_block_ts = substrate.query("Timestamp", "Now", block_hash=fr["block_hash"]).value
         timing = {
-            "basis": "wall-clock on one machine; stand-in chain + local anvil reserve (not V3, not Sepolia)",
+            "basis": ("wall-clock on one machine; Portaldot V3 testnet + local anvil reserve (not Sepolia)"
+                      if not profile.is_standin else
+                      "wall-clock on one machine; stand-in chain + local anvil reserve (not V3, not Sepolia)"),
             "trigger_head": trigger["head"],
             "freeze_block": fr["block_number"],
             "freeze_block_timestamp_ms": included_block_ts,

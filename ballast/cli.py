@@ -676,7 +676,7 @@ def build_parser() -> argparse.ArgumentParser:
     deployment_args(v)
     v.set_defaults(func=cmd_verify)
 
-    d = sub.add_parser("drill", help="breaker drill on a stand-in against a local anvil reserve")
+    d = sub.add_parser("drill", help="breaker drill on a stand-in or v3 against a local anvil reserve")
     d.add_argument("--scenario", choices=("drain", "outage", "heartbeat"), default="drain",
                    help="drain: release 30%% of the vault; outage: every provider unreachable (fail-closed); "
                    "heartbeat: the bot never signs (I8)")

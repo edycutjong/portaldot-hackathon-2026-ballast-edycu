@@ -1,0 +1,85 @@
+name: Watcher W2
+
+# W2 of the 1-of-2 watcher set (M_watch), run on GitHub Actions: reads the Sepolia vault and the V3 supply of
+# assets 4401 + 4402 and signs the M_watch freeze when the reserve is short. Scheduled (<= every 5 min, GitHub
+# may delay a run), not real time. Outage fail-closed stays with the operator's own watcher (W1): a runner with a
+# flaky network must not freeze the asset, so --fail-closed-after is set past the run window.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      max_seconds:
+        description: "watch window in seconds (the scheduled run uses 240)"
+        required: false
+        default: "240"
+
+permissions:
+  contents: read
+
+# Two runs never overlap: the next one queues behind the one in flight.
+concurrency:
+  group: watcher-w2
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BREAKER: "4401"
+      SUPPLY_ASSETS: "4401,4402"
+      VAULT: "0x7ceB7c3EBDBCC75e585599e5dd944286F009357b"
+      USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e .
+      - name: Watch (freeze if the Sepolia reserve is short)
+        env:
+          # The W2 signing phrase. Never printed; GitHub masks it, and the step masks it again below.
+          BALLAST_WATCHER_SURI: ${{ secrets.BALLAST_W2_SEED }}
+          WINDOW: ${{ github.event.inputs.max_seconds || '240' }}
+        run: |
+          if [ -z "$BALLAST_WATCHER_SURI" ]; then
+            echo "BALLAST_W2_SEED is not set: W2 cannot sign" >&2
+            exit 2
+          fi
+          echo "::add-mask::$BALLAST_WATCHER_SURI"
+          mkdir -p evidence-run
+          # exit 0 = the asset is (now) frozen, 4 = window elapsed with reserves level (a no-op), else a real failure
+          set +e
+          python -m ballast.cli --profile v3 watch \
+            --breaker "$BREAKER" --supply-assets "$SUPPLY_ASSETS" --holder "$VAULT" --token "$USDC" \
+            --watchers "//BallastW1,//BallastW2" --poll-blocks 2 --fail-closed-after 86400 \
+            --until-frozen --max-seconds "$WINDOW" --log evidence-run/w2-actions.jsonl
+          rc=$?
+          set -e
+          echo "ballast watch exit: $rc"
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 4 ]; then exit "$rc"; fi
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f evidence-run/w2-actions.jsonl ]; then
+            python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          rows = [json.loads(line) for line in open("evidence-run/w2-actions.jsonl")]
+          checks = [r for r in rows if r["event"] == "check"]
+          freezes = [r for r in rows if r["event"] == "freeze"]
+          last = checks[-1]["decision"]["action"] if checks else "none"
+          print(f"W2 on Actions: {len(checks)} checks, last decision `{last}`, "
+                f"{len(freezes)} freeze(s)" + "".join(f", extrinsic `{f['receipt']['extrinsic_id']}`" for f in freezes))
+          PY
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: w2-actions-log
+          path: evidence-run/w2-actions.jsonl
+          if-no-files-found: ignore
+          retention-days: 30

@@ -180,12 +180,11 @@ def main() -> int:
         eth0 = w3.eth.get_balance(owner)
         usdc0 = usdc.functions.balanceOf(owner).call()
         run.note("owner before", {"address": owner, "eth_wei": eth0, "usdc": usdc0})
-        if args.vault:  # resume: the 100.00 already sits in the vault; the owner needs gas and the drain amount for the refill
+        if args.vault:  # resume: the 100.00 already sits in the vault; the owner needs gas only (the drain pays the refill)
             vault_reserves0 = w3.eth.contract(address=Web3.to_checksum_address(args.vault), abi=vault_abi) \
                 .functions.reserves().call()
-            run.check("vault holds the 100.00 deposit; owner holds gas and >= the refill (30%)",
-                      vault_reserves0 == DEPOSIT and eth0 > 10 ** 16 and usdc0 >= DEPOSIT * args.drain_pct // 100, True,
-                      "sepolia latest")
+            run.check("vault holds the 100.00 deposit and the owner holds gas (the drain pays the refill)",
+                      vault_reserves0 == DEPOSIT and eth0 > 10 ** 16, True, "sepolia latest")
         else:
             run.check("owner holds >= 100.00 test USDC and gas", usdc0 >= DEPOSIT and eth0 > 10 ** 16, True,
                       "sepolia latest")

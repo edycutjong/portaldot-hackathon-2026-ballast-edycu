@@ -52,3 +52,11 @@ def test_vault_matches_the_committed_sepolia_manifest():
     manifest = json.loads((WORKFLOW.parent.parent.parent / "deployments" / "v3-sepolia.json").read_text())
     assert f'VAULT: "{manifest["reserve"]["vault"]}"' in TEXT
     assert f'USDC: "{manifest["reserve"]["erc20"]}"' in TEXT
+
+
+def test_watcher_set_is_public_addresses_matching_the_manifest():
+    import json
+
+    manifest = json.loads((WORKFLOW.parent.parent.parent / "deployments" / "v3.json").read_text())
+    assert f'WATCHERS: "{",".join(manifest["roles"]["watchers"])}"' in TEXT
+    assert '--watchers "$WATCHERS"' in TEXT and "//Ballast" not in TEXT  # no seed file other than W2's is needed

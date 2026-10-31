@@ -313,7 +313,7 @@ def main() -> int:
         m_admin = MultisigAccount(rm2.admin_signatories, 2, fmt)
 
         # --- 3. community watcher ---------------------------------------------------------------------------------
-        log_out = EVIDENCE / f"{stem}-watch-outage.log"
+        log_out = EVIDENCE / f"{stem}-watch-outage.watchdog.jsonl"
         p = watcher("W3 outage", list(UNREACHABLE), ["--until-frozen", "--max-seconds", "30"], log_out, 60)
         p.wait(timeout=90)
         recs = read_log(log_out)
@@ -323,7 +323,7 @@ def main() -> int:
         run.check("…its checks all read 'outage' with 'never fail-closed'",
                   bool(checks) and all(x["decision"]["action"] == "outage" and "never fail-closed" in
                                        x["decision"]["detail"] for x in checks), True, "watcher log")
-        log_c = EVIDENCE / f"{stem}-watch-community.log"
+        log_c = EVIDENCE / f"{stem}-watch-community.watchdog.jsonl"
         provs = [f"anvil-a={args.evm_url}", f"anvil-b={args.evm_url.replace('127.0.0.1', 'localhost')}"]
         p = watcher("W3 community", provs, ["--until-frozen", "--max-seconds", str(int(args.timeout))], log_c,
                     args.timeout)
@@ -391,7 +391,7 @@ def main() -> int:
         run.check("every holder with a balance individually frozen",
                   sorted((role_of.get(h["who"], h["who"]), h["frozen"]) for h in rows if h["balance"] > 0),
                   [("Judge (holder)", True), ("Peer (holder)", True)], "head")
-        log_h = EVIDENCE / f"{stem}-watch-hold.log"
+        log_h = EVIDENCE / f"{stem}-watch-hold.watchdog.jsonl"
         p = watcher("W3 hold", provs, ["--until-frozen", "--max-seconds", "40"], log_h, 60)
         p.wait(timeout=90)
         recs = read_log(log_h)
@@ -438,6 +438,7 @@ def main() -> int:
         for p in procs:
             if p.poll() is None:
                 p.terminate()
+    run["watcher_logs"] = sorted(f.name for f in EVIDENCE.glob(f"{stem}-watch-*.watchdog.jsonl"))
     out_path = run.finish(f"{stem}.json")
     write_receipts_md()
     print(json.dumps({"evidence": str(out_path.relative_to(ROOT)), "verdict": run["verdict"]}))

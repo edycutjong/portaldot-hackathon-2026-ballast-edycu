@@ -309,7 +309,11 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - [x] `ReserveVault` on Sepolia with 100.00 test USDC and the drill against it, including the real finality wait (2026-10-30 UTC, [`docs/PROOF.md`](docs/PROOF.md))
 - [x] The scratch-asset outage and heartbeat drills on V3 (2026-10-30 UTC, assets 4501/4503, local anvil reserve; [`docs/PROOF.md`](docs/PROOF.md))
 - [x] W2 on GitHub Actions (`.github/workflows/watcher-w2.yml`, cron `*/5` configured but no scheduled run has fired yet, manual dispatch proven, secret seed): a healthy-reserve dispatch is a no-op, and with W1 off the Sepolia drill's freeze `259731-1` was signed by W2 on Actions (2026-10-31 UTC, [`docs/W2-ACTIONS.md`](docs/W2-ACTIONS.md))
-- [ ] Community-watcher mode, watcher-set rotation, `M_admin` rotation, wind-down branch, `ReserveOracle.trip()`
+- [x] Governance branches on V3 (scratch asset 4601, local anvil reserve, drill K = W = 5 blocks): announced watcher-set and `M_admin` rotations,
+  a community watcher's freeze (`ballast watch --community`), the wind-down thaw and an atomic thaw + burn redemption, PASS 30/30 + 16/16
+  (2026-10-31 UTC, [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md))
+- [x] `ReserveOracle` v2 with `trip()` by a listed watcher: 6 new Hardhat tests, trip drill PASS 9/9 + 9/9 on the stand-in (not V3)
+- [ ] `ReserveOracle` v2 on V3: its storage deposit exceeds what Ballast's V3 keys hold ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))
 - [ ] Benchmarks over many drills, reserves page
 
 **Honest limitations**

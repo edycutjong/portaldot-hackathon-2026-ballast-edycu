@@ -5,7 +5,7 @@ stale unfrozen post refused, a later post clears it.
   python scripts/trip_drill.py [--profile standin-upstream] [--url ws://127.0.0.1:49944]
 
 Runs on the stand-in by default (labelled NOT V3). On v3 it needs --allow-v3: the v2 deploy's storage deposit is the
-largest single cost there (v1 measured 138.53 tPOT for 1,818 bytes of initcode; v2 is 2,960 bytes), so it is a
+largest single cost there (v1 measured 138.53 tPOT; v2 initcode is 2,960 bytes, see scripts/oracle_v2_sizing.py), so it is a
 human-funded step. The posted values are a drill status (S1 = S2 = 50.00, reserves 100.00) — the oracle mirrors
 whatever B attests; nothing here reads a reserve chain. Evidence: evidence/oracle-trip-<profile>-<UTC>.json.
 """

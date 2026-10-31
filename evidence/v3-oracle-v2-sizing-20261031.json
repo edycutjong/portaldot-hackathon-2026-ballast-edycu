@@ -1,0 +1,59 @@
+{
+  "kind": "v3-oracle-v2-sizing",
+  "read_only": true,
+  "chain": "Portaldot V3 testnet",
+  "at": "2026-10-31T01:36:49Z",
+  "head": 260387,
+  "head_hash": "0xde8f3025e7398b247fa638fc6e78449edafbf1ee671cf23bab72e0e5d7f94f3a",
+  "v2_initcode_bytes": 2960,
+  "dry_run_instantiate_from_B": {
+    "ok": false,
+    "reverted": false,
+    "storage_deposit": 0
+  },
+  "balances": {
+    "funder": {
+      "free_tpot": 6.2894,
+      "reserved_tpot": 0.0
+    },
+    "a": {
+      "free_tpot": 15.0735,
+      "reserved_tpot": 8.96
+    },
+    "a2": {
+      "free_tpot": 16.1669,
+      "reserved_tpot": 0.0
+    },
+    "a3": {
+      "free_tpot": 0.0,
+      "reserved_tpot": 0.0
+    },
+    "b": {
+      "free_tpot": 34.5211,
+      "reserved_tpot": 0.0
+    },
+    "w1": {
+      "free_tpot": 4.7027,
+      "reserved_tpot": 0.0
+    },
+    "w2": {
+      "free_tpot": 4.703,
+      "reserved_tpot": 0.0
+    },
+    "w3": {
+      "free_tpot": 0.9247,
+      "reserved_tpot": 0.0
+    },
+    "judge": {
+      "free_tpot": 0.4526,
+      "reserved_tpot": 0.0
+    },
+    "peer": {
+      "free_tpot": 0.3,
+      "reserved_tpot": 0.0
+    }
+  },
+  "sum_free_tpot": 83.1339,
+  "v1_deposit_measured_tpot": 138.53,
+  "v1_deposit_source": "scripts/setup_roles.py docstring (dry-run 2026-10-20)"
+}

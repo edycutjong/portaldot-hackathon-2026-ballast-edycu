@@ -263,7 +263,7 @@ class ReserveBot:
             raise ValueError(f"this key is not the bot key B {self.rm.b}")
         fmt = substrate.ss58_format or 42
         self.m_mint = MultisigAccount(self.rm.mint_signatories, 2, fmt)
-        self.m_admin = MultisigAccount(self.rm.admin_signatories, 2, fmt)
+        self.m_admin = MultisigAccount(self.rm.admin_signatories, self.rm.admin_threshold, fmt)
 
     @contextlib.contextmanager
     def _lock(self) -> Iterator[None]:
@@ -359,7 +359,7 @@ class ReserveBot:
 
     def cosign_thaw(self, max_lookback: int | None = None) -> dict:
         call = self.compose("thaw_asset")
-        if self._pending(self.m_admin, call, [self.rm.a, self.rm.a2]) is None:
+        if self._pending(self.m_admin, call, self.rm.admin_proposers) is None:
             return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
         # The freeze scan is read-only and can take minutes: done BEFORE the lock, then re-checked under it.
         head = self.substrate.get_block_number(None)
@@ -369,7 +369,7 @@ class ReserveBot:
         freeze = last_freeze(self.substrate, self.dep.breaker, head, lookback, log=self.log) if frozen_now else None
         anchor = freeze_anchor(self.substrate, self.dep.breaker, freeze, self.rm.watchers) if freeze else None
         with self._lock():
-            op = self._pending(self.m_admin, call, [self.rm.a, self.rm.a2])
+            op = self._pending(self.m_admin, call, self.rm.admin_proposers)
             if op is None:
                 return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
             now = self.substrate.get_block_number(None)
@@ -419,4 +419,4 @@ class ReserveBot:
 
 def operator_accounts(deployment: Deployment, ss58_format: int) -> tuple[MultisigAccount, MultisigAccount]:
     rm = deployment.role_map()
-    return MultisigAccount(rm.mint_signatories, 2, ss58_format), MultisigAccount(rm.admin_signatories, 2, ss58_format)
+    return MultisigAccount(rm.mint_signatories, 2, ss58_format), MultisigAccount(rm.admin_signatories, rm.admin_threshold, ss58_format)

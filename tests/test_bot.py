@@ -297,7 +297,7 @@ class FrozenChain:
 def test_cosign_thaw_anchors_on_a_freeze_that_lands_while_it_scans(monkeypatch, tmp_path):
     import ballast.bot as bot_mod
 
-    rm = type("RM", (), {"a": A, "a2": W, "b": "x", "watchers": [W], "mint_signatories": [], "admin_signatories": []})
+    rm = type("RM", (), {"a": A, "a2": W, "b": "x", "watchers": [W], "mint_signatories": [], "admin_signatories": [], "admin_proposers": [A, W], "admin_threshold": 2})
     b = object.__new__(bot_mod.ReserveBot)
     b.substrate = FrozenChain({100: 1, 150: 4}, head=120, later=160)
     b.dep = type("D", (), {"breaker": 1})()

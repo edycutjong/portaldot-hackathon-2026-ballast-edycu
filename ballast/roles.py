@@ -46,6 +46,8 @@ class RoleMap:
     watchers: tuple[str, ...]
     ss58_format: int = 42
     watch_threshold: int = 1
+    admins: tuple[str, ...] = ()  # M_admin signatories; empty = the original {A, A2, B} (a rotation replaces it)
+    admin_threshold: int = 2
     m_mint: str = field(init=False)
     m_admin: str = field(init=False)
     m_watch: str = field(init=False)
@@ -58,9 +60,13 @@ class RoleMap:
             raise ValueError("A, A2 and B must be three different keys")
         if not self.watchers:
             raise ValueError("at least one watcher")
+        admins = self.admins or (self.a, self.a2, self.b)
+        if not any(public_key(x) == public_key(self.b) for x in admins) or not 2 <= self.admin_threshold <= len(admins):
+            raise ValueError("M_admin must include B with a threshold >= 2: no admin set may thaw without two keys")
+        object.__setattr__(self, "admins", tuple(admins))
         fmt = self.ss58_format
         object.__setattr__(self, "m_mint", multi_address([self.a, self.b], 2, ss58_format=fmt))
-        object.__setattr__(self, "m_admin", multi_address([self.a, self.a2, self.b], 2, ss58_format=fmt))
+        object.__setattr__(self, "m_admin", multi_address(list(self.admins), self.admin_threshold, ss58_format=fmt))
         object.__setattr__(self, "m_watch", multi_address(list(self.watchers), 1, ss58_format=fmt))
         object.__setattr__(self, "control", {r: ss58_encode(keyless_account(r), ss58_format=fmt) for r in KEYLESS_ROLES})
 
@@ -70,7 +76,16 @@ class RoleMap:
 
     @property
     def admin_signatories(self) -> list[str]:
-        return [self.a, self.a2, self.b]
+        return list(self.admins)
+
+    @property
+    def admin_proposers(self) -> list[str]:
+        """Every M_admin member except the bot: the keys that may open a thaw for the bot to co-sign."""
+        return [x for x in self.admins if public_key(x) != public_key(self.b)]
+
+    def _admin_names(self) -> list[str]:
+        names = {public_key(self.a): "A", public_key(self.a2): "A2", public_key(self.b): "B"}
+        return [names.get(public_key(x), x) for x in self.admins]
 
     def breaker_team(self) -> dict[str, str]:
         return {"owner": self.m_mint, "issuer": self.m_mint, "admin": self.m_admin, "freezer": self.m_watch}
@@ -79,10 +94,12 @@ class RoleMap:
         return dict(self.control)
 
     def as_dict(self) -> dict:
+        rotated = [public_key(x) for x in self.admins] != [public_key(x) for x in (self.a, self.a2, self.b)]
         return {
             "A": self.a, "A2": self.a2, "B": self.b, "watchers": list(self.watchers), "ss58_format": self.ss58_format,
+            **({"admins": list(self.admins)} if rotated else {}),
             "M_mint": {"address": self.m_mint, "threshold": 2, "signatories": ["A", "B"]},
-            "M_admin": {"address": self.m_admin, "threshold": 2, "signatories": ["A", "A2", "B"]},
+            "M_admin": {"address": self.m_admin, "threshold": self.admin_threshold, "signatories": self._admin_names()},
             "M_watch": {"address": self.m_watch, "threshold": 1, "signatories": [f"W{i}" for i in
                                                                                  range(1, len(self.watchers) + 1)]},
             "control_keyless": {r: {"address": a, "derivation": f'blake2_256("ballast:a2-{r}:v1")'}
@@ -132,7 +149,8 @@ class Deployment:
 
     def role_map(self) -> RoleMap:
         r = self.roles
-        rm = RoleMap(a=r["A"], a2=r["A2"], b=r["B"], watchers=tuple(r["watchers"]), ss58_format=r.get("ss58_format", 42))
+        rm = RoleMap(a=r["A"], a2=r["A2"], b=r["B"], watchers=tuple(r["watchers"]), ss58_format=r.get("ss58_format", 42),
+                     admins=tuple(r.get("admins", ())), admin_threshold=r["M_admin"].get("threshold", 2))
         if not (same(rm.m_mint, r["M_mint"]["address"]) and same(rm.m_admin, r["M_admin"]["address"])
                 and same(rm.m_watch, r["M_watch"]["address"])):
             raise ValueError("manifest multisig addresses do not match their signatories")

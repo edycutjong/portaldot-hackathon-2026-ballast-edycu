@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ballast · pitch deck · Portaldot Hacker House 2026</title>
-<meta name="description" content="Ballast: a reserve-gated circuit breaker for a custodial test dollar on Portaldot. Deck rebuilt 2026-10-25; facts at build 0071879 except the cover's 2026-10-25 receipt re-run.">
+<meta name="description" content="Ballast: a reserve-gated circuit breaker for a custodial test dollar on Portaldot. Deck rebuilt 2026-10-25; facts at build 0071879 except the receipt, test and commit counts and the status slides, refreshed 2026-10-31 at build 03458f0.">
 <!--
   Ballast pitch deck. Single file, 1920x1080 stage scaled to the window.
   Keys: arrows / space / PageUp / PageDown, Home / End, 1-9 and 0 jump, Esc overview, P presenter notes, F fullscreen.
   Print (Cmd+P, "Save as PDF", background graphics on) gives one slide per page; docs/pitch-deck.pdf is that print.
   Every figure on these slides comes from docs/PROOF.md, docs/RECEIPTS.md, evidence/ or README.md at build 0071879, except the
-  cover terminal: evidence/check-receipts-v3-20261025T013504Z.txt (2026-10-25 read-only re-run).
+  cover terminal and the receipt total (evidence/check-receipts-v3-20261031T034000Z.txt, 2026-10-31 read-only re-run) and the test and commit counts and status slides (build 03458f0).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -282,14 +282,14 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
 <!-- 1 · COVER: the frozen moment (design.md §2), the tripped load-line gauge (§5) -->
 <section class="slide s1" data-title="Cover" data-noline>
   <div class="title">
-    <span class="label">Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span><a class="rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.0.1</a>
+    <span class="label">Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span><a class="rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.6.1</a>
     <h1><span class="ln">When the vault</span> <span class="ln">runs short,</span> <span class="ln">the test dollar</span> <span class="ln"><em>stops moving.</em></span></h1>
     <p class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><clipPath id="bl-c"><circle cx="226" cy="256" r="156"/></clipPath></defs><rect x="8" y="8" width="496" height="496" rx="104" fill="#0C2536"/><rect x="40" y="318" width="380" height="200" fill="#3FD9B5" clip-path="url(#bl-c)"/><rect x="40" y="318" width="380" height="8" fill="#B8FFEC" clip-path="url(#bl-c)"/><circle cx="226" cy="256" r="156" fill="none" stroke="#6F92A6" stroke-width="40"/><rect x="36" y="236" width="316" height="40" fill="#F4F1E6"/><rect x="398" y="236" width="80" height="40" fill="#3E5A6C"/><rect x="354" y="150" width="40" height="212" rx="6" fill="#FF5B2E"/></svg><span><b>BALLAST</b> a reserve-gated circuit breaker for a custodial test dollar on Portaldot.</span></p>
   </div>
-  <div class="run"><div class="bar">re-run read-only 2026-10-25 · evidence/check-receipts-v3-20261025T013504Z.txt</div>
+  <div class="run"><div class="bar">re-run read-only 2026-10-31 · evidence/check-receipts-v3-20261031T034000Z.txt</div>
 <pre><span class="p">$</span> <span class="c">python scripts/check_receipts.py --profile v3 | grep '^\[v3\]'</span>
-[v3] 79/79 receipts confirmed from 8 run(s)
-[v3] all confirmed rows at or below the finalized head #182414</pre></div>
+[v3] 261/261 receipts confirmed from 23 run(s)
+[v3] all confirmed rows at or below the finalized head #261558</pre></div>
   <p class="proof">On the Portaldot V3 testnet, 2026-10-24: watcher W2 froze asset 4401 in extrinsic
     <a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">170112-1</a>. Reserve: local anvil chain, NOT Sepolia. Deck 2026-10-25.</p>
   <svg class="gauge" viewBox="0 0 900 760" role="img" aria-label="Ballast — the load-line gauge tripped: reserves sunk below the supply line, the gate shut, block 170,112">
@@ -418,7 +418,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <li><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xb82d68a566fac58fefe36d0c30638a84f00bb353499b65316d05c01f87057724">170156-1</a><span>safe <code>set_team</code>, co-signed</span></li>
   </ul>
   <div class="tot">
-    <div><b>79/79</b><span>V3 extrinsics in 8 runs (4 ERROR runs kept as history), all final ≤ #170291 on <span style="white-space:nowrap">2026-10-24</span></span></div>
+    <div><b>261/261</b><span>V3 extrinsics in 23 runs (failed and errored runs kept as history), all final ≤ #261558 on <span style="white-space:nowrap">2026-10-31</span></span></div>
     <div><b>22/22</b><span>role drill steps, 20/20 state checks</span></div>
     <div><b>15/15</b><span>attestation drill steps, 6/6 checks</span></div>
     <div><b>16/16</b><span>role setup steps, 6/6 checks</span></div>
@@ -496,7 +496,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
       <dt>Genesis</dt><dd><span class="mono">0xd4f9acbc…5283bd</span></dd>
       <dt>Runtime</dt><dd><span class="mono">portaldot-v3 / 3002</span></dd>
       <dt>Blocks</dt><dd><span class="mono">6000 ms</span></dd>
-      <dt>Open source</dt><dd>MIT · one CLI, <code>ballast</code> · 274 tests (239 pytest, 20 Foundry, 15 Hardhat)</dd>
+      <dt>Open source</dt><dd>MIT · one CLI, <code>ballast</code> · 342 tests (301 pytest, 20 Foundry, 21 Hardhat)</dd>
     </dl>
   </div>
   <aside class="speaker-notes">The role split and the thresholds come from Portaldot modules: Assets roles, Multisig, batched remarks, and Revive for the EVM-readable oracle; the reserve checks run in the off-chain bot and watchers. The chain profile is pinned to V3's genesis and runtime, so the tools refuse to run against the wrong chain.</aside>
@@ -512,12 +512,12 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
   <div class="path">
     <span class="eb">Path · steps 2 and 3 are plans</span>
     <div class="track"></div>
-    <div class="st now" style="left: 0"><span class="n">1</span><b>Testnet, today</b><span class="t">V3 drills pass; one person holds every key; reserve on local anvil.</span></div>
-    <div class="st" style="left: 560px"><span class="n">2</span><b>Sepolia reserve</b><span class="t"><code>ReserveVault</code> with 100.00 test USDC; a watcher on separate infrastructure.</span></div>
+    <div class="st now" style="left: 0"><span class="n">1</span><b>Testnet, today</b><span class="t">V3 drills pass; the Sepolia reserve is drilled with real finality; one person holds every key.</span></div>
+    <div class="st" style="left: 560px"><span class="n">2</span><b>Outside watchers</b><span class="t">a watcher run by someone other than us; W2 on GitHub Actions is still ours.</span></div>
     <div class="st" style="left: 1120px"><span class="n">3</span><b>A real issuer</b><span class="t">watcher and attester keys held by parties other than the issuer; community-watcher mode.</span></div>
   </div>
-  <p class="honest"><b>Funding (plan):</b> an ecosystem grant to reach a Sepolia-backed deployment with outside watchers; after that, the dollar's issuer runs Ballast as the safety layer the ecosystem could ask of it. <b>Today:</b> no external users and no revenue.</p>
-  <aside class="speaker-notes">The user is whoever issues the first dollar on Portaldot, and the builders who would accept it. Today this is a testnet build with one operator. The next steps are a real Sepolia reserve and watchers run by other people, funded by a grant. We have no users or revenue yet, and we say so.</aside>
+  <p class="honest"><b>Funding (plan):</b> an ecosystem grant to reach a deployment with outside watchers; after that, the dollar's issuer runs Ballast as the safety layer the ecosystem could ask of it. <b>Today:</b> no external users and no revenue.</p>
+  <aside class="speaker-notes">The user is whoever issues the first dollar on Portaldot, and the builders who would accept it. Today this is a testnet build with one operator. The Sepolia reserve is already drilled. The next steps are watchers run by other people, funded by a grant. We have no users or revenue yet, and we say so.</aside>
 </section>
 
 <!-- 10 · STATUS + LINKS -->
@@ -527,21 +527,21 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <div class="done">
       <h3>Done</h3>
       <ul>
-        <li>Role split + <code>ReserveOracle</code> on V3: PASS <span class="mono">16/16 + 6/6</span></li>
-        <li>Role drill on V3: PASS <span class="mono">22/22 + 20/20</span></li>
-        <li>Attestation drill on V3: PASS <span class="mono">15/15 + 6/6</span></li>
-        <li><span class="mono">79/79</span> V3 extrinsics (8 runs) final, re-queried by <code>check_receipts.py --profile v3</code></li>
-        <li><span class="mono">274</span> tests · <span class="mono">130</span> commits from 2026-10-14 to build <span class="mono">0071879</span></li>
+        <li>Role drill on V3: PASS <span class="mono">22/22 + 20/20</span> · attestation drill PASS <span class="mono">15/15 + 6/6</span></li>
+        <li>Sepolia vault (100.00 test USDC) drilled with the real finality wait: PASS <span class="mono">8/8 + 18/18</span></li>
+        <li>Outage, heartbeat and governance drills on V3 (scratch assets); W2 froze via GitHub Actions with W1 off</li>
+        <li><span class="mono">261/261</span> V3 extrinsics (23 runs) final · <span class="mono">35</span> freeze drills benchmarked · reserves page live</li>
+        <li><span class="mono">342</span> tests · <span class="mono">232</span> commits from 2026-10-14 to build <span class="mono">03458f0</span></li>
       </ul>
     </div>
     <div class="open">
       <h3>Next</h3>
       <ul>
-        <li>Sepolia <code>ReserveVault</code> with 100.00 test USDC (the wallet holds 80.00), then the drill with the real finality wait</li>
-        <li>Outage and heartbeat drills on V3 (stand-in only so far)</li>
-        <li>A watcher on separate infrastructure</li>
-        <li>Watcher-set rotation, <code>M_admin</code> rotation, wind-down</li>
-        <li>Benchmarks over many drills; a reserves page</li>
+        <li>A watcher run by someone other than us (the Actions cron fired once in ~19 h)</li>
+        <li><code>ReserveOracle</code> v2 with <code>trip()</code> on V3: its deposit exceeds our keys (stand-in only)</li>
+        <li>A community watcher with an outside operator (drilled on our own anvil)</li>
+        <li>Keys held by parties other than the issuer</li>
+        <li>A fresh oracle mirror against the Sepolia reserve (the last post is 2026-10-24, local anvil)</li>
       </ul>
     </div>
   </div>
@@ -555,7 +555,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
       <li><b>The freeze, in the node console</b><a class="mono" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">block #170,112</a></li>
     </ul>
   </div>
-  <aside class="speaker-notes">Everything on these slides has a file and a command behind it, at build 0071879. Before the final we want the real Sepolia reserve, the outage drills on V3, and a watcher that is not on our machine. Scan the code for the repository.</aside>
+  <aside class="speaker-notes">Everything on these slides has a file and a command behind it, at build 0071879. Since the check-in the Sepolia reserve, the outage and heartbeat drills on V3 and a watcher on GitHub Actions have been drilled; what is still open is a watcher run by someone else. Scan the code for the repository.</aside>
 </section>
 
 </div>
@@ -587,7 +587,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     tb.className = 'tb';
     tb.innerHTML = '<span class="name">BALLAST</span><span>' + s.dataset.title + '</span><span>' + pad(i + 1) + ' / ' + pad(N) + '</span>' +
       '<span class="grow"></span><span>Portaldot Hacker House 2026 · Multi-Chain &amp; Cross-Chain Infra</span>' +
-      '<span><a class="ver rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.0.1</a> · facts at build <span class="ver">0071879</span> · cover re-run 2026-10-25</span>';
+      '<span><a class="ver rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.6.1</a> · facts at build <span class="ver">0071879</span> · counts 2026-10-31</span>';
     s.appendChild(tb);
   });
   let cur = 0, overview = false;

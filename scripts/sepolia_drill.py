@@ -58,6 +58,17 @@ REPO = "edycutjong/portaldot-hackathon-2026-ballast-edycu"
 FINALITY_TIMEOUT = 45 * 60
 
 
+def retry(fn, tries: int = 5):
+    """A free public RPC drops a connection now and then (it did on 2026-10-31, mid-drill): retry reads and sends."""
+    for i in range(tries):
+        try:
+            return fn()
+        except OSError:  # requests.ConnectionError / timeouts
+            if i == tries - 1:
+                raise
+            time.sleep(3 * (i + 1))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--vault", help="reuse an already deployed + funded Sepolia vault (resume)")
@@ -148,11 +159,17 @@ def main() -> int:
 
     def send(name: str, fn, **extra) -> dict:
         """Sign + send one Sepolia tx from the owner key; the row is the receipt re-read from the chain."""
-        tx = fn.build_transaction({"from": owner, "nonce": w3.eth.get_transaction_count(owner, "pending"),
+        tx = fn.build_transaction({"from": owner, "nonce": retry(lambda: w3.eth.get_transaction_count(owner, "pending")),
                                    "chainId": SEPOLIA_CHAIN_ID})
-        tx["gas"] = int(w3.eth.estimate_gas(tx) * 1.3)
-        h = w3.eth.send_raw_transaction(acct.sign_transaction(tx).raw_transaction)
-        rcpt = w3.eth.wait_for_transaction_receipt(h, timeout=180)
+        tx["gas"] = int(retry(lambda: w3.eth.estimate_gas(tx)) * 1.3)
+        signed = acct.sign_transaction(tx)
+        h = signed.hash
+        try:
+            retry(lambda: w3.eth.send_raw_transaction(signed.raw_transaction))
+        except ValueError as exc:  # a retry after a dropped response: the first send already landed
+            if not any(m in str(exc).lower() for m in ("already known", "known transaction", "nonce too low")):
+                raise
+        rcpt = retry(lambda: w3.eth.wait_for_transaction_receipt(h, timeout=180))
         row = run.evm_step({"name": name, "expected": "status 1", "as_expected": rcpt["status"] == 1, "counted": True,
                             "chain": "Sepolia", "tx_hash": rcpt["transactionHash"].to_0x_hex(),
                             "block_number": rcpt["blockNumber"], "block_hash": rcpt["blockHash"].to_0x_hex(),
@@ -167,7 +184,7 @@ def main() -> int:
         t0 = time.time()
         fin = None
         while time.time() - t0 < FINALITY_TIMEOUT:
-            fin = [finalized(p) for p in providers]
+            fin = retry(lambda: [finalized(p) for p in providers])
             if min(fin) >= block:
                 break
             time.sleep(20)

@@ -7,7 +7,7 @@ Workflow: [`.github/workflows/watcher-w2.yml`](../.github/workflows/watcher-w2.y
 ## What it does
 
 - Trigger: `schedule: */5 * * * *` and `workflow_dispatch`. GitHub starts scheduled runs on a best-effort basis and may delay or skip
-  them. **No schedule-triggered run has fired yet** (see Limits); every run so far was a manual dispatch. This is **not** a real-time watcher.
+  them. **One schedule-triggered run has fired** (41159712874, 2026-10-31 02:22 UTC, success, no freeze; see Limits); every freeze proof is a manual dispatch. This is **not** a real-time watcher.
 - Each run installs the package, then runs `ballast watch` for a 240 s window (a dispatch can set `max_seconds`): it checks the Sepolia
   `ReserveVault` (`0x7ceB…357b`, two providers, publicnode and Tenderly) against the V3 supply of assets 4401 + 4402 every 2 V3 blocks, and signs
   the `M_watch` freeze (`Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]`) when a provider reads
@@ -42,6 +42,6 @@ freeze `259520-1` by W2 on Actions had landed; the harness now retries). After t
 
 ## Limits
 
-- Scheduled runs depend on GitHub. As of 2026-10-31 00:54 UTC no `schedule`-triggered run of this workflow had occurred (`gh run list --workflow watcher-w2.yml`: 5 runs, all `workflow_dispatch`, the first of them a failed setup run that needed the public watcher addresses). The cron is configured and the workflow is active; the proof above is dispatch-driven. A later `gh run list` (2026-10-31 03:45 UTC) shows one `schedule`-triggered run, 41159712874 created 02:22:30 UTC, conclusion success; its log (inspected 2026-10-31) shows the watchdog armed at #260845 and two checks, `check #260847` and `#260849`, each `reserves 100000000 >= supply 100000000` (Sepolia reserve, assets 4401 and 4402), and no freeze. One scheduled run in the ~19 hours after the cron was enabled shows how sparse GitHub's best-effort schedule is; it is not counted as a freeze proof.
+- Scheduled runs depend on GitHub. As of 2026-10-31 00:54 UTC no `schedule`-triggered run of this workflow had occurred (`gh run list --workflow watcher-w2.yml`: 5 runs, all `workflow_dispatch`, the first of them a failed setup run that needed the public watcher addresses). The cron is configured and the workflow is active; the proof above is dispatch-driven. A later `gh run list` (2026-10-31 03:45 UTC) shows one `schedule`-triggered run, 41159712874 created 02:22:30 UTC, conclusion success; its log (inspected 2026-10-31) shows the watchdog armed at #260845 and two checks, `check #260847` and `#260849`, each `reserves 100000000 >= supply 100000000` (Sepolia reserve, assets 4401 and 4402), and no freeze (a third check, #260851, found asset 4401 already frozen: `asset not live (frozen); no transaction`, then the run exited 0 early, so it did not exercise a full level-reserves window). One scheduled run in the ~4.7 hours after the cron was enabled (2026-10-30 23:11 UTC to 2026-10-31 03:55 UTC) shows how sparse GitHub's best-effort schedule is; it is not counted as a freeze proof.
 - The runner and the operator's machine are two clocks; the latency above is a wall-clock figure across both.
 - The uploaded log artifacts are kept for 30 days; the evidence copies in `evidence/` are the durable ones.

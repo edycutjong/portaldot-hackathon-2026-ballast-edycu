@@ -1,0 +1,660 @@
+{
+  "generated_at": "2026-10-31T03:36:26Z",
+  "method": "nearest-rank percentiles over samples whose own freeze step was as expected",
+  "runs": [
+    {
+      "file": "roles-bench-v3-20261031T015842Z.json",
+      "kind": "roles-bench",
+      "verdict": "FAIL",
+      "started_at": "2026-10-31T01:58:42Z",
+      "samples": 2,
+      "samples_ok": 2,
+      "source": "71cb007"
+    },
+    {
+      "file": "roles-bench-v3-20261031T020152Z.json",
+      "kind": "roles-bench",
+      "verdict": "PASS",
+      "started_at": "2026-10-31T02:01:52Z",
+      "samples": 24,
+      "samples_ok": 24,
+      "source": "ca893a3"
+    },
+    {
+      "file": "sepolia-drill-20261030T200923Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "PASS",
+      "started_at": "2026-10-30T20:09:23Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "cff62bc"
+    },
+    {
+      "file": "sepolia-drill-20261030T204614Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "FAIL",
+      "started_at": "2026-10-30T20:46:14Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "1328f88"
+    },
+    {
+      "file": "sepolia-drill-20261030T212330Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "FAIL",
+      "started_at": "2026-10-30T21:23:30Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "9c2112e"
+    },
+    {
+      "file": "sepolia-drill-20261030T220145Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "PASS",
+      "started_at": "2026-10-30T22:01:45Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "2dbd35c"
+    },
+    {
+      "file": "sepolia-drill-20261030T231633Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "FAIL",
+      "started_at": "2026-10-30T23:16:33Z",
+      "samples": 1,
+      "samples_ok": 0,
+      "source": "b77e02f"
+    },
+    {
+      "file": "sepolia-drill-20261031T000804Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "ERROR",
+      "started_at": "2026-10-31T00:08:05Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "fc371f3"
+    },
+    {
+      "file": "sepolia-drill-20261031T002936Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "PASS",
+      "started_at": "2026-10-31T00:29:36Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "3555312"
+    },
+    {
+      "file": "sepolia-drill-20261031T023622Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "PASS",
+      "started_at": "2026-10-31T02:36:22Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "94e5377"
+    },
+    {
+      "file": "sepolia-drill-20261031T025614Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "PASS",
+      "started_at": "2026-10-31T02:56:14Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "94e5377"
+    },
+    {
+      "file": "sepolia-drill-20261031T031516Z.json",
+      "kind": "sepolia-drill",
+      "verdict": "PASS",
+      "started_at": "2026-10-31T03:15:17Z",
+      "samples": 1,
+      "samples_ok": 1,
+      "source": "94e5377"
+    }
+  ],
+  "groups": {
+    "v3-anvil": {
+      "drain_to_freeze_s": {
+        "n": 26,
+        "min": 11.203,
+        "p50": 12.309,
+        "p95": 16.706,
+        "max": 30.743,
+        "mean": 13.943
+      },
+      "drain_to_detect_s": {
+        "n": 26,
+        "min": 6.051,
+        "p50": 7.331,
+        "p95": 11.858,
+        "max": 25.111,
+        "mean": 8.713
+      },
+      "freeze_fee_planck": {
+        "n": 26,
+        "min": 2990576854518,
+        "p50": 2990577027870,
+        "p95": 2990577220048,
+        "max": 2990577234111,
+        "mean": 2990577039195.692
+      },
+      "v3_blocks_to_freeze": {
+        "n": 26,
+        "min": 2,
+        "p50": 3,
+        "p95": 3,
+        "max": 3,
+        "mean": 2.923
+      }
+    },
+    "v3-sepolia-local": {
+      "drain_to_freeze_s": {
+        "n": 6,
+        "min": 5.55,
+        "p50": 10.61,
+        "p95": 11.25,
+        "max": 11.25,
+        "mean": 9.898
+      },
+      "drain_to_detect_s": {
+        "n": 0
+      },
+      "freeze_fee_planck": {
+        "n": 6,
+        "min": 3060576606829,
+        "p50": 3080579851032,
+        "p95": 3080581197100,
+        "max": 3080581197100,
+        "mean": 3077245924464.167
+      },
+      "v3_blocks_to_freeze": {
+        "n": 0
+      }
+    },
+    "v3-sepolia-actions": {
+      "drain_to_freeze_s": {
+        "n": 3,
+        "min": 60.88,
+        "p50": 64.44,
+        "p95": 70.73,
+        "max": 70.73,
+        "mean": 65.35
+      },
+      "drain_to_detect_s": {
+        "n": 0
+      },
+      "freeze_fee_planck": {
+        "n": 3,
+        "min": 3080576391436,
+        "p50": 3080578324191,
+        "p95": 3080578572252,
+        "max": 3080578572252,
+        "mean": 3080577762626.333
+      },
+      "v3_blocks_to_freeze": {
+        "n": 0
+      }
+    }
+  },
+  "samples": [
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T015842Z.json",
+      "run_verdict": "FAIL",
+      "i": 1,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260610-1",
+      "drain_to_freeze_s": 30.743,
+      "drain_to_detect_s": 25.111,
+      "fee_planck": 2990577234111,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T015842Z.json",
+      "run_verdict": "FAIL",
+      "i": 2,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260622-1",
+      "drain_to_freeze_s": 11.54,
+      "drain_to_detect_s": 6.151,
+      "fee_planck": 2990577220048,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260640-1",
+      "drain_to_freeze_s": 16.706,
+      "drain_to_detect_s": 11.858,
+      "fee_planck": 2990577198948,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 2,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260652-1",
+      "drain_to_freeze_s": 11.719,
+      "drain_to_detect_s": 6.107,
+      "fee_planck": 2990577184886,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 3,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260666-1",
+      "drain_to_freeze_s": 15.688,
+      "drain_to_detect_s": 10.715,
+      "fee_planck": 2990577168478,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 4,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260679-1",
+      "drain_to_freeze_s": 12.805,
+      "drain_to_detect_s": 7.454,
+      "fee_planck": 2990577153244,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 5,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260692-1",
+      "drain_to_freeze_s": 16.669,
+      "drain_to_detect_s": 11.775,
+      "fee_planck": 2990577138010,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 6,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260705-1",
+      "drain_to_freeze_s": 15.604,
+      "drain_to_detect_s": 10.618,
+      "fee_planck": 2990577122776,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 7,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260720-1",
+      "drain_to_freeze_s": 16.228,
+      "drain_to_detect_s": 10.658,
+      "fee_planck": 2990577105199,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 8,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260733-1",
+      "drain_to_freeze_s": 14.339,
+      "drain_to_detect_s": 9.484,
+      "fee_planck": 2990577089966,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 9,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260745-1",
+      "drain_to_freeze_s": 12.309,
+      "drain_to_detect_s": 7.266,
+      "fee_planck": 2990577075907,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 10,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260758-1",
+      "drain_to_freeze_s": 14.535,
+      "drain_to_detect_s": 9.551,
+      "fee_planck": 2990577060675,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 11,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260771-1",
+      "drain_to_freeze_s": 14.016,
+      "drain_to_detect_s": 8.489,
+      "fee_planck": 2990577045445,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 12,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260786-1",
+      "drain_to_freeze_s": 12.828,
+      "drain_to_detect_s": 7.408,
+      "fee_planck": 2990577027870,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 13,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260798-1",
+      "drain_to_freeze_s": 11.203,
+      "drain_to_detect_s": 6.163,
+      "fee_planck": 2990577013812,
+      "v3_blocks_to_freeze": 2
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 14,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260812-1",
+      "drain_to_freeze_s": 16.62,
+      "drain_to_detect_s": 11.708,
+      "fee_planck": 2990576997411,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 15,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260824-1",
+      "drain_to_freeze_s": 11.283,
+      "drain_to_detect_s": 6.128,
+      "fee_planck": 2990576983354,
+      "v3_blocks_to_freeze": 2
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 16,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260836-1",
+      "drain_to_freeze_s": 11.685,
+      "drain_to_detect_s": 6.116,
+      "fee_planck": 2990576969297,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 17,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260850-1",
+      "drain_to_freeze_s": 12.532,
+      "drain_to_detect_s": 7.331,
+      "fee_planck": 2990576952898,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 18,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260862-1",
+      "drain_to_freeze_s": 12.221,
+      "drain_to_detect_s": 7.28,
+      "fee_planck": 2990576938842,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 19,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260874-1",
+      "drain_to_freeze_s": 12.3,
+      "drain_to_detect_s": 7.449,
+      "fee_planck": 2990576924787,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 20,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260886-1",
+      "drain_to_freeze_s": 11.707,
+      "drain_to_detect_s": 7.08,
+      "fee_planck": 2990576910732,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 21,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260898-1",
+      "drain_to_freeze_s": 11.64,
+      "drain_to_detect_s": 6.208,
+      "fee_planck": 2990576896678,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 22,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260910-1",
+      "drain_to_freeze_s": 11.799,
+      "drain_to_detect_s": 6.051,
+      "fee_planck": 2990576882625,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 23,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260922-1",
+      "drain_to_freeze_s": 11.855,
+      "drain_to_detect_s": 6.216,
+      "fee_planck": 2990576868571,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-anvil",
+      "run": "roles-bench-v3-20261031T020152Z.json",
+      "run_verdict": "PASS",
+      "i": 24,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260934-1",
+      "drain_to_freeze_s": 11.947,
+      "drain_to_detect_s": 6.165,
+      "fee_planck": 2990576854518,
+      "v3_blocks_to_freeze": 3
+    },
+    {
+      "group": "v3-sepolia-local",
+      "run": "sepolia-drill-20261030T200923Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "257294-1",
+      "drain_to_freeze_s": 11.25,
+      "fee_planck": 3080581197100,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-local",
+      "run": "sepolia-drill-20261030T204614Z.json",
+      "run_verdict": "FAIL",
+      "i": 1,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "257674-1",
+      "drain_to_freeze_s": 10.61,
+      "fee_planck": 3080580747955,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-local",
+      "run": "sepolia-drill-20261030T212330Z.json",
+      "run_verdict": "FAIL",
+      "i": 1,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "258057-1",
+      "drain_to_freeze_s": 11.08,
+      "fee_planck": 3080580295731,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-local",
+      "run": "sepolia-drill-20261030T220145Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W1",
+      "freeze_ok": true,
+      "freeze_extrinsic": "258434-1",
+      "drain_to_freeze_s": 10.26,
+      "fee_planck": 3080579851032,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-actions",
+      "run": "sepolia-drill-20261030T231633Z.json",
+      "run_verdict": "FAIL",
+      "i": 1,
+      "watcher": "W2 (Actions)",
+      "freeze_ok": false,
+      "freeze_extrinsic": "259196-1",
+      "drain_to_freeze_s": 53.77,
+      "fee_planck": 3080578953426,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-actions",
+      "run": "sepolia-drill-20261031T000804Z.json",
+      "run_verdict": "ERROR",
+      "i": 1,
+      "watcher": "W2 (Actions)",
+      "freeze_ok": true,
+      "freeze_extrinsic": "259520-1",
+      "drain_to_freeze_s": 70.73,
+      "fee_planck": 3080578572252,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-actions",
+      "run": "sepolia-drill-20261031T002936Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W2 (Actions)",
+      "freeze_ok": true,
+      "freeze_extrinsic": "259731-1",
+      "drain_to_freeze_s": 64.44,
+      "fee_planck": 3080578324191,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-local",
+      "run": "sepolia-drill-20261031T023622Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "260989-1",
+      "drain_to_freeze_s": 10.64,
+      "fee_planck": 3080576848138,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-local",
+      "run": "sepolia-drill-20261031T025614Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W2",
+      "freeze_ok": true,
+      "freeze_extrinsic": "261184-1",
+      "drain_to_freeze_s": 5.55,
+      "fee_planck": 3060576606829,
+      "v3_blocks_to_freeze": null
+    },
+    {
+      "group": "v3-sepolia-actions",
+      "run": "sepolia-drill-20261031T031516Z.json",
+      "run_verdict": "PASS",
+      "i": 1,
+      "watcher": "W2 (Actions)",
+      "freeze_ok": true,
+      "freeze_extrinsic": "261379-1",
+      "drain_to_freeze_s": 60.88,
+      "fee_planck": 3080576391436,
+      "v3_blocks_to_freeze": null
+    }
+  ],
+  "total_freeze_samples": 35,
+  "excluded_samples": 1
+}

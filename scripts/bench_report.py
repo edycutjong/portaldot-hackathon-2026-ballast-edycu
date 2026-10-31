@@ -25,7 +25,7 @@ EVIDENCE = ROOT / "evidence"
 DECIMALS = 14  # tPOT on V3
 GROUPS = (
     ("v3-anvil", "V3 + local-anvil reserve, watcher on this machine (W1/W2 alternating)"),
-    ("v3-sepolia-local", "V3 + real Sepolia reserve, watcher W1 on this machine"),
+    ("v3-sepolia-local", "V3 + real Sepolia reserve, watchers W1/W2 as processes on this machine"),
     ("v3-sepolia-actions", "V3 + real Sepolia reserve, watcher W2 on GitHub Actions (W1 off)"),
 )
 
@@ -143,8 +143,11 @@ def main() -> int:
            "- **Local anvil is not Sepolia.** The first row's reserve chain is a local anvil with instant mining; the freeze leg "
            "(read vault → decide → sign `M_watch` → V3 inclusion) is the same code, but the provider read is faster than a public "
            "Sepolia RPC. The thaw leg in that row uses an emulated finality (`anvil_mine`) and says nothing about Sepolia's 13–19 min.",
-           "- **What dominates.** V3 blocks are ~6 s and the watcher checks every 2 blocks, so the floor is a block or two; a p95 of "
-           "a few multiples of that is the cost of waiting for the next poll and for inclusion, not computation.",
+           "- **What dominates.** Waiting for the watcher's next poll (the detect column, every 2 V3 blocks of ~6 s) and for inclusion in "
+           "a ~6 s block; neither is computation. A sample can land in under one poll interval when the drain happens just before a check.",
+           "- **Small n.** With fewer than 20 samples a nearest-rank p95 is simply the largest or second-largest sample; read the Sepolia "
+           f"rows (n = {summary['groups']['v3-sepolia-local']['drain_to_freeze_s']['n']} and "
+           f"{summary['groups']['v3-sepolia-actions']['drain_to_freeze_s']['n']}) as a handful of observed drills, not as a percentile.",
            "- **Fee.** The freeze is `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]`; "
            "the figure is the on-chain `TransactionPayment.TransactionFeePaid` of that extrinsic.",
            "- **Samples are not independent trials of a service.** They are sequential drills on one asset; the n is a count of drills, "

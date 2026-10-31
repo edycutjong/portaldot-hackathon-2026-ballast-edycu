@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-10-31T03:34:45Z",
+  "kind": "reserves-snapshot (read-only; no transaction)",
+  "sepolia": {
+    "vault": "0x7ceB7c3EBDBCC75e585599e5dd944286F009357b",
+    "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    "providers": [
+      {
+        "name": "publicnode",
+        "latest": {
+          "block": 12031179,
+          "balance": 100000000
+        },
+        "finalized": {
+          "block": 12031106,
+          "balance": 100000000
+        }
+      },
+      {
+        "name": "tenderly",
+        "latest": {
+          "block": 12031179,
+          "balance": 100000000
+        },
+        "finalized": {
+          "block": 12031106,
+          "balance": 100000000
+        }
+      }
+    ]
+  },
+  "v3": {
+    "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "finalized_block": 261556,
+    "finalized_hash": "0xcb96295091997c17e506439ff33cb89a08cac820e7bdfff0595c70413dd1093c",
+    "assets": {
+      "4401": {
+        "supply": 50000000,
+        "status": "Live",
+        "storage_key": "0x682a59d51ab9e48a8c8cc418ff9708d2d34371a193a751eea5883e9553457b2edc80186ba3c1d062770a27ad0480088d31110000"
+      },
+      "4402": {
+        "supply": 50000000,
+        "status": "Live",
+        "storage_key": "0x682a59d51ab9e48a8c8cc418ff9708d2d34371a193a751eea5883e9553457b2e56c350adacad6f9240a1971e32f2870d32110000"
+      }
+    }
+  },
+  "oracle": {
+    "address": "0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e",
+    "s1": 56000000,
+    "s2": 50000000,
+    "reserves": 106000000,
+    "sep_block": 1758,
+    "sep_hash": "0x4d54fee2acd6f0e8b8766bbd98b1d2225456fb87d1adfdbe1761709831a7def4",
+    "pd_block": 170249,
+    "frozen": false,
+    "updated_at": 1792818678
+  }
+}

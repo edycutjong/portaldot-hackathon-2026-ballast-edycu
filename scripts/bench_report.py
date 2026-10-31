@@ -144,7 +144,7 @@ def main() -> int:
            "(read vault → decide → sign `M_watch` → V3 inclusion) is the same code, but the provider read is faster than a public "
            "Sepolia RPC. The thaw leg in that row uses an emulated finality (`anvil_mine`) and says nothing about Sepolia's measured 14–19 min (841–1,168 s) finality waits.",
            "- **What dominates.** Waiting for the watcher's next poll (the detect column, every 2 V3 blocks of ~6 s) and for inclusion in "
-           "a ~6 s block; both are mostly waiting, not computation (a provider read takes ~0.003 s on the anvil and ~0.4–0.6 s on Sepolia in the watcher logs). A sample can land in under one poll interval when the drain happens just before a check.",
+           "a ~6 s block; both are mostly waiting, not computation (a provider read takes about 0.01 s on the anvil, median 0.008 s, and typically 0.4–0.6 s on Sepolia, median 0.49 s, in the watcher logs). A sample can land in under one poll interval when the drain happens just before a check.",
            "- **Small n.** With fewer than 20 samples a nearest-rank p95 is simply the largest sample; read the Sepolia "
            f"rows (n = {summary['groups']['v3-sepolia-local']['drain_to_freeze_s']['n']} and "
            f"{summary['groups']['v3-sepolia-actions']['drain_to_freeze_s']['n']}) as a handful of observed drills, not as a percentile.",
@@ -165,9 +165,10 @@ def main() -> int:
         return "its own freeze step was not as expected (see the run JSON)"
 
     md += ["", "Excluded: " + ("; ".join(f"`{x['run']}` ({x['watcher']}, {x['drain_to_freeze_s']:.2f} s): {why(x)}" for x in excluded) or "none") + ".",
-           "", "FAIL / ERROR run verdicts above come from pre-flight state checks, not the freeze: `roles-bench-v3-20261031T015842Z` (the vault held a 6.00 surplus, "
-           "check relaxed afterwards), `sepolia-drill-20261030T204614Z` and `…212330Z` (owner funding checks). Their freeze steps were as expected and are counted. "
-           "`sepolia-drill-20261030T200923Z` ran with uncommitted changes (`dirty: true` in its JSON).", "", "## Samples", "", "| Group | Run | # | Watcher | Freeze extrinsic | Drain → freeze (s) | Fee (tPOT) |", "|---|---|---|---|---|---|---|"]
+           "", "Of the non-PASS run verdicts above, three come from pre-flight state checks, not the freeze: `roles-bench-v3-20261031T015842Z` (the vault held a 6.00 surplus, "
+           "check relaxed afterwards) and `sepolia-drill-20261030T204614Z` / `…212330Z` (owner funding checks); their freeze steps were as expected and are counted. "
+           "`sepolia-drill-20261030T231633Z` is the excluded run above; `…20261031T000804Z` ended ERROR on a dropped public Sepolia RPC connection during the refill, "
+           "after its freeze (counted). `sepolia-drill-20261030T200923Z` ran with uncommitted changes (`dirty: true` in its JSON).", "", "## Samples", "", "| Group | Run | # | Watcher | Freeze extrinsic | Drain → freeze (s) | Fee (tPOT) |", "|---|---|---|---|---|---|---|"]
     for s in samples:
         md.append(f"| {s['group']} | `{s['run']}` | {s['i']} | {s['watcher']} | {s['freeze_extrinsic']}{'' if s['freeze_ok'] else ' (excluded)'} | "
                   f"{s['drain_to_freeze_s']:.2f} | {tpot(s['fee_planck'])} |")

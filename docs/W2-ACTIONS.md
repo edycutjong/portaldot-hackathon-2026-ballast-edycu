@@ -28,7 +28,7 @@ Workflow: [`.github/workflows/watcher-w2.yml`](../.github/workflows/watcher-w2.y
 | W1 off, Sepolia drain 30.00, freeze by W2 on Actions | PASS 8/8 steps, 18/18 state checks | [run 41150496088](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/runs/41150496088), `evidence/sepolia-drill-20261031T002936Z.json`, Actions log `evidence/sepolia-drill-20261031T002936Z.w2-actions.jsonl` |
 | The freeze | V3 extrinsic `259731-1`, signer W2 `5HmY…Sf39` through `M_watch`, remark `reason=deficit s=100000000 r=70000000` (eb = a Sepolia block at or after the drain) | `docs/PROOF.md` (sepolia-drill 20261031T002936Z) |
 | Rest of the drill | judge transfer refused `Err(Assets.AssetNotLive)` (259735-1), W1 thaw refused `Err(Assets.NoPermission)` (259736-1), bot refused the thaw until Sepolia finality passed, then co-signed (259895-1), judge transfer OK (259896-1) | same |
-| Drain to freeze included | 64.44 s, one sample (this machine's drain, the runner's clock; the drill dispatched the workflow right after the drain, so this includes queue, runner start and install and is **not** the latency of a scheduled run; the other attempts took 53.77 s, 70.73 s and, in a later run on 2026-10-31, 60.88 s) | the drill JSON, `notes` |
+| Drain to freeze included | 64.44 s in this run (docs/BENCHMARKS.md counts three Actions samples: 60.88, 64.44, 70.73 s; this machine's drain, the runner's clock; the drill dispatched the workflow right after the drain, so this includes queue, runner start and install and is **not** the latency of a scheduled run; the other attempts took 53.77 s, 70.73 s and, in a later run on 2026-10-31, 60.88 s) | the drill JSON, `notes` |
 
 "W1 off" means a `ps` snapshot taken just before the drain, logged as a state check, showed no `python -m ballast.cli … watch` process on the
 operator's machine. The freeze itself is W2's: it was signed by W2's key (read back from the V3 chain) and the Actions log carries it. The drain was a
@@ -42,6 +42,6 @@ freeze `259520-1` by W2 on Actions had landed; the harness now retries). After t
 
 ## Limits
 
-- Scheduled runs depend on GitHub. As of 2026-10-31 00:54 UTC no `schedule`-triggered run of this workflow had occurred (`gh run list --workflow watcher-w2.yml`: 5 runs, all `workflow_dispatch`, the first of them a failed setup run that needed the public watcher addresses). The cron is configured and the workflow is active; the proof above is dispatch-driven.
+- Scheduled runs depend on GitHub. As of 2026-10-31 00:54 UTC no `schedule`-triggered run of this workflow had occurred (`gh run list --workflow watcher-w2.yml`: 5 runs, all `workflow_dispatch`, the first of them a failed setup run that needed the public watcher addresses). The cron is configured and the workflow is active; the proof above is dispatch-driven. A later `gh run list` (2026-10-31 03:45 UTC) shows one `schedule`-triggered run, 41159712874 created 02:22:30 UTC, conclusion success; its log was not inspected, so it is not counted as evidence of a freeze or of a no-op.
 - The runner and the operator's machine are two clocks; the latency above is a wall-clock figure across both.
 - The uploaded log artifacts are kept for 30 days; the evidence copies in `evidence/` are the durable ones.

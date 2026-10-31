@@ -183,7 +183,7 @@ Enforcement is **pallet-native**. The two Solidity contracts (`contracts/`) are 
 | Contract | Key functions | Tests | Where it has been deployed |
 |---|---|---|---|
 | [`contracts/ReserveVault.sol`](contracts/ReserveVault.sol) | `reserves()`, `release(to, amount, redeemId)` (owner only, emits `Released`), `transferOwnership` | 20 Foundry tests | local anvil (chain id 31337) in the role drills; Ethereum Sepolia `0x7ceB…357b` in the Sepolia drill (Sourcify `exact_match`) |
-| [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 15 Hardhat tests | V3 Revive (`0x4832…155e`, 2026-10-24) and the stand-in's Revive pallet |
+| [`contracts/ReserveOracle.sol`](contracts/ReserveOracle.sol) | `post(...)` (attester only, `pdBlock` must increase), `status()`, `isBacked(maxAge)` | 21 Hardhat tests (v2 adds `trip()` by a listed watcher) | v1 on V3 Revive (`0x4832…155e`, 2026-10-24); v2 on the stand-in's Revive pallet only |
 
 A multisig can report `MultisigExecuted` while the call inside it failed, so every executing multisig receipt records the *inner* result (the
 executed rows in `docs/RECEIPTS.md` read `inner Ok`). The freezer's thaw through `as_multi_threshold_1` fails the whole
@@ -313,7 +313,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
   a community watcher's freeze (`ballast watch --community`), the wind-down thaw and an atomic thaw + burn redemption, PASS 30/30 + 16/16
   (2026-10-31 UTC, [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md))
 - [x] `ReserveOracle` v2 with `trip()` by a listed watcher: 6 new Hardhat tests, trip drill PASS 9/9 + 9/9 on the stand-in (not V3)
-- [ ] `ReserveOracle` v2 on V3: its storage deposit exceeds what Ballast's V3 keys hold ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))
+- [ ] `ReserveOracle` v2 on V3: its deposit is estimated to exceed what Ballast's V3 keys hold (v1 needed 138.53 tPOT; the keys hold 83.13; a v2 dry-run fails) ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))
 - [ ] Benchmarks over many drills, reserves page
 
 **Honest limitations**

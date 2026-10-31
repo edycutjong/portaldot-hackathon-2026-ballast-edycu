@@ -15,9 +15,12 @@ The drills are `scripts/governance_drill.py` and `scripts/trip_drill.py`.
 
 Both drill runs started from committed code (`source.dirty: false`). `python scripts/check_receipts.py --profile v3`
 re-queried all V3 extrinsics, 165 of them, at finalized head #260355
-([`evidence/check-receipts-v3-20261031T013443Z.txt`](../evidence/check-receipts-v3-20261031T013443Z.txt)). One
-row, 260287-1, was re-included in the canonical block at the same height after a short fork. The V3 rows are also in
-[`PROOF.md`](PROOF.md).
+([`evidence/check-receipts-v3-20261031T013443Z.txt`](../evidence/check-receipts-v3-20261031T013443Z.txt)). Five of
+the 165 rows were re-included in the canonical block at the same height after short forks. Only one of them,
+260287-1, is from this drill. The V3 rows are also in [`PROOF.md`](PROOF.md).
+
+The drill calls the bot's co-sign methods in-process. This is the same `ReserveBot` code that `ballast bot
+cosign-team --announcement …`, `cosign-thaw --final …` and `announce` run from the CLI. Redemption has no CLI yet.
 
 **Drill overrides** are recorded in the evidence under `overrides`. The announcement age K and the wind-down
 trigger W were both set to **5 blocks** for the drill. In production, K = 3 × H blocks and W is about 24 h, both
@@ -51,8 +54,9 @@ Holders get K blocks to see a change coming before it can take effect.
 ## 2. Community-watcher mode
 
 `ballast watch --community` freezes on a deficit only when every provider answers and reads short. It then reads
-every provider again, pinned to one Sepolia block (the lowest latest block among them), and requires the same hash
-everywhere. If only one provider reads short, the result is `one-short` and nothing is frozen. A total outage is
+every provider again, pinned to one reserve-chain block (the lowest latest block among them), and requires the
+same hash everywhere. In production that is a Sepolia block; in this drill it was local anvil block 1838. If only one
+provider reads short, the result is `one-short` and nothing is frozen. A total outage is
 `outage` and never triggers fail-closed, because one community member's bad network must not freeze the asset for
 every holder. Fail-closed (I6) stays operator-only. The heartbeat rule (I8) applies in both modes.
 
@@ -63,7 +67,8 @@ the custodian drained 30.00 of the 100.00 reserve, W3 froze asset 4601 through `
 
 ## 3. Wind-down and redemption
 
-This follows spec "Shortfall end state" for when the reserve stays short.
+This is the branch for a reserve that stays short. While the asset is frozen, an admin `burn` fails inside the
+multisig, so the wind-down freezes every holder's account first and only then thaws the asset.
 
 | V3 step | Extrinsic | Outcome |
 |---|---|---|
@@ -87,16 +92,17 @@ Version 2 of the contract adds a watcher H160 list to the constructor. Any liste
 sets `frozen` and records `trippedBlock`. That is all it does: it is one-way, like the pallet freezer. Only the
 attester can clear the trip, by posting a reading whose Portaldot block is after `trippedBlock`. On Revive,
 `block.number` is the Portaldot block. The stand-in drill measured this: `trippedBlock` 8879 matched the trip
-extrinsic's block. The Hardhat suite has 6 tests for `trip()`, 21 in total.
+extrinsic's block. This phase added 6 Hardhat tests (the watcher list and `trip()`), for 21 in total.
 
 On the stand-in, a non-watcher's `trip()` reverted, W1's `trip()` turned `isBacked` false, and a post with
 `pdBlock = trippedBlock` reverted (`TripNotCleared`). A post from a later block cleared the trip.
 
-**Not on V3 yet.** The v1 mirror on V3 (`0x4832…155e`) needed a 138.53 tPOT storage deposit, and the v2 initcode
-is larger at 2,960 bytes. All of Ballast's V3 keys together hold 83.13 tPOT free, and a deploy dry-run from B fails
+**Not on V3 yet.** The v1 mirror on V3 (`0x4832…155e`) needed 138.53 tPOT in deposits (code upload plus storage),
+and the v2 initcode is larger at 2,960 bytes. The v2 deposit itself is not measured, so the shortfall is an estimate. All of Ballast's V3 keys together hold 83.13 tPOT free, and a deploy dry-run from B fails
 ([`evidence/v3-oracle-v2-sizing-20261031.json`](../evidence/v3-oracle-v2-sizing-20261031.json), read-only,
 `scripts/oracle_v2_sizing.py`). The v1 mirror stays live and has no `trip()`. Deploying v2 on V3 is
-`python scripts/trip_drill.py --profile v3 --allow-v3` once the funder is topped up.
+`python scripts/trip_drill.py --profile v3 --allow-v3` once the funder is topped up. That V3 path has not run
+yet.
 
 ## Tests
 

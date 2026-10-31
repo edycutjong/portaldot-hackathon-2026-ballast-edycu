@@ -154,7 +154,8 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 ## Not built
 
-`ReserveOracle` v2 (with `trip()`) on V3: it is tested and drilled on the stand-in only, and the V3 mirror stays v1. A redemption CLI: the
-governance drill drives `ReserveBot.cosign_redeem` in-process. The reserves web page. The status HTTP endpoint. Community-watcher mode,
+`ReserveOracle` v2 (with `trip()`) on V3: it is tested and drilled on the stand-in only, and the V3 mirror stays v1 (the v2 deposit is
+estimated to exceed what Ballast's V3 keys hold). A redemption CLI: the governance drill drives the bot's co-sign methods in-process, and
+`cosign_redeem` has no CLI command. The reserves web page. The status HTTP endpoint. Community-watcher mode,
 watcher-set and `M_admin` rotations, and the wind-down with redemption ran on V3 on 2026-10-31 UTC; see
 [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md).

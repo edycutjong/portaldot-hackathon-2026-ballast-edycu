@@ -150,9 +150,10 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 | `standin-upstream` | the profile the drain scratch drills and every timing before 2026-10-24 were measured on (the outage and heartbeat drills also ran on V3): polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 
+**W2 on GitHub Actions.** `.github/workflows/watcher-w2.yml` runs `ballast watch` as W2 on a 5-minute schedule (best effort) with the seed in a repository secret; it covers the reserve deficit only. Proof and limits: `docs/W2-ACTIONS.md`.
+
 ## Not built
 
 Community-watcher mode (the "both providers short at the same block" rule); `ReserveOracle.trip()`; watcher-set rotation (K-block announcement);
 `M_admin` rotation; the wind-down branch (per-account freezes, `final` and `redeem` remarks are parsed by `verify` but no flow posts them); the
-reserves web page; the status HTTP endpoint; a Sepolia `ReserveVault` deployment (the deployer wallet holds 80.00 test USDC on 2026-10-24, below the 100.00 the
-plan needs); a watcher on separate infrastructure.
+reserves web page; the status HTTP endpoint.

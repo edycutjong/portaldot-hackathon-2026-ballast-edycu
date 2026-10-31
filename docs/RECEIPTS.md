@@ -13,7 +13,7 @@ extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** 
 | Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |
 |---|---|---|---|---|
 | Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality | v3 | Sepolia | PASS (8/8 steps as expected, 18/18 state checks) | [`sepolia-drill-20261031T002936Z.json`](../evidence/sepolia-drill-20261031T002936Z.json) |
-| Benchmark: back-to-back drain -> freeze -> thaw cycles on asset 4401 (local-anvil reserve), per-cycle latency | v3 | local-anvil (not Sepolia) | FAIL (10/10 steps as expected, 5/6 state checks) | [`roles-bench-v3-20261031T015842Z.json`](../evidence/roles-bench-v3-20261031T015842Z.json) |
+| Benchmark: back-to-back drain -> freeze -> thaw cycles on asset 4401 (local-anvil reserve), per-cycle latency | v3 | local-anvil (not Sepolia) | PASS (120/120 steps as expected, 50/50 state checks) | [`roles-bench-v3-20261031T020152Z.json`](../evidence/roles-bench-v3-20261031T020152Z.json) |
 | Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | v3 | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-v3-20261031T012503Z.json`](../evidence/roles-governance-v3-20261031T012503Z.json) |
 | Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json) |
 | ReserveOracle v2: trip() by a listed watcher, refused for others, cleared only by a later post | standin-upstream (stand-in, NOT V3) | none — the oracle mirrors B's attestation; this drill posts a fixed drill status | PASS (9/9 steps as expected, 9/9 state checks) | [`oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json) |
@@ -116,9 +116,9 @@ Other runs, newest first, any verdict (full tables in the JSON):
 - asset 4401 — 2026-10-30T20:46:14Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `1328f88` (clean) — [`evidence/sepolia-drill-20261030T204614Z.json`](../evidence/sepolia-drill-20261030T204614Z.json) — failed: owner holds >= 100.00 test USDC and gas
 - asset 4401 — 2026-10-30T20:09:23Z — PASS (12/12 steps as expected, 18/18 state checks) — source: `cff62bc` (UNCOMMITTED CHANGES) — [`evidence/sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json)
 
-### Benchmark — back-to-back drain -> freeze -> thaw cycles on asset 4401 (local-anvil reserve), latency per cycle — 2026-10-31T01:58:42Z
+### Benchmark — back-to-back drain -> freeze -> thaw cycles on asset 4401 (local-anvil reserve), latency per cycle — 2026-10-31T02:01:52Z
 
-Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-bench-v3-20261031T015842Z.json`](../evidence/roles-bench-v3-20261031T015842Z.json) · result: **FAIL** (10/10 steps as expected, 5/6 state checks) · source: `71cb007` (clean)
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-bench-v3-20261031T020152Z.json`](../evidence/roles-bench-v3-20261031T020152Z.json) · result: **PASS** (120/120 steps as expected, 50/50 state checks) · source: `ca893a3` (clean)
 
 Role map: `M_mint` 5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb (2-of-2 A, B) · `M_admin` 5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg (2-of-3 A, A2, B) · `M_watch` 5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c (1-of-2 watchers).
 
@@ -126,42 +126,265 @@ Reserve-chain transactions (local-anvil (not Sepolia); vault `0x22753E4264FDDc61
 
 | # | Step | Block | Tx hash | Observed |
 |---|---|---|---|---|
-| 1 | iter 1: custodian drains 10% (10.60) — release() | 1840 | `0x9d07311f8c8387899fabfe860489a5776eb241279ede8aa0a8b66c494af31324` | ✅ status 1 |
-| 2 | iter 1: custodian re-deposits 10.60 | 1841 | `0xa2b6e2e3c2c5fc3e0e3d64abca254f67271ed6e8708a43ac7d4b5f261ba71893` | ✅ status 1 |
-| 3 | iter 2: custodian drains 10% (10.60) — release() | 1907 | `0xf595bdaff6a5e211256f84bc0211e6b08224bab59993b3ef15f22161090253fb` | ✅ status 1 |
-| 4 | iter 2: custodian re-deposits 10.60 | 1908 | `0x8bd9204ae79e47d89771b5b9ecf634b34b1a8e4f6d2f88cf6fc518f68b56e4a5` | ✅ status 1 |
+| 1 | iter 1: custodian drains 10% (10.60) — release() | 1974 | `0x02aa6dbab13f7b8e0ea783d7f69f638c77cf936a998cc5b592b0fb17ac1b45a9` | ✅ status 1 |
+| 2 | iter 1: custodian re-deposits 10.60 | 1975 | `0xba4bd543c325c5219474db7d60a440999f61dd1f74b75a3dd42d48c940dbc32f` | ✅ status 1 |
+| 3 | iter 2: custodian drains 10% (10.60) — release() | 2041 | `0x30e06635ead2e7999e0bad7b4ab85a43f39efb57e6dc47c1da1b4fc5e35b43a0` | ✅ status 1 |
+| 4 | iter 2: custodian re-deposits 10.60 | 2042 | `0x011f220b45852d71e36b1021688d515b5036e0f78879e3715dfb8b3c6de5bc3c` | ✅ status 1 |
+| 5 | iter 3: custodian drains 10% (10.60) — release() | 2108 | `0x92e2a5e10ebf46d089b175261356a1e28b0bfc8a3f526d4f1d175783be168952` | ✅ status 1 |
+| 6 | iter 3: custodian re-deposits 10.60 | 2109 | `0x46e42c80f40ada672f236bac126fccac39217183c6356163afc6ac8c99c9ebfd` | ✅ status 1 |
+| 7 | iter 4: custodian drains 10% (10.60) — release() | 2175 | `0x459ff4e770559fea915b44c53fd8bf5bcbcf1956e6539b2ec7e3bb9656475a23` | ✅ status 1 |
+| 8 | iter 4: custodian re-deposits 10.60 | 2176 | `0x1249248bec45dd7d2125df1087e1628e2028e9f1208f87dec2db4353a6b380a6` | ✅ status 1 |
+| 9 | iter 5: custodian drains 10% (10.60) — release() | 2242 | `0x59f690ec1917d9109ac897f6915dc9a513388d7a0ac7b68b59fe57a055aa415f` | ✅ status 1 |
+| 10 | iter 5: custodian re-deposits 10.60 | 2243 | `0x24ed1bec666441a5cad8ea147fa8b0d475b3244a02f9181efb24f02f52636be5` | ✅ status 1 |
+| 11 | iter 6: custodian drains 10% (10.60) — release() | 2309 | `0x5facca67d3c2c66a8b223fdb68e0cc3ae40beadd1c6344fc2b24fbc9bd376f8b` | ✅ status 1 |
+| 12 | iter 6: custodian re-deposits 10.60 | 2310 | `0x9a1c7b3f9e48ede5133cb4952852a6d8f7e067542c111fa57a98775482ec4455` | ✅ status 1 |
+| 13 | iter 7: custodian drains 10% (10.60) — release() | 2376 | `0x2acc02e0289d9fd40c03c434bc15dd0185392a946afe6477bdf37a0814f8d192` | ✅ status 1 |
+| 14 | iter 7: custodian re-deposits 10.60 | 2377 | `0x1eedd1cdefa0a35a4747afa398fce905a67cfb107b903b35195fc011a1b2e1ae` | ✅ status 1 |
+| 15 | iter 8: custodian drains 10% (10.60) — release() | 2443 | `0xcc9883c4acc16ad188de49d7454b149b1b5839dc3c9ba786e5ebd51841a19002` | ✅ status 1 |
+| 16 | iter 8: custodian re-deposits 10.60 | 2444 | `0x9a7eea5953c11f339010e8f3ee14a8381325e8136bc6f50828649cb16abc839e` | ✅ status 1 |
+| 17 | iter 9: custodian drains 10% (10.60) — release() | 2510 | `0x37521511186844199d60b9f7d4c4cd7e4e2fefa0f940dd8059bd514500584f9c` | ✅ status 1 |
+| 18 | iter 9: custodian re-deposits 10.60 | 2511 | `0x124777349125498aecb830b1e4ac46c6afab55ae8469863acaf1c3971e6b16aa` | ✅ status 1 |
+| 19 | iter 10: custodian drains 10% (10.60) — release() | 2577 | `0x84a0ccacdcad310311169f73b56d0d7c9820af6b871a2ecfd70c7c3833dbacf7` | ✅ status 1 |
+| 20 | iter 10: custodian re-deposits 10.60 | 2578 | `0x6c08e367d4f2036bfa2365a6ac03d58520cee699cab83904a8e40f845c746e8c` | ✅ status 1 |
+| 21 | iter 11: custodian drains 10% (10.60) — release() | 2644 | `0xc45e39f55e428ea9ee7abd4dec3418e9917f1c4144f98c4eb4206b7f84e015f7` | ✅ status 1 |
+| 22 | iter 11: custodian re-deposits 10.60 | 2645 | `0xb17713389a8c5096ae7055af7506bb8814dbb5460e6b9aac633ae49a1e3e02d5` | ✅ status 1 |
+| 23 | iter 12: custodian drains 10% (10.60) — release() | 2711 | `0x98908455468b1978f550eb1263818dd36ab28afecea826e76742914aee5e76f8` | ✅ status 1 |
+| 24 | iter 12: custodian re-deposits 10.60 | 2712 | `0xe13c041a46e4a97211ed398f2b75fb35c5b15261076882036c707c83e811b0b5` | ✅ status 1 |
+| 25 | iter 13: custodian drains 10% (10.60) — release() | 2778 | `0xa8d0bb285c0a2ba2febb6fe5f5d66d4cdfe039df0f39436f5a5c00bfc0ad1557` | ✅ status 1 |
+| 26 | iter 13: custodian re-deposits 10.60 | 2779 | `0x148a244febd9dff6261c3d1b42c7b3fb7c4f320f6d6439049af58d2a4d54f18b` | ✅ status 1 |
+| 27 | iter 14: custodian drains 10% (10.60) — release() | 2845 | `0xb30abaaf49bc475fc2e7b496197c9b9d5e36420c8e774aef1213959a6190ea6a` | ✅ status 1 |
+| 28 | iter 14: custodian re-deposits 10.60 | 2846 | `0x8fc9ece3f55c2e04fb1db5418379f5462e1986647517686ece7c9c57129b9471` | ✅ status 1 |
+| 29 | iter 15: custodian drains 10% (10.60) — release() | 2912 | `0xedf337a702f3825c2422699fdf2cd87a97cbcb57ab1aef4c9d7413ab7793919b` | ✅ status 1 |
+| 30 | iter 15: custodian re-deposits 10.60 | 2913 | `0xceed83f54a5611fe77077443705e31df100ba86c9b787aa481ebfc7aace19016` | ✅ status 1 |
+| 31 | iter 16: custodian drains 10% (10.60) — release() | 2979 | `0x1dfa89fbd4d0fa2e8b97ba33b75caed96cbbac1b12793733d7e7d60daafc6416` | ✅ status 1 |
+| 32 | iter 16: custodian re-deposits 10.60 | 2980 | `0xd4d483d9c37894d9a9c650413b5c89e2e77451679abbf8b8647d325666a63cf1` | ✅ status 1 |
+| 33 | iter 17: custodian drains 10% (10.60) — release() | 3046 | `0xa03fac71dce4afbf9cf04701f1a7216bbcc7414e9e323542ccbaad7e119201da` | ✅ status 1 |
+| 34 | iter 17: custodian re-deposits 10.60 | 3047 | `0x77ee16c0629beeac203fb1fbbc3e86823df20989400f2389b3b09454d4cf6265` | ✅ status 1 |
+| 35 | iter 18: custodian drains 10% (10.60) — release() | 3113 | `0x02e395377060287bd55541b0099bbcacc1470ef8076a1c94eaa0556530416e9b` | ✅ status 1 |
+| 36 | iter 18: custodian re-deposits 10.60 | 3114 | `0x04720d3a93b276a686184c7dd931585012a35dfd9db7d334df5ef752497532cc` | ✅ status 1 |
+| 37 | iter 19: custodian drains 10% (10.60) — release() | 3180 | `0xe7f32b6a2e47429b535185f342ee559d4eafc723035e1d824702168326c13ac9` | ✅ status 1 |
+| 38 | iter 19: custodian re-deposits 10.60 | 3181 | `0x876d7d6ed9b81fd920a96a07f67242e8b1a1c878a9d63c15198d84159b646bb3` | ✅ status 1 |
+| 39 | iter 20: custodian drains 10% (10.60) — release() | 3247 | `0x32cd5369105f87eb2169cc206eb6fdda264027abce8a893b9934e187bc8b6bad` | ✅ status 1 |
+| 40 | iter 20: custodian re-deposits 10.60 | 3248 | `0xfb2b03e5598a5bcbf7e064cf12ebb0bb90fb8631cfaff04a408a1f35829e1b15` | ✅ status 1 |
+| 41 | iter 21: custodian drains 10% (10.60) — release() | 3314 | `0xb8c2ee102955bfe0593aefacd6603a63ccb72ba0725e9e28f779b5e29c0d25bd` | ✅ status 1 |
+| 42 | iter 21: custodian re-deposits 10.60 | 3315 | `0xc7e4099a543d59f76430f550698580c857d63d49841c9fedb28904eb3ef62a48` | ✅ status 1 |
+| 43 | iter 22: custodian drains 10% (10.60) — release() | 3381 | `0xd4373a69c87eda150d8df7a92e2ea2f215fab97c03edb9102d8c7d3e71b67cb3` | ✅ status 1 |
+| 44 | iter 22: custodian re-deposits 10.60 | 3382 | `0x482e61f62d0fe68d8a370b4b3dc028f9ceef1f47f77cdd72b49ee177ba18d05f` | ✅ status 1 |
+| 45 | iter 23: custodian drains 10% (10.60) — release() | 3448 | `0xf1b0c46f5fc9b4141024c918c528fac288f740961ee240555327baf9f30b95f9` | ✅ status 1 |
+| 46 | iter 23: custodian re-deposits 10.60 | 3449 | `0xa799bee3c5aeb6a975de36e726bbe4105ad206b645d0b61cb0b8d22ea9313df3` | ✅ status 1 |
+| 47 | iter 24: custodian drains 10% (10.60) — release() | 3515 | `0xdc821e28e1d3d30b8cc08ea549b78d55fa158936924d24096ce86c5292925eda` | ✅ status 1 |
+| 48 | iter 24: custodian re-deposits 10.60 | 3516 | `0x8a9548e4dc7ef455bd69ebe3b8cba7743397e31b5198bf666db2ad087ea19a1a` | ✅ status 1 |
 
 Portaldot extrinsics:
 
 | # | Step | Call (signer) | Extrinsic id | Expected | Observed |
 |---|---|---|---|---|---|
-| 1 | iter 1: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260610-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
-| 2 | iter 1: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260613-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
-| 3 | iter 1: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260617-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
-| 4 | iter 2: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260622-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
-| 5 | iter 2: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260625-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
-| 6 | iter 2: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260630-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 1 | iter 1: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260640-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 2 | iter 1: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260643-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 3 | iter 1: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260647-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 4 | iter 2: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260652-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 5 | iter 2: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260655-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 6 | iter 2: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260660-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 7 | iter 3: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260666-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 8 | iter 3: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260669-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 9 | iter 3: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260673-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 10 | iter 4: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260679-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 11 | iter 4: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260682-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 12 | iter 4: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260686-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 13 | iter 5: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260692-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 14 | iter 5: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260695-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 15 | iter 5: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260699-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 16 | iter 6: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260705-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 17 | iter 6: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260709-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 18 | iter 6: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260714-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 19 | iter 7: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260720-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 20 | iter 7: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260723-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 21 | iter 7: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260727-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 22 | iter 8: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260733-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 23 | iter 8: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260736-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 24 | iter 8: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260740-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 25 | iter 9: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260745-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 26 | iter 9: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260748-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 27 | iter 9: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260752-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 28 | iter 10: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260758-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 29 | iter 10: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260761-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 30 | iter 10: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260765-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 31 | iter 11: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260771-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 32 | iter 11: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260775-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 33 | iter 11: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260780-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 34 | iter 12: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260786-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 35 | iter 12: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260789-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 36 | iter 12: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260793-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 37 | iter 13: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260798-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 38 | iter 13: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260801-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 39 | iter 13: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260805-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 40 | iter 14: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260812-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 41 | iter 14: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260815-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 42 | iter 14: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260819-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 43 | iter 15: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260824-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 44 | iter 15: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260827-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 45 | iter 15: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260831-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 46 | iter 16: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260836-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 47 | iter 16: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260839-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 48 | iter 16: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260844-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 49 | iter 17: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260850-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 50 | iter 17: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260853-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 51 | iter 17: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260857-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 52 | iter 18: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260862-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 53 | iter 18: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260865-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 54 | iter 18: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260869-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 55 | iter 19: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260874-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 56 | iter 19: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260877-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 57 | iter 19: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260881-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 58 | iter 20: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260886-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 59 | iter 20: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260889-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 60 | iter 20: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260893-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 61 | iter 21: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260898-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 62 | iter 21: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260901-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 63 | iter 21: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260905-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 64 | iter 22: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260910-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 65 | iter 22: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260913-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 66 | iter 22: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260917-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 67 | iter 23: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260922-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 68 | iter 23: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260925-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 69 | iter 23: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260929-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 70 | iter 24: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260934-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 71 | iter 24: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260937-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 72 | iter 24: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260941-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
 
 Block and transaction hashes (full):
 
 ```
- 1  260610-1 block 0x5d056dfc70b24b6fdf4556f313df7ee54761d12028b7444fb25187894b921c58  tx 0x27ead09cf03ab72db5b4c5a7f35b24c22faa6c4b548763637642eb8a07ac0dd0
- 2  260613-1 block 0x69d887267bc57f9cc44fd55173e2f38d0503a7940f81e3afbcf01c0dc6debc5b  tx 0xb8a2df55593e86f412f134073e63b4577cbdf8d8241aa10c2bdc15e17a25bc3d
- 3  260617-1 block 0xc1bd813e19175b8f5d7d9dd824c070e766744137d54ba76460540d827c744a87  tx 0xed8b22425bdf87820550329a1ab247f66f34f6d10841ed80180928a3faab4ef0
- 4  260622-1 block 0x579976bb3c09879241623b1b05c0d8f3352c6600b01b9564595b500a008bae0c  tx 0x27854cdd0c8a60151dd8ac837bbc7d02c8b644b0e42d3734ebad86092b6e3c50
- 5  260625-1 block 0xc74e4581dd905328fe2418d801b6413a14e4080c38b80d6fec9ab6d15ff3c24e  tx 0x223d1e124e91f3a0c36b02a52751aa381095a66db0fd4530e0bf487ee86b79bc
- 6  260630-1 block 0x42eb3583d7dff1080c25023a028195010f3928d03395310e7814fe40da01ea74  tx 0x5eadecbee92583be0ce11a4e1059a2bbfead339fb43149c755d9893b0665f0d4
+ 1  260640-1 block 0xcda7434dee5be74b0671140eb00550fdf7759ea74fd505f7a3f6699c99c0709d  tx 0xd871df7719b175c2492666e81ebceb4467d141aa205569956ebdcb9fabedfc43
+ 2  260643-1 block 0x3dc6015826eda8ac931333cba537804327013658c63b2fb3795061c636783f2f  tx 0x9d1800eda036ffd0ee3365946adb81ba809a3675d575b71c35527c690527c588
+ 3  260647-1 block 0x33b0caba3dbf1cd70d5a356e71be012074590f1551ef63c03f863140485927b8  tx 0x9d446bdf71f84a0901a1c06bf90b95c98a5066eb88d94d647db2c0b21fbd3328
+ 4  260652-1 block 0xaea64da8b7f9866d357ee290756cf8e0ceaddb4bc0bca8766037f996b4590932  tx 0x9e2e834318742806857cc657ec204b963da8a4d22819006e97d6c0e6eb3a2185
+ 5  260655-1 block 0x2e91a7cd79d9553159ad53174bf16fbffc4ae2e1af637f8e35c57da8d9cc758e  tx 0xf00b0241b57be9fce317138514345133a6e9dd3f9e24fca2ac7c607b7840d319
+ 6  260660-1 block 0xa652798c28d029b7b500e0d8c425bda2e8df0f135cbf29a53e9319563bbf62ee  tx 0xfebf85a7dcd08aeb3664ee4fad9426f0c6b10b1f0e17fc34731853507ba2e6f7
+ 7  260666-1 block 0xdae2d951f3b7b3e03c2d116f849b0de58d393d0c43b5a1b7df076dc3c1d537db  tx 0x876e8da53e377d819c30b8e69ed00d7e9fb91e9b659cd8f988439a9d617a5e94
+ 8  260669-1 block 0x36191e7ffa545a7ff6009959ca190526876131d7e5b9bc4cc575973c94b5a5ba  tx 0xe97d7f2cd7393747337d8651e227f7131258429e40511b2b85cb72e2c9cae22d
+ 9  260673-1 block 0xaf96611d672c9713b87a88f7d315882e538342b4a1e2bfcab68540358bbe4213  tx 0x12ca6dac6d90c20f22dd421a1b240584d4fb7a7f570c2f2179c55c6316e9a956
+10  260679-1 block 0x35394c0ac688de792c93e01f00865dd553326ce046ba0b95fdb7b28ca90ad7c7  tx 0xdd2af16c658c61c438d783ae5d478637c8bdb56956e57aaa7a5df0367536dea2
+11  260682-1 block 0x08bc18af45976728861618c7073256248f118c6876b4c5e0c7035473d62bf4d9  tx 0xae0580bf892b8a15e37629101ec4bbb51cc4947ccb1cbc1c8d438811b8f9dab1
+12  260686-1 block 0x36e82b4ec69e56780002dbdf34b8a9ace4bf6a59edbe61ff84eff17c189f3162  tx 0xe0fdca5d6b09813417d76d88c55993f2eb3cdfdd0ed284e0a024e75a48b8652d
+13  260692-1 block 0xab8fbea3fdae25d7f7f0b1a8b4eda223d96ef2ae74fcf38aeceb14e66610b41c  tx 0x59b9f751457dca579060a5812e4bf965d64fe9ea09d63d6aad135b6ee245982c
+14  260695-1 block 0xc42af7e26cc4c9c45485cd04e5efc2d5e24823d9fb29e53bec8b49b94045392b  tx 0x3f7d9e050d8ee0b6a2eafa48998bee1b73b05f9d0b35861f37b685edf25ec37f
+15  260699-1 block 0x726333ffdaa6ced17b9d845d7352a1190c57f41a71a48ea358868cff2428a416  tx 0x65d646717a66c477172b6c31b444119f446687691ff722aa6995179f9211a041
+16  260705-1 block 0x44259041ccf753ad4c244ad00d44e9b5d8b9b2c81f934a82eeaab2c565764308  tx 0x9dfc6f72f26c912c9590d3045c89a289bd71c4e97380dbcccb4e62bbd12256dd
+17  260709-1 block 0xc2e74428c3749403d4529a2077657f0f54ce26577ffa7c37fa30b34b1892eb4d  tx 0x6111d8688df6dea3ffc1a31991eca84f631fbc12e86712eccac0241e0bb3eddd
+18  260714-1 block 0xf6869af65aa8ddde2fadfdfe8141c111f3b850c19ce8d4ca0b9c4c9899772736  tx 0x29391017a309ed3330f3aefd96a62fb25876f9b8d71265f5b4aad422861be881
+19  260720-1 block 0xb80474e394128955b4f11b2296a55e42cd47cc6281ffe1e7df2abe11560d3761  tx 0x92fb0e5a166219644c58af17c1d2aeef47d6f8da1538b235d19d0bce013bb903
+20  260723-1 block 0xfb95c6ff3d0e7a8ee18ae41d0e8c967a7d1a040306045cce6e5543a6dc03ac7e  tx 0xfb9b2e75f1a89173a9440a9208a52987c4e33107a965ad068958bc142f1dbd98
+21  260727-1 block 0x32a176cf7439934997e02dfa2bb1cd188519f06f40a29d4e9578a801c552782f  tx 0xb32d2fd0f023deb4257e591a2e19f89b529f9ddec14f8e610483f53c409552c2
+22  260733-1 block 0x41084ddfca3c089cf7f1d0be969651542e92b49a942000e33e3ffa4f925f4e57  tx 0xddf905b786350f968417b38f623f68d37e09c165f927ed4053e20bb0751c8d59
+23  260736-1 block 0xdb3fd0070178e4b9ad795d40ad65f377c45e123be3e29e2d9a95df279865dc78  tx 0x30b7291a7e1c6c64357f7258a59941aedbadd4e60b3152a96c340d41c1c2697d
+24  260740-1 block 0x6c7ce71d3a9018aba4e4b86d0529b269463d7caf30584892254f95d43b059af6  tx 0x31593bef76e62c7b527f07c2f0aa763e54230a36d44662e914b088e90e67fdd2
+25  260745-1 block 0x7849ae6c90ac9363c207b177bb5599ae7ec3afd7e6cde3c2156713275ec35e28  tx 0xc712b63ac93c2d7a1eeb08bce3b48a9e0f38ec09085fa710718929c6fa9a2d30
+26  260748-1 block 0x2fe1fbc5dfbf9861ff0740f7ef944358f26bed624bf769482fb806a90e100895  tx 0x8abde43801079da792cd05cf46e73117746a04a452e162c0aebf5ffea435f971
+27  260752-1 block 0x80dbad4f9d876166af24d8bcab0fedf4b1f4b5b44803dc73ef73d96b6e4080f0  tx 0x2dec673b54bce7f037991c5c4c9e2d2576cf44f6536df9fcdba40bc7c7ca6bb4
+28  260758-1 block 0x0a439efc6f77ea3933b05c706116f9def5501e82c1c148949faca30b6b78024e  tx 0x79f6d0c5d3a9f91146df8782bade6299a716304bc6ce2077549d88424ef7eed1
+29  260761-1 block 0xd3322711c44825d8fabf3350c073f54e3eaf0350396f7e4fcc4cca233580b1ca  tx 0x49fc2c34cd2042909c67cc39c08345db79f78ba657a8a33e8bf3e73f68df53f7
+30  260765-1 block 0x25ab2f7aedc584ed3ed4ea30844e51de49782d5bb1adc327ca1c036e3e346e30  tx 0x68a0f490857af73cab7f343b895af510cb5c4b84f8c954a8e6d38c065e90321a
+31  260771-1 block 0xf1dfae4c8f870c719857c7529fd40019f1c628424567a767442aae7d1c6430d5  tx 0x963ed3639e5b86ae058dbc7878a6b2664491d70d2fe11dfe925721781832d015
+32  260775-1 block 0x004a5dc10ef458d4a6007516f807223ec8bb6773bece27fd0fc459babc31e61e  tx 0x57e7a341473c9e8eacde02d7da3b2eac1f86e062f75a7edcb628ee48492ebfcd
+33  260780-1 block 0xf520e4feae13315e69a1de97dd1d2c91a69f05a14d20712b9d0abfcd7d2038bf  tx 0x0307fe056c197c29846ee3d5d9c7fe171e7d1f385c839dcd7c7fd01887cf4e36
+34  260786-1 block 0xb4495d5704c952f756a997cb821e34b7c461cb94c10e2530a70abed1ebe208fd  tx 0x527d76b0e4993c32350c922edb9b3feffb0a594d42d32dba9531f631bdd57a1c
+35  260789-1 block 0x488fbb0afb2d22e9823adcafa3486b098d576143632da1ce1e2afe541f15302b  tx 0x3f356a4da447818337ef0b63339adccab1aafbbb11f28d97d3a616a2c6fd43aa
+36  260793-1 block 0x1216bc8b9ed3c6b726f821617c5d532ffd9f484201254b1e5d2c24e0a4e062a5  tx 0x8a581ba38485f1fd0d5a00683eb09b4d669709c8737beff574276208a9923753
+37  260798-1 block 0xadb3f49ddabee36a851da31271d6f69c9f57535348ff05a19ab7bdfca68734b1  tx 0x5cbcde3ed2e88323b37c0dea4609886002d59564315144ee1c253b48a4d58d7a
+38  260801-1 block 0xe3b08cfee0f4add3408467d1d1af332cf12bbdfa08bffd6979eb1923cbd9f507  tx 0x6f1756d26d0baf61cd05a09696fa0d6e82bfc2c7c4d4658eec9ff659a813ca71
+39  260805-1 block 0xd74195c8e00928ec200545b0cabbf2031bc245d7a94ac90beab2c80a4b68d935  tx 0x0d653808a63eae9793141eb68f837222896dcf42d6c08d6a514ff055491373f7
+40  260812-1 block 0xbffbe3b18b0f14abd08aec3bde11620e950169ccae0812f223ea336b4fbf4e84  tx 0xd8f3127fc39a25957f4a971b56f5d06e25941bacdd68d3ea1adbc22f14bbcda4
+41  260815-1 block 0x186005720306f2bd25e329ab06b50e90bba712437a13001f6cf9c6660bf9f87e  tx 0x28ed9645849761dbfb3ff8e9cfe6aa9019dc69948d722783a0cd7a35e1ebb9f1
+42  260819-1 block 0x2ad17bf48e2bf92bc8a01337cf5ddf59e29429a0fe44e2ba96eab23d7ceac7a4  tx 0x946bfa757df2b3b3c58ffb5fe84ef019baa8bdf591fd641c1582836405ee199f
+43  260824-1 block 0xa35b88c036e9ddda280210118f8b615b870e689580cf96741427f2b9b92f54f6  tx 0xd585233fa15099e4dadeff28751de1be1bf3d687d49f9fc82862b33d626e2674
+44  260827-1 block 0x1e71e3fdbda0129fcacd4e0ed73e2c56c032b85074bd451b3150ac393b243851  tx 0xc9a417e5d21b6c4298b4c1f3f14e8dc03603452d92fa573e76f3580769d7f6fe
+45  260831-1 block 0x365a92b07640df196a9702580322479241622f1a51ab16201a7daa0aab45ee06  tx 0xd8ead2e9fad3e59d20515a6c6097054d3ef0125e395084552239141b9551736a
+46  260836-1 block 0xcad411285617b0d94b3915c22b2bb4d112ffe17d8d460088ecdf48290947005b  tx 0x704dc556a7d9e554a64fedabe068ae097fe210d39e8c6cf604b5db3616faf3c1
+47  260839-1 block 0x062a44c9b93f7b43684ce7b0acf756490d80efa8792e0e98b5bf9632c157d426  tx 0xba87f9da4ad71e73f767b2bbc84535fd855294181e22ee33e37e43b73f2b8aa9
+48  260844-1 block 0x94ad935e43fae2be4c60c973706d70bacc69f95819329e3a542c570792d97292  tx 0xca32ddd08ea7dc85bdefb8a0b84687c373ef7455ba2b6031728e171d77c254c2
+49  260850-1 block 0x5d3e4f5af46ebb5da6f67aaa06159f50d9cd030591e58340aad096f1e7da58ff  tx 0xc9765dd5120fa1cfb59e8e6b8a2d89c95e037556339cf86c5a3c1f8446d35446
+50  260853-1 block 0x70418eb2edba9b17b333727939ccae91330b714ee2720cdcf47d7d8e25090dea  tx 0x6614e8eb8f409bc009ad77888bc6e7a6b1dec54aa06082025cdf387a6b2e7df9
+51  260857-1 block 0x9b6123c92ca6c366b832ee531054d7db221f3062f8d2008d370ea30045a0452a  tx 0x09afc460f3366b7105cd741aa2d37d47a4390ea742fb6d9f98137c475fe47db4
+52  260862-1 block 0xd1597d5ba2da6cc21b568c879e968ad5d839300811e96aaa78682eb66d802fc1  tx 0xc66623f6e54a7655bfaa6c51ab82fafb1443c65f411f9ce7d7954ba254d06381
+53  260865-1 block 0x8bcbc4aec2e764290dc958a3c91bd423a8d804f09f18f8fefa0e148254cf7f94  tx 0x8fdd9ff818168bdf65d70a9a2978b4e0ed83694736177028c9f4e9df208d3b0c
+54  260869-1 block 0xd3976bb0cb659421c590c1c1ee2161100da50326d4347eec17f3172fc15757cb  tx 0xa12226cf09d97b3f4c5ac0bbf465b7eb7301bb4e1eaeea4bd9b40a8ba1da2cf4
+55  260874-1 block 0x23b7f3b1bcb9f12f2b18e6bb0a4245be1554c685e6be632faec7d216a6ce0c94  tx 0xbf7c2bf3fafc65c0df7ca336be79dc4bceaa8a272ef87f5815508c5911790a03
+56  260877-1 block 0x83e427e6606fcdfc705bbf43aa7a366f08ea6eafecc0c4872e5e2d97191e86f9  tx 0x16174e57f61956ab5ec581cbd8cb2e2586f41084bd8d4da2cd6051e84fa753de
+57  260881-1 block 0x015d993e84c75e08b3fcee2a2599070d155d3b8ffbed46ae332be55ef6803aa5  tx 0x8eb606a7e56cf2b19ae5c9c4a01ef37526ffc1d0a210e40285d7df53690db8fc
+58  260886-1 block 0x28547557cbb872c719ec79a80f47aa1d64f6f576361f45a0df2fbed980550c97  tx 0x8d14a9d0e8941227c93d44598be60cc2116d4fcc41a8912d37ae39aa354abd6d
+59  260889-1 block 0x5169cfe93ac88ee163fa25f9a6e4ad4397f1f737bda240c006e7953ef0e6745e  tx 0x17b3e18d98c7c7043f287b10e92d8d9e6ee962d6f869db7747396d9b7af5c57e
+60  260893-1 block 0x9e3df647af467babf649d1a0380affe0da7d06a156af150acfce1346995c14b3  tx 0x193c89dce577c22f6bb703cac5f0bc4d14fb2d1eee71e6f2a3ab4c897abc8cc8
+61  260898-1 block 0x32c982d426e5f3f44eebab08f4e588fe6721ecbfcef1837ed8ac1385a4afd2df  tx 0x3ed7acb363c1694bfbe33a0859450321a7b0f438089729a923589555d5ba6c83
+62  260901-1 block 0xf77aaa4e58cbb65a31f869a780d24ae7863f59caa73d5251a1b78419dfcc54b7  tx 0x60954d6b57c7a984b33eba7ba8c692d2c80b7275995d98eb88f3b53c8f6f72f7
+63  260905-1 block 0xfda099182c635d121de8b08e2e64cd65949e9c6f07c3959735efffaafb73cc0a  tx 0xc3a8211e22d93b7ed2bdf6b190aeb8c9505ffb3853cccc96ebd586af9ffb2ca8
+64  260910-1 block 0xe5f3d4946a88dff0e269fa706c958b1743701b0702a07573e36a6626c878e19c  tx 0x9291007e8c5c600fd72fa4699d6f4a09c1e08970b00d8d7e8fbda2a07b5c2fd6
+65  260913-1 block 0x11ba3bdb9f8aa7794c24d796a29b98785d8e67b7de6b641064bf8676bdaddfaf  tx 0x5c34790a97e0b8df38cb3d96876ef0ffecee6b0dac73f78c2362557ce5381050
+66  260917-1 block 0x1e23b4190682001278867cd4b384b5d1aa0608911dd64999ac4988e87f8a2fff  tx 0xd5f19170e7ed089d9286604ca1b3615f8dbaab4f952f676b603e5e73d9eca980
+67  260922-1 block 0x20ddac447db2c565f3b0a906d227ad0c119d347fb6c25d2bcd4c194bb89d937b  tx 0xbd89c361516108250fb0d87f15c7fc4367ae96f58cc311d6f5577e86fc9200c7
+68  260925-1 block 0x7ef3ca40bfd5a45b06ab062a94875b1f2331b34ab1068bcfc710166d1ca83062  tx 0xfd254aa5854d36f44707f33120448a7e372b07be7acaca832f802dbe34f6ad0e
+69  260929-1 block 0x02159a01254763fbd716fd36125c00ef21ce30c3c324c20665a8e56e390e27f1  tx 0x7ae7518868acfbc7c69049ac9741a22030865cabe252774c53a5fed83558e87c
+70  260934-1 block 0x6c13f38b914953203b43abc9c93601afb7ef6ce2023fbac14ebceb9604588601  tx 0x4430272df1ae6d5eb03a67faae6172f812e7c5342bf5949fa9d06636a42baac4
+71  260937-1 block 0x3d676c96eef3262de97c164cc1db0e71147b10b2b7c1d6cf6c6cdc3f88b15e21  tx 0xf4fe85fad6ee65ea261eaa3a9d949b8eeb49f19d37d012c4bbaf4623ed69a686
+72  260941-1 block 0xda1a8b1f30994bc9b0d6e2e79145e7e23f188ef928bbb3ebec43fe012992b831  tx 0x6837f1ccbd50accc0a3a91c4196f8b13428b660fbd4556d76a34df238e9da0c2
 ```
 
 State checks (storage/events read at the step's block):
 
 - ✅ asset 4401 team == role map before the bench (ARMED): expected `[]`, observed `[]` at block `head`
-- ❌ level before the bench: vault reserves == S1 + S2: expected `100000000`, observed `106000000` at block `head`
-- ✅ iter 1: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x5d056dfc70b24b6fdf4556f313df7ee54761d12028b7444fb25187894b921c58`
-- ✅ iter 1: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xc1bd813e19175b8f5d7d9dd824c070e766744137d54ba76460540d827c744a87`
-- ✅ iter 2: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x579976bb3c09879241623b1b05c0d8f3352c6600b01b9564595b500a008bae0c`
-- ✅ iter 2: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x42eb3583d7dff1080c25023a028195010f3928d03395310e7814fe40da01ea74`
+- ✅ level before the bench: vault reserves >= S1 + S2 (a surplus is not a deficit): expected `True`, observed `True` at block `head`
+- ✅ iter 1: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xcda7434dee5be74b0671140eb00550fdf7759ea74fd505f7a3f6699c99c0709d`
+- ✅ iter 1: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x33b0caba3dbf1cd70d5a356e71be012074590f1551ef63c03f863140485927b8`
+- ✅ iter 2: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xaea64da8b7f9866d357ee290756cf8e0ceaddb4bc0bca8766037f996b4590932`
+- ✅ iter 2: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xa652798c28d029b7b500e0d8c425bda2e8df0f135cbf29a53e9319563bbf62ee`
+- ✅ iter 3: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xdae2d951f3b7b3e03c2d116f849b0de58d393d0c43b5a1b7df076dc3c1d537db`
+- ✅ iter 3: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xaf96611d672c9713b87a88f7d315882e538342b4a1e2bfcab68540358bbe4213`
+- ✅ iter 4: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x35394c0ac688de792c93e01f00865dd553326ce046ba0b95fdb7b28ca90ad7c7`
+- ✅ iter 4: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x36e82b4ec69e56780002dbdf34b8a9ace4bf6a59edbe61ff84eff17c189f3162`
+- ✅ iter 5: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xab8fbea3fdae25d7f7f0b1a8b4eda223d96ef2ae74fcf38aeceb14e66610b41c`
+- ✅ iter 5: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x726333ffdaa6ced17b9d845d7352a1190c57f41a71a48ea358868cff2428a416`
+- ✅ iter 6: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x44259041ccf753ad4c244ad00d44e9b5d8b9b2c81f934a82eeaab2c565764308`
+- ✅ iter 6: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xf6869af65aa8ddde2fadfdfe8141c111f3b850c19ce8d4ca0b9c4c9899772736`
+- ✅ iter 7: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xb80474e394128955b4f11b2296a55e42cd47cc6281ffe1e7df2abe11560d3761`
+- ✅ iter 7: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x32a176cf7439934997e02dfa2bb1cd188519f06f40a29d4e9578a801c552782f`
+- ✅ iter 8: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x41084ddfca3c089cf7f1d0be969651542e92b49a942000e33e3ffa4f925f4e57`
+- ✅ iter 8: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x6c7ce71d3a9018aba4e4b86d0529b269463d7caf30584892254f95d43b059af6`
+- ✅ iter 9: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x7849ae6c90ac9363c207b177bb5599ae7ec3afd7e6cde3c2156713275ec35e28`
+- ✅ iter 9: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x80dbad4f9d876166af24d8bcab0fedf4b1f4b5b44803dc73ef73d96b6e4080f0`
+- ✅ iter 10: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x0a439efc6f77ea3933b05c706116f9def5501e82c1c148949faca30b6b78024e`
+- ✅ iter 10: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x25ab2f7aedc584ed3ed4ea30844e51de49782d5bb1adc327ca1c036e3e346e30`
+- ✅ iter 11: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xf1dfae4c8f870c719857c7529fd40019f1c628424567a767442aae7d1c6430d5`
+- ✅ iter 11: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xf520e4feae13315e69a1de97dd1d2c91a69f05a14d20712b9d0abfcd7d2038bf`
+- ✅ iter 12: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xb4495d5704c952f756a997cb821e34b7c461cb94c10e2530a70abed1ebe208fd`
+- ✅ iter 12: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x1216bc8b9ed3c6b726f821617c5d532ffd9f484201254b1e5d2c24e0a4e062a5`
+- ✅ iter 13: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xadb3f49ddabee36a851da31271d6f69c9f57535348ff05a19ab7bdfca68734b1`
+- ✅ iter 13: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xd74195c8e00928ec200545b0cabbf2031bc245d7a94ac90beab2c80a4b68d935`
+- ✅ iter 14: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xbffbe3b18b0f14abd08aec3bde11620e950169ccae0812f223ea336b4fbf4e84`
+- ✅ iter 14: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x2ad17bf48e2bf92bc8a01337cf5ddf59e29429a0fe44e2ba96eab23d7ceac7a4`
+- ✅ iter 15: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xa35b88c036e9ddda280210118f8b615b870e689580cf96741427f2b9b92f54f6`
+- ✅ iter 15: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x365a92b07640df196a9702580322479241622f1a51ab16201a7daa0aab45ee06`
+- ✅ iter 16: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xcad411285617b0d94b3915c22b2bb4d112ffe17d8d460088ecdf48290947005b`
+- ✅ iter 16: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x94ad935e43fae2be4c60c973706d70bacc69f95819329e3a542c570792d97292`
+- ✅ iter 17: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x5d3e4f5af46ebb5da6f67aaa06159f50d9cd030591e58340aad096f1e7da58ff`
+- ✅ iter 17: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x9b6123c92ca6c366b832ee531054d7db221f3062f8d2008d370ea30045a0452a`
+- ✅ iter 18: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xd1597d5ba2da6cc21b568c879e968ad5d839300811e96aaa78682eb66d802fc1`
+- ✅ iter 18: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xd3976bb0cb659421c590c1c1ee2161100da50326d4347eec17f3172fc15757cb`
+- ✅ iter 19: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x23b7f3b1bcb9f12f2b18e6bb0a4245be1554c685e6be632faec7d216a6ce0c94`
+- ✅ iter 19: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x015d993e84c75e08b3fcee2a2599070d155d3b8ffbed46ae332be55ef6803aa5`
+- ✅ iter 20: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x28547557cbb872c719ec79a80f47aa1d64f6f576361f45a0df2fbed980550c97`
+- ✅ iter 20: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x9e3df647af467babf649d1a0380affe0da7d06a156af150acfce1346995c14b3`
+- ✅ iter 21: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x32c982d426e5f3f44eebab08f4e588fe6721ecbfcef1837ed8ac1385a4afd2df`
+- ✅ iter 21: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xfda099182c635d121de8b08e2e64cd65949e9c6f07c3959735efffaafb73cc0a`
+- ✅ iter 22: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0xe5f3d4946a88dff0e269fa706c958b1743701b0702a07573e36a6626c878e19c`
+- ✅ iter 22: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x1e23b4190682001278867cd4b384b5d1aa0608911dd64999ac4988e87f8a2fff`
+- ✅ iter 23: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x20ddac447db2c565f3b0a906d227ad0c119d347fb6c25d2bcd4c194bb89d937b`
+- ✅ iter 23: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x02159a01254763fbd716fd36125c00ef21ce30c3c324c20665a8e56e390e27f1`
+- ✅ iter 24: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x6c13f38b914953203b43abc9c93601afb7ef6ce2023fbac14ebceb9604588601`
+- ✅ iter 24: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xda1a8b1f30994bc9b0d6e2e79145e7e23f188ef928bbb3ebec43fe012992b831`
 
+Other runs, newest first, any verdict (full tables in the JSON):
+
+- asset 4401 — 2026-10-31T01:58:42Z — FAIL (10/10 steps as expected, 5/6 state checks) — source: `71cb007` (clean) — [`evidence/roles-bench-v3-20261031T015842Z.json`](../evidence/roles-bench-v3-20261031T015842Z.json) — failed: level before the bench: vault reserves == S1 + S2
 
 ### Governance drill — announced watcher-set + M_admin rotations, community watcher, wind-down, redemption — 2026-10-31T01:25:03Z
 

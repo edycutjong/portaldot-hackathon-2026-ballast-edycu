@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ballast · reserves, read live</title>
+<meta name="description" content="Is the Ballast load line level right now? The Sepolia vault's test-USDC balance and the Portaldot V3 supply of the breaker asset, read from your browser. Falls back to a labelled static snapshot.">
+<meta name="theme-color" content="#0C2536">
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ballast">
+<meta property="og:title" content="Ballast · reserves, read live">
+<meta property="og:description" content="Sepolia vault reserves against Portaldot V3 supply, read read-only from the browser.">
+<meta property="og:url" content="https://ballast.edycu.dev/reserves/">
+<meta property="og:image" content="https://ballast.edycu.dev/assets/og.png?v=20261025">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Red+Hat+Text:ital,wght@0,400;0,500;0,700;1,400&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!--
+  Ballast reserves page. Single file. Reads, from the browser and read-only:
+    - Sepolia: ERC-20 balanceOf(ReserveVault) on two public RPCs (eth_call, latest + finalized)
+    - Portaldot V3: Assets.Asset(4401 / 4402) over wss://test-node-v3.portaldot.dev (supply + status byte)
+    - V3 Revive EVM RPC: ReserveOracle.status() (the last mirrored attestation)
+  If a read fails it falls back, panel by panel, to snapshot.json (scripts/reserves_snapshot.py; also in evidence/)
+  and says so on the page. No key, no transaction, nothing is written.
+-->
+<style>
+:root {
+  --bg: #0C2536; --ink: #F4F1E6; --muted: #9AB0BE; --before: #3FD9B5; --after: #FF5B2E; --rule: #1E3D52;
+  --hull: #6F92A6; --crest: #B8FFEC; --deep: #081B28; --dead: #3B5568; --prose: #C9D6DE; --amber: #E8B04B;
+  --font-display: "Stardos Stencil", Impact, sans-serif;
+  --font-body: "Red Hat Text", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "Red Hat Mono", ui-monospace, Menlo, monospace;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; overflow-x: clip;
+  background:
+    linear-gradient(90deg, transparent 0 calc(100% - 1px), rgba(30,61,82,.7) 0) 0 0 / 236px 100%,
+    linear-gradient(180deg, transparent 0 calc(100% - 1px), rgba(30,61,82,.55) 0) 0 0 / 100% 236px,
+    radial-gradient(120% 60% at 78% 100%, rgba(63,217,181,.10), transparent 60%), var(--bg); }
+:focus-visible { outline: 2px solid var(--crest); outline-offset: 3px; }
+a { color: inherit; text-decoration-color: var(--hull); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-color: var(--crest); }
+code, .data { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+code { font-size: .86em; overflow-wrap: anywhere; }
+.wrap { width: min(1100px, 100% - 48px); margin-inline: auto; }
+.label { font: 500 12px/1.4 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0; }
+.brand { display: flex; align-items: center; gap: 12px; font: 700 22px/1 var(--font-display); letter-spacing: .1em; text-decoration: none; }
+.brand img { width: 34px; height: 34px; }
+nav a.back { font: 500 13px/1 var(--font-data); color: var(--muted); text-decoration: none; padding: 10px 0; }
+nav a.back:hover { color: var(--ink); }
+.eyebrow { display: flex; align-items: center; gap: 12px; font: 500 12px/1.4 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--before); margin-top: 28px; }
+.eyebrow::before { content: ""; width: 36px; height: 2px; background: var(--before); flex: none; }
+h1 { font: 700 clamp(38px, 6vw, 68px)/.96 var(--font-display); text-transform: uppercase; letter-spacing: .005em; margin: 18px 0 14px; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--before); }
+h1 em.short { color: var(--after); }
+h1 em.unk { color: var(--amber); }
+.sub { max-width: 40em; color: var(--prose); font-size: 18px; }
+
+.srcline { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 22px 0 0; font: 500 13px/1.4 var(--font-data); color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border: 1px solid var(--rule); background: rgba(8,27,40,.55); color: var(--prose); }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dead); }
+.pill.live::before { background: var(--before); box-shadow: 0 0 8px var(--before); }
+.pill.static::before { background: var(--amber); }
+.pill.err::before { background: var(--after); }
+
+.gauge { margin: 34px 0 10px; }
+.track { position: relative; height: 54px; background: var(--deep); border: 1.5px solid var(--hull); overflow: hidden; }
+.fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(63,217,181,.55), var(--before)); transition: width 1.1s var(--ease); }
+.fill.short { background: linear-gradient(90deg, rgba(255,91,46,.5), var(--after)); }
+.fill::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 3px; background: var(--crest); box-shadow: 0 0 14px var(--crest); }
+.supply-tick { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--ink); left: 100%; }
+.gauge-scale { display: flex; justify-content: space-between; margin-top: 8px; font: 400 12px/1.3 var(--font-data); color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 30px 0 0; }
+.card { border: 1px solid var(--rule); background: rgba(8,27,40,.62); padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h2 { font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.big { font: 500 clamp(30px, 3.6vw, 40px)/1.05 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.big small { font-size: .42em; color: var(--muted); margin-left: 6px; letter-spacing: .06em; }
+.rows { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font: 400 13px/1.45 var(--font-data); color: var(--prose); }
+.rows dt { color: var(--muted); } .rows dd { text-align: right; overflow-wrap: anywhere; white-space: nowrap; }
+.chip { display: inline-block; padding: 2px 8px; font: 500 12px/1.5 var(--font-data); border: 1px solid var(--hull); color: var(--prose); }
+.chip.ok { border-color: var(--before); color: var(--before); } .chip.bad { border-color: var(--after); color: var(--after); }
+.chip.warn { border-color: var(--amber); color: var(--amber); }
+.note { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: auto; font: 500 12px/1.4 var(--font-data); padding-top: 4px; }
+
+.foot { margin: 44px 0 56px; padding-top: 22px; border-top: 1px solid var(--rule); font-size: 14.5px; color: var(--muted); display: grid; gap: 8px; max-width: 52em; }
+.foot b { color: var(--prose); font-weight: 700; }
+@media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .wrap { width: calc(100% - 32px); } .track { height: 44px; } .rows { grid-template-columns: 1fr; } .rows dd { text-align: left; margin-bottom: 4px; white-space: normal; } }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="34" height="34">BALLAST</a>
+    <a class="back" href="../">&larr; ballast.edycu.dev</a>
+  </nav>
+
+  <p class="eyebrow">Reserves · read-only · from your browser</p>
+  <h1 id="verdict">Reading the <em class="unk">load line</em>&hellip;</h1>
+  <p class="sub" id="sub">Sepolia vault balance against the Portaldot V3 supply of the breaker asset. Nothing here is written or signed.</p>
+
+  <div class="srcline" id="srcline" aria-live="polite">
+    <span class="pill" id="pill-sepolia">Sepolia vault: reading</span>
+    <span class="pill" id="pill-v3">V3 supply: reading</span>
+    <span class="pill" id="pill-oracle">Attestation mirror: reading</span>
+  </div>
+
+  <div class="gauge" role="img" aria-label="Reserve as a share of supply" id="gauge">
+    <div class="track"><div class="fill" id="fill"></div><div class="supply-tick" id="tick"></div></div>
+    <div class="gauge-scale"><span>0</span><span id="gauge-mid">reserve &divide; supply</span><span id="gauge-max">supply</span></div>
+  </div>
+
+  <div class="cards">
+    <section class="card" aria-labelledby="h-res">
+      <span class="label">Reserve · Ethereum Sepolia</span>
+      <h2 id="h-res">Vault balance</h2>
+      <div class="big" id="res-big">&ndash;<small>test USDC</small></div>
+      <dl class="rows" id="res-rows"></dl>
+      <p class="note">Circle test USDC held by the <code>ReserveVault</code>. Verdict uses the <b>finalized</b> block, the lower of the two providers.</p>
+      <div class="links" id="res-links"></div>
+    </section>
+    <section class="card" aria-labelledby="h-sup">
+      <span class="label">Supply · Portaldot V3 testnet</span>
+      <h2 id="h-sup">Asset supply</h2>
+      <div class="big" id="sup-big">&ndash;<small>pUSDC-test</small></div>
+      <dl class="rows" id="sup-rows"></dl>
+      <p class="note">Breaker asset 4401 + control asset 4402, read from chain storage. Status is the head; a <span class="chip bad">Frozen</span> breaker means the watchers tripped.</p>
+      <div class="links" id="sup-links"></div>
+    </section>
+    <section class="card" aria-labelledby="h-att">
+      <span class="label">Last mirrored attestation · Revive</span>
+      <h2 id="h-att">ReserveOracle</h2>
+      <div class="big" id="att-big">&ndash;<small>reserves</small></div>
+      <dl class="rows" id="att-rows"></dl>
+      <p class="note" id="att-note">The bot posts attestations while it runs; it is not a running service. The age below is the honest freshness.</p>
+      <div class="links" id="att-links"></div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <p><b>What this page is.</b> A read of three public sources. It is not an audit and it does not sign anything. The drills that prove the breaker
+    (freeze, refused transfer, gated thaw) are in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md">PROOF.md</a>;
+    latency and fee over many drills are in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>.</p>
+    <p><b>Two reserve chains.</b> The vault above is on real Ethereum <b>Sepolia</b>. Most V3 drills (and every attestation the oracle mirrors) used a
+    <b>local anvil</b> reserve chain, not Sepolia; the attestation card says which chain its reserves figure came from.</p>
+    <p><b>Static fallback.</b> If a source cannot be reached from your browser, that panel shows <code>snapshot.json</code>, a read taken at the
+    time printed in its pill, and says &ldquo;static snapshot&rdquo;. It is a record, not a live value.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const SEPOLIA = [
+  { name: "publicnode", url: "https://ethereum-sepolia-rpc.publicnode.com" },
+  { name: "tenderly", url: "https://sepolia.gateway.tenderly.co" },
+];
+const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+const VAULT = "0x7ceB7c3EBDBCC75e585599e5dd944286F009357b";
+const V3_WS = "wss://test-node-v3.portaldot.dev";
+const V3_EVM = "https://test-evm-rpc-v3.portaldot.dev";
+const ORACLE = "0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e";
+const ASSET_KEYS = {
+  4401: "0x682a59d51ab9e48a8c8cc418ff9708d2d34371a193a751eea5883e9553457b2edc80186ba3c1d062770a27ad0480088d31110000",
+  4402: "0x682a59d51ab9e48a8c8cc418ff9708d2d34371a193a751eea5883e9553457b2e56c350adacad6f9240a1971e32f2870d32110000",
+};
+const ONE = 1e6;
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => (Number(n) / ONE).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const short = (h) => h.slice(0, 8) + "…" + h.slice(-6);
+const state = { reserve: null, supply: null, breakerStatus: null, att: null };
+
+function timeout(ms, p) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout " + ms + " ms")), ms))]);
+}
+async function rpc(url, method, params) {
+  const r = await timeout(9000, fetch(url, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) }));
+  const j = await r.json();
+  if (j.error) throw new Error(j.error.message || "rpc error");
+  return j.result;
+}
+const hexBig = (h) => BigInt(h);
+function pill(id, cls, text) { const e = $(id); e.className = "pill " + cls; e.textContent = text; }
+function rows(id, list) {
+  $(id).replaceChildren(...list.flatMap(([k, v]) => {
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); if (v instanceof Node) dd.append(v); else dd.textContent = v;
+    return [dt, dd];
+  }));
+}
+function chip(text, cls) { const s = document.createElement("span"); s.className = "chip " + (cls || ""); s.textContent = text; return s; }
+function links(id, list) {
+  $(id).replaceChildren(...list.map(([t, h]) => { const a = document.createElement("a"); a.href = h; a.textContent = t; a.rel = "noopener"; return a; }));
+}
+
+/* ---------------- Sepolia ---------------- */
+async function readSepolia() {
+  const data = "0x70a08231" + "0".repeat(24) + VAULT.slice(2).toLowerCase();
+  const out = [];
+  await Promise.all(SEPOLIA.map(async (p) => {
+    const row = { name: p.name };
+    for (const tag of ["latest", "finalized"]) {
+      const b = await rpc(p.url, "eth_getBlockByNumber", [tag, false]);
+      const bal = await rpc(p.url, "eth_call", [{ to: USDC, data }, b.number]);
+      row[tag] = { block: Number(hexBig(b.number)), balance: Number(hexBig(bal)) };
+    }
+    out.push(row);
+  }));
+  if (!out.length) throw new Error("no provider answered");
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+function renderSepolia(providers, live, stamp) {
+  const fins = providers.map((p) => p.finalized.balance);
+  const low = Math.min(...fins);
+  state.reserve = low;
+  $("res-big").replaceChildren(document.createTextNode(fmt(low)), Object.assign(document.createElement("small"), { textContent: "test USDC" }));
+  rows("res-rows", [
+    ...providers.map((p) => [p.name + " · finalized #" + p.finalized.block, fmt(p.finalized.balance)]),
+    ["providers agree", chip(fins.every((f) => f === fins[0]) ? "yes" : "NO", fins.every((f) => f === fins[0]) ? "ok" : "bad")],
+    ["latest (not final)", providers.map((p) => fmt(p.latest.balance)).join(" · ")],
+  ]);
+  links("res-links", [["vault on Etherscan", "https://sepolia.etherscan.io/address/" + VAULT], ["token", "https://sepolia.etherscan.io/token/" + USDC + "?a=" + VAULT]]);
+  pill("pill-sepolia", live ? "live" : "static", live ? "Sepolia vault: live, read just now" : "Sepolia vault: static snapshot " + stamp);
+}
+
+/* ---------------- V3 supply over WSS ---------------- */
+function readV3() {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(V3_WS);
+    const pending = new Map(); let n = 0;
+    const done = (fn, v) => { clearTimeout(timer); try { ws.close(); } catch (e) { /* closed */ } fn(v); };
+    const timer = setTimeout(() => done(reject, new Error("V3 websocket timeout")), 12000);
+    const call = (method, params) => new Promise((res, rej) => { const id = ++n; pending.set(id, { res, rej }); ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params })); });
+    ws.onerror = () => done(reject, new Error("V3 websocket error"));
+    ws.onmessage = (m) => { const j = JSON.parse(m.data); const p = pending.get(j.id); if (!p) return; pending.delete(j.id); j.error ? p.rej(new Error(j.error.message)) : p.res(j.result); };
+    ws.onopen = async () => {
+      try {
+        const finHash = await call("chain_getFinalizedHead", []);
+        const finHdr = await call("chain_getHeader", [finHash]);
+        const head = await call("chain_getHeader", []);
+        const assets = {};
+        for (const [id, key] of Object.entries(ASSET_KEYS)) {
+          const raw = await call("state_getStorage", [key]);
+          if (!raw) throw new Error("asset " + id + " not found");
+          const b = raw.slice(2);
+          if (b.length !== 190 * 2) throw new Error("unexpected AssetDetails length " + b.length / 2);
+          const le = b.slice(128 * 2, 144 * 2).match(/../g).reverse().join("");
+          assets[id] = { supply: Number(BigInt("0x" + le)), status: ["Live", "Frozen", "Destroying"][parseInt(b.slice(189 * 2), 16)] || "?" };
+        }
+        done(resolve, { finalized_block: Number(hexBig(finHdr.number)), head_block: Number(hexBig(head.number)), assets });
+      } catch (e) { done(reject, e); }
+    };
+  });
+}
+function renderV3(v3, live, stamp) {
+  const a = v3.assets;
+  const total = a[4401].supply + a[4402].supply;
+  state.supply = total; state.breakerStatus = a[4401].status;
+  $("sup-big").replaceChildren(document.createTextNode(fmt(total)), Object.assign(document.createElement("small"), { textContent: "pUSDC-test" }));
+  rows("sup-rows", [
+    ["4401 breaker", fmt(a[4401].supply)],
+    ["4401 status", chip(a[4401].status, a[4401].status === "Live" ? "ok" : "bad")],
+    ["4402 control", fmt(a[4402].supply)],
+    [live ? "head" : "finalized", "#" + (v3.head_block || v3.finalized_block)],
+  ]);
+  links("sup-links", [["node console", "https://node-console.portaldot.dev/"], ["PROOF.md", "https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md"]]);
+  pill("pill-v3", live ? "live" : "static", live ? "V3 supply: live, head #" + v3.head_block : "V3 supply: static snapshot " + stamp);
+}
+
+/* ---------------- ReserveOracle.status() ---------------- */
+async function readOracle() {
+  const r = await rpc(V3_EVM, "eth_call", [{ to: ORACLE, data: "0x200d2ed2" }, "latest"]);
+  const h = r.slice(2);
+  if (h.length !== 8 * 64) throw new Error("unexpected status() length");
+  const w = (i) => BigInt("0x" + h.slice(i * 64, (i + 1) * 64));
+  return { s1: Number(w(0)), s2: Number(w(1)), reserves: Number(w(2)), sep_block: Number(w(3)), pd_block: Number(w(5)), frozen: w(6) === 1n, updated_at: Number(w(7)) };
+}
+function ago(sec) {
+  if (sec < 90) return Math.round(sec) + " s";
+  if (sec < 5400) return Math.round(sec / 60) + " min";
+  if (sec < 172800) return (sec / 3600).toFixed(1) + " h";
+  return (sec / 86400).toFixed(1) + " days";
+}
+function renderOracle(o, live, stamp) {
+  state.att = o;
+  const age = Date.now() / 1000 - o.updated_at;
+  $("att-big").replaceChildren(document.createTextNode(fmt(o.reserves)), Object.assign(document.createElement("small"), { textContent: "reserves" }));
+  rows("att-rows", [
+    ["S1 + S2 (supply)", fmt(o.s1 + o.s2)],
+    ["covers supply", chip(o.reserves >= o.s1 + o.s2 ? "yes" : "no", o.reserves >= o.s1 + o.s2 ? "ok" : "bad")],
+    ["mirror frozen flag", chip(o.frozen ? "frozen" : "not frozen", o.frozen ? "bad" : "ok")],
+    ["V3 block of the post", "#" + o.pd_block],
+    ["posted", ago(age) + " ago"],
+    ["fresh (< 1 h)?", chip(age < 3600 ? "yes" : "STALE", age < 3600 ? "ok" : "warn")],
+  ]);
+  $("att-note").textContent = "The reserves figure was read from the local anvil reserve chain (reserve block #" + o.sep_block +
+    ", not Sepolia) during the attestation drill. The oracle's isBacked() fails closed once a post is older than its max age.";
+  links("att-links", [["oracle on Revive", "https://node-console.portaldot.dev/"], ["ARCHITECTURE.md", "https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/ARCHITECTURE.md"]]);
+  pill("pill-oracle", live ? "live" : "static", live ? "Attestation mirror: live, posted " + ago(age) + " ago" : "Attestation mirror: static snapshot " + stamp);
+}
+
+/* ---------------- verdict + gauge ---------------- */
+function paint() {
+  const v = $("verdict"), fill = $("fill");
+  if (state.reserve == null || state.supply == null) return;
+  const ratio = state.reserve / state.supply;
+  const level = state.reserve >= state.supply;
+  const frozen = state.breakerStatus === "Frozen";
+  const pct = Math.min(ratio, 1.25) / 1.25 * 100;
+  fill.style.width = pct + "%"; fill.classList.toggle("short", !level);
+  $("tick").style.left = (1 / 1.25 * 100) + "%";
+  $("gauge-max").textContent = "supply " + fmt(state.supply);
+  $("gauge-mid").textContent = "reserve " + fmt(state.reserve) + " · " + (ratio * 100).toFixed(1) + "% of supply";
+  $("gauge").setAttribute("aria-label", "Reserve " + fmt(state.reserve) + " against supply " + fmt(state.supply));
+  const stale = document.querySelectorAll(".pill.static").length > 0;
+  v.replaceChildren(document.createTextNode(level ? "The load line is " : "Reserves are "),
+    Object.assign(document.createElement("em"), { className: level ? "" : "short", textContent: level ? "level" : "short" }),
+    document.createTextNode(frozen ? " · breaker frozen" : ""));
+  $("sub").textContent = (level ? "Reserves cover supply: " : "Reserves are below supply: ") + fmt(state.reserve) + " test USDC in the Sepolia vault (finalized) against " +
+    fmt(state.supply) + " pUSDC-test on Portaldot V3. " + (frozen && level ? "The breaker is frozen while the Sepolia vault is level: a drill on the local anvil reserve chain (or a trip) is waiting for its finality-gated thaw. " : "") +
+    (stale ? "At least one panel is a static snapshot, labelled below." : "All three panels were read from your browser just now.");
+}
+
+async function load() {
+  let snap = null;
+  try { snap = await (await timeout(6000, fetch("snapshot.json", { cache: "no-store" }))).json(); } catch (e) { /* no snapshot: live only */ }
+  const stamp = snap ? snap.generated_at : "unavailable";
+  const jobs = [
+    [readSepolia, renderSepolia, snap && snap.sepolia.providers, "pill-sepolia", "Sepolia vault"],
+    [readV3, renderV3, snap && { finalized_block: snap.v3.finalized_block, assets: Object.fromEntries(Object.entries(snap.v3.assets).map(([k, v]) => [k, { supply: v.supply, status: v.status }])) }, "pill-v3", "V3 supply"],
+    [readOracle, renderOracle, snap && snap.oracle, "pill-oracle", "Attestation mirror"],
+  ];
+  await Promise.all(jobs.map(async ([read, render, fallback, pillId, name]) => {
+    try { render(await read(), true, stamp); }
+    catch (e) {
+      if (fallback) render(fallback, false, stamp);
+      else pill(pillId, "err", name + ": unreachable (" + e.message + "), no snapshot");
+    }
+  }));
+  paint();
+}
+load();
+</script>
+</body>
+</html>

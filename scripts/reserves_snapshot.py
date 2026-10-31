@@ -66,7 +66,8 @@ def main() -> int:
     evm = Web3(HTTPProvider(EVM_RPC, request_kwargs={"timeout": 20, "headers": {"User-Agent": "Mozilla/5.0 ballast-snapshot", "Content-Type": "application/json"}}))
     raw = call(evm, oracle_addr, STATUS)
     word = lambda i: int.from_bytes(raw[32 * i:32 * (i + 1)], "big")  # noqa: E731
-    oracle = {"address": oracle_addr, "s1": word(0), "s2": word(1), "reserves": word(2), "sep_block": word(3),
+    backed = call(evm, oracle_addr, "0xdbd8a87f" + format(3600, "064x"))  # isBacked(3600)
+    oracle = {"address": oracle_addr, "is_backed_3600": int.from_bytes(backed, "big") == 1, "s1": word(0), "s2": word(1), "reserves": word(2), "sep_block": word(3),
               "sep_hash": "0x" + raw[128:160].hex(), "pd_block": word(5), "frozen": bool(word(6)), "updated_at": word(7)}
 
     out = {"generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

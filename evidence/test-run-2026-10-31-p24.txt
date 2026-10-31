@@ -1,7 +1,7 @@
-# P24 test run 2026-10-31T01:35:15Z at 83c093e (+ uncommitted: check_receipts chain-id fallback, governance_drill evm_chain_id)
+# P24 test run 2026-10-31T01:47:27Z at d30652b (clean tree: 0 changed files)
 ## pytest
-296 passed in 3.70s
+296 passed in 3.53s
 ## forge
-Ran 1 test suite in 22.93ms (19.21ms CPU time): 20 tests passed, 0 failed, 0 skipped (20 total tests)
+Ran 1 test suite in 21.95ms (17.99ms CPU time): 20 tests passed, 0 failed, 0 skipped (20 total tests)
 ## hardhat
-  21 passing (614ms)
+  21 passing (676ms)

@@ -34,6 +34,7 @@ from ballast.chain import Receipt, connect, dev_keypair, submit  # noqa: E402
 from ballast.chain_profile import ProfileError, identify  # noqa: E402
 from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import forge_build, source_pin  # noqa: E402
+from ballast.oracle import constructor_args  # noqa: E402
 from ballast.receipts import EVIDENCE, clean_pass, score, summarize, write_receipts_md  # noqa: E402
 from ballast.revive import dry_call, dry_instantiate, eth_address  # noqa: E402
 from ballast.rpc import node_rpc  # noqa: E402
@@ -155,7 +156,7 @@ def main() -> int:
         attester = eth_address(substrate, bot.ss58_address)
         initcode = bytes.fromhex(json.loads(ARTIFACT.read_text())["bytecode"]["object"][2:])
         run["source"]["ReserveOracle_initcode_sha256"] = hashlib.sha256(initcode).hexdigest()
-        code = initcode + encode(["address"], [attester])
+        code = initcode + constructor_args(attester, [])  # v2 constructor; no watcher list in this probe
         dry = dry_instantiate(substrate, alice.ss58_address, code)
         if not dry.ok or dry.reverted:
             raise RuntimeError(f"deploy dry-run failed: {dry}")

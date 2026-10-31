@@ -7,6 +7,9 @@ pragma solidity 0.8.24;
 /// remark is included on Portaldot; any EVM dApp reads `status()` / `isBacked(maxAge)`.
 /// It never holds or moves value and cannot freeze the asset: the freeze lives in the Assets pallet. A stale
 /// mirror reads as NOT backed (`isBacked` fails closed on age), and a never-posted oracle is never backed.
+/// v2: any listed watcher H160 can `trip()` it — one-way, like the pallet freezer: it sets `frozen` and nothing else.
+/// Only the attester clears it, with a post whose Portaldot block is AFTER the trip's block (on Revive,
+/// `block.number` is the Portaldot block), i.e. a pallet reading taken after the trip.
 contract ReserveOracle {
     struct Status {
         uint128 s1; // supply of the wrapped asset (asset 1)
@@ -21,6 +24,9 @@ contract ReserveOracle {
 
     address public immutable attester;
     Status private _status;
+    mapping(address => bool) public isWatcher;
+    address[] private _watchers;
+    uint64 public trippedBlock; // block of the latest trip (0 = never tripped)
 
     event Posted(
         uint128 s1, uint128 s2, uint256 reserves, uint64 indexed sepBlock, bytes32 sepHash, uint64 indexed pdBlock,
@@ -29,11 +35,36 @@ contract ReserveOracle {
 
     error NotAttester(address caller);
     error ZeroAddress();
-    error StalePost(uint64 pdBlock, uint64 latestPdBlock);
+    event Tripped(address indexed watcher, uint64 blockNumber);
 
-    constructor(address attester_) {
+    error StalePost(uint64 pdBlock, uint64 latestPdBlock);
+    error NotWatcher(address caller);
+    error DuplicateWatcher(address watcher);
+    error TripNotCleared(uint64 pdBlock, uint64 trippedBlock);
+
+    constructor(address attester_, address[] memory watchers_) {
         if (attester_ == address(0)) revert ZeroAddress();
         attester = attester_;
+        for (uint256 i = 0; i < watchers_.length; i++) {
+            address w = watchers_[i];
+            if (w == address(0)) revert ZeroAddress();
+            if (isWatcher[w]) revert DuplicateWatcher(w);
+            isWatcher[w] = true;
+            _watchers.push(w);
+        }
+    }
+
+    /// @notice Any listed watcher marks the mirror frozen (one-way). It changes nothing else and moves no value.
+    function trip() external {
+        if (!isWatcher[msg.sender]) revert NotWatcher(msg.sender);
+        _status.frozen = true;
+        // forge-lint: disable-next-line(unsafe-typecast) — a uint64 block number outlasts the chain
+        trippedBlock = uint64(block.number);
+        emit Tripped(msg.sender, trippedBlock);
+    }
+
+    function watchers() external view returns (address[] memory) {
+        return _watchers;
     }
 
     /// @notice Mirror one attestation. Portaldot blocks only move forward: an older or repeated pdBlock reverts.
@@ -44,6 +75,7 @@ contract ReserveOracle {
     {
         if (msg.sender != attester) revert NotAttester(msg.sender);
         if (_status.updatedAt != 0 && pdBlock <= _status.pdBlock) revert StalePost(pdBlock, _status.pdBlock);
+        if (!frozen && trippedBlock != 0 && pdBlock <= trippedBlock) revert TripNotCleared(pdBlock, trippedBlock);
         // forge-lint: disable-next-line(unsafe-typecast) — a uint64 of seconds outlasts the chain
         _status = Status(s1, s2, reserves, sepBlock, sepHash, pdBlock, frozen, uint64(block.timestamp));
         emit Posted(s1, s2, reserves, sepBlock, sepHash, pdBlock, frozen);

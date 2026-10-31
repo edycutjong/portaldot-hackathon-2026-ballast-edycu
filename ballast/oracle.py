@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 from eth_abi import decode, encode
@@ -32,6 +33,15 @@ def initcode() -> bytes:
     return bytes.fromhex(json.loads(ARTIFACT.read_text())["bytecode"]["object"][2:])
 
 
+def constructor_args(attester: str, watchers: Sequence[str] = ()) -> bytes:
+    """ABI-encoded `constructor(address attester, address[] watchers)` (v2: the watchers may `trip()`)."""
+    return encode(["address", "address[]"], [attester, list(watchers)])
+
+
+def trip_data() -> bytes:
+    return selector("trip()")
+
+
 def post_data(s1, s2, reserves, sep_block, sep_hash, pd_block, frozen) -> bytes:
     args = [s1, s2, reserves, sep_block, bytes.fromhex(sep_hash[2:]), pd_block, frozen]
     return selector(POST_SIG) + encode(POST_TYPES, args)
@@ -41,10 +51,12 @@ def _limit(weight: dict) -> dict:
     return {"ref_time": max(20 * weight["ref_time"], 10**10), "proof_size": 2_000_000}
 
 
-def deploy(substrate: Any, profile: Any, keypair: Any, *, step: str = "deploy_oracle") -> tuple[Receipt, str | None, str]:
-    """B deploys ReserveOracle(attester = B's H160). Returns (receipt, contract address or None, attester H160)."""
+def deploy(substrate: Any, profile: Any, keypair: Any, *, watchers: Sequence[str] = (),
+           step: str = "deploy_oracle") -> tuple[Receipt, str | None, str]:
+    """B deploys ReserveOracle(attester = B's H160, watchers = their H160s). Returns (receipt, contract address or
+    None, attester H160)."""
     attester = eth_address(substrate, keypair.ss58_address)
-    code = initcode() + encode(["address"], [attester])
+    code = initcode() + constructor_args(attester, watchers)
     dry = dry_instantiate(substrate, keypair.ss58_address, code)
     if not dry.ok or dry.reverted:
         raise RuntimeError(f"ReserveOracle deploy dry-run failed: ok={dry.ok} reverted={dry.reverted}")
@@ -64,6 +76,25 @@ def post(substrate: Any, profile: Any, keypair: Any, contract: str, state: tuple
                   {"dest": contract, "value": 0, "weight_limit": _limit(est.weight_required),
                    "storage_deposit_limit": 10 * max(est.storage_deposit, ed), "data": "0x" + data.hex()},
                   step=step, call_label="Revive.call(ReserveOracle.post)")
+
+
+def trip(substrate: Any, profile: Any, keypair: Any, contract: str, *, step: str) -> Receipt:
+    """A watcher's `trip()` (any listed watcher H160; one-way)."""
+    data = trip_data()
+    ed = substrate.get_constant("Balances", "ExistentialDeposit").value
+    est = dry_call(substrate, keypair.ss58_address, contract, data)
+    return submit(substrate, profile, keypair, "Revive", "call",
+                  {"dest": contract, "value": 0, "weight_limit": _limit(est.weight_required),
+                   "storage_deposit_limit": 10 * max(est.storage_deposit, ed), "data": "0x" + data.hex()},
+                  step=step, call_label="Revive.call(ReserveOracle.trip)")
+
+
+def tripped_block(substrate: Any, origin: str, contract: str, block_hash: str | None = None) -> int:
+    return read(substrate, origin, contract, "trippedBlock()", ["uint64"], block_hash=block_hash)[0]
+
+
+def watcher_list(substrate: Any, origin: str, contract: str, block_hash: str | None = None) -> list[str]:
+    return [a.lower() for a in read(substrate, origin, contract, "watchers()", ["address[]"], block_hash=block_hash)[0]]
 
 
 def read(substrate: Any, origin: str, contract: str, sig: str, out_types: list[str], args: bytes = b"",

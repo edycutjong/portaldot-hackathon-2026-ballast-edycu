@@ -37,7 +37,7 @@ from ballast.config import load_chain_config  # noqa: E402
 from ballast.drill import artifact, forge_build, source_pin  # noqa: E402
 from ballast.keys import keypair  # noqa: E402
 from ballast.oracle import deploy as deploy_oracle  # noqa: E402
-from ballast.oracle import initcode  # noqa: E402
+from ballast.oracle import constructor_args, initcode  # noqa: E402
 from ballast.revive import dry_instantiate  # noqa: E402
 from eth_abi import encode  # noqa: E402
 from ballast.receipts import EVIDENCE, write_receipts_md  # noqa: E402
@@ -132,7 +132,8 @@ def main() -> int:
         fee = 50 * ed
         if prior is None and not args.no_oracle:  # dry-run from the funder: an unfunded origin cannot be sized
             dry = dry_instantiate(substrate, alice.ss58_address,
-                                  initcode() + encode(["address"], [_h160(substrate, addr["B"])]))
+                                  initcode() + constructor_args(_h160(substrate, addr["B"]),
+                                                                [_h160(substrate, w) for w in rm.watchers]))
             if not dry.ok or dry.reverted or not dry.storage_deposit:
                 print("setup_roles: cannot size the ReserveOracle storage deposit (funder too low for the dry-run?); "
                       "fund the funder or pass --no-oracle", file=sys.stderr)
@@ -299,7 +300,8 @@ def main() -> int:
             if not substrate.query("Revive", "OriginalAccount", [_h160(substrate, addr["B"])]).value:
                 r = send(keys["B"], "Revive", "map_account", {}, step="map_b")
                 run.step("B maps its account in Revive", "Ok", r, r.outcome.ok)
-            r, contract, attester = deploy_oracle(substrate, profile, keys["B"])
+            r, contract, attester = deploy_oracle(substrate, profile, keys["B"],
+                                                     watchers=[_h160(substrate, w) for w in rm.watchers])
             run.step(f"B deploys ReserveOracle(attester = {attester})", "Ok + Revive.Instantiated", r,
                      r.outcome.ok and contract is not None, ("Revive.Instantiated",))
             if not contract:

@@ -2,14 +2,28 @@
   "kind": "v3-oracle-v2-sizing",
   "read_only": true,
   "chain": "Portaldot V3 testnet",
-  "at": "2026-10-31T01:36:49Z",
-  "head": 260387,
-  "head_hash": "0xde8f3025e7398b247fa638fc6e78449edafbf1ee671cf23bab72e0e5d7f94f3a",
+  "at": "2026-10-31T01:47:01Z",
+  "head": 260489,
+  "head_hash": "0x60f8225fca64d7476b5643929a5f9620054c213c7c28c619de4d6c9ca4bc5877",
   "v2_initcode_bytes": 2960,
   "dry_run_instantiate_from_B": {
     "ok": false,
     "reverted": false,
     "storage_deposit": 0
+  },
+  "v1_mirror": {
+    "address": "0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e",
+    "status": {
+      "s1": 56000000,
+      "s2": 50000000,
+      "reserves": 106000000,
+      "sep_block": 1758,
+      "sep_hash": "0x4d54fee2acd6f0e8b8766bbd98b1d2225456fb87d1adfdbe1761709831a7def4",
+      "pd_block": 170249,
+      "frozen": false,
+      "updated_at": 1792818678
+    },
+    "isBacked_3600": false
   },
   "balances": {
     "funder": {

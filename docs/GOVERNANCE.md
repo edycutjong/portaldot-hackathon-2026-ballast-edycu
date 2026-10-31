@@ -9,11 +9,13 @@ The drills are `scripts/governance_drill.py` and `scripts/trip_drill.py`.
 
 | Branch | Where it ran | Evidence |
 |---|---|---|
-| Watcher-set rotation, `M_admin` rotation, community watcher, wind-down, redemption | **Portaldot V3 testnet**, scratch asset 4601 (not the demo asset 4401). Reserve: a **local anvil** vault (not Sepolia) | [`evidence/roles-governance-v3-20261031T012503Z.json`](../evidence/roles-governance-v3-20261031T012503Z.json), PASS 30/30 steps + 16/16 state checks |
-| The same drill, rehearsal | stand-in `standin-upstream` (not V3), asset 3001 | [`evidence/roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json), PASS 30/30 + 16/16 |
+| Watcher-set rotation, `M_admin` rotation, community watcher, wind-down, redemption | **Portaldot V3 testnet**, scratch asset 4601 (not the demo asset 4401). Reserve: a **local anvil** vault (not Sepolia) | [`evidence/roles-governance-v3-20261031T012503Z.json`](../evidence/roles-governance-v3-20261031T012503Z.json), PASS 30/30 steps (25 V3 extrinsics + 5 anvil transactions) + 16/16 state checks |
+| The same drill, rehearsal | stand-in `standin-upstream` (not V3), asset 3001 | [`evidence/roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json), PASS 30/30 (25 stand-in extrinsics + 5 anvil transactions) + 16/16 |
 | `ReserveOracle` v2 with `trip()` | stand-in `standin-upstream` only (**not V3**, see below) | [`evidence/oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json), PASS 9/9 + 9/9 |
 
-Both drill runs started from committed code (`source.dirty: false`). `python scripts/check_receipts.py --profile v3`
+Both drill runs started from committed code (`source.dirty: false`). The V3 run wrote its three watcher logs as
+`*.log`, which the repo ignores. They were renamed to `*.watchdog.jsonl` after the run with their content unchanged,
+and the script now writes that name. `python scripts/check_receipts.py --profile v3`
 re-queried all V3 extrinsics, 165 of them, at finalized head #260355
 ([`evidence/check-receipts-v3-20261031T013443Z.txt`](../evidence/check-receipts-v3-20261031T013443Z.txt)). Five of
 the 165 rows were re-included in the canonical block at the same height after short forks. Only one of them,
@@ -40,7 +42,8 @@ The bot co-signs a `set_team` that moves the freezer or the admin only when all 
 - Only one role moves per proposal, and the issuer stays `M_mint`.
 - A new admin set contains B and has a threshold of at least 2.
 
-Holders get K blocks to see a change coming before it can take effect.
+Holders get K blocks to see a change coming before the bot will co-sign it. In this build one person holds A and B,
+so this is a process gate, not a separation between independent people.
 
 | V3 step | Extrinsic | Outcome |
 |---|---|---|
@@ -67,8 +70,8 @@ the custodian drained 30.00 of the 100.00 reserve, W3 froze asset 4601 through `
 
 ## 3. Wind-down and redemption
 
-This is the branch for a reserve that stays short. While the asset is frozen, an admin `burn` fails inside the
-multisig, so the wind-down freezes every holder's account first and only then thaws the asset.
+This is the branch for a reserve that stays short. The wind-down freezes every holder's account first, thaws the
+asset, and burns only after that thaw. A burn on a frozen asset is not exercised anywhere in this repo's evidence.
 
 | V3 step | Extrinsic | Outcome |
 |---|---|---|
@@ -90,17 +93,19 @@ S1 = 20.00 and the reserves were 49.00, so r stayed 0.7000.
 
 Version 2 of the contract adds a watcher H160 list to the constructor. Any listed watcher can call `trip()`, which
 sets `frozen` and records `trippedBlock`. That is all it does: it is one-way, like the pallet freezer. Only the
-attester can clear the trip, by posting a reading whose Portaldot block is after `trippedBlock`. On Revive,
-`block.number` is the Portaldot block. The stand-in drill measured this: `trippedBlock` 8879 matched the trip
-extrinsic's block. This phase added 6 Hardhat tests (the watcher list and `trip()`), for 21 in total.
+attester can clear the trip, by posting a reading whose Portaldot block is after `trippedBlock`. On the stand-in's
+Revive pallet, `block.number` is the Portaldot block: the drill measured `trippedBlock` 8879 against the trip
+extrinsic 8879-2. This has not been measured on V3's Revive yet. This phase added 6 Hardhat tests (the watcher list and `trip()`), for 21 in total.
 
 On the stand-in, a non-watcher's `trip()` reverted, W1's `trip()` turned `isBacked` false, and a post with
 `pdBlock = trippedBlock` reverted (`TripNotCleared`). A post from a later block cleared the trip.
 
 **Not on V3 yet.** The v1 mirror on V3 (`0x4832…155e`) needed 138.53 tPOT in deposits (code upload plus storage),
-and the v2 initcode is larger at 2,960 bytes. The v2 deposit itself is not measured, so the shortfall is an estimate. All of Ballast's V3 keys together hold 83.13 tPOT free, and a deploy dry-run from B fails
+and the v2 initcode is larger at 2,960 bytes. The v2 deposit itself is not measured, so the shortfall is an estimate. All of Ballast's V3 keys together hold 83.13 tPOT free. A read-only deploy dry-run from B returns `ok: false`; the
+failure reason is not recorded, and B holds 34.52 tPOT
 ([`evidence/v3-oracle-v2-sizing-20261031.json`](../evidence/v3-oracle-v2-sizing-20261031.json), read-only,
-`scripts/oracle_v2_sizing.py`). The v1 mirror stays live and has no `trip()`. Deploying v2 on V3 is
+`scripts/oracle_v2_sizing.py`). The v1 mirror (source: commit `70f1b84^`) still answers on V3 and has no `trip()`. Its last post is from #170249
+(2026-10-24), so `isBacked(3600)` reads false: the attester is not running, and the mirror fails closed on age. Deploying v2 on V3 is
 `python scripts/trip_drill.py --profile v3 --allow-v3` once the funder is topped up. That V3 path has not run
 yet.
 

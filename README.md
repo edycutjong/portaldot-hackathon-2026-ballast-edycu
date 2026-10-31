@@ -89,7 +89,7 @@ subject to the chain's Root origin (`force_asset_status`); on the V3 testnet a `
 
 The breaker is assembled from pallet-native modules (Assets roles, Multisig, System remarks), with no contract code in the enforcement path,
 and it freezes at the asset level, so every transfer is refused rather than one pool's. The one contract that targets Portaldot's EVM layer,
-`ReserveOracle`, is a read-only mirror so EVM dApps can ask `isBacked(maxAge)`; it cannot freeze or thaw anything. On the V3 testnet it
+`ReserveOracle`, is a mirror so EVM dApps can ask `isBacked(maxAge)`; it never holds value and cannot freeze or thaw the asset (v2, on the stand-in only, also lets a listed watcher mark the mirror itself frozen, one-way). On the V3 testnet it
 is deployed through `Revive.instantiate_with_code` at `0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e` (extrinsic `169960-1`, attester = the bot's
 H160, [`evidence/roles-setup-v3.json`](evidence/roles-setup-v3.json)) and receives each attestation after inclusion; it ran on the stand-in's
 `Revive` pallet first.
@@ -313,7 +313,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
   a community watcher's freeze (`ballast watch --community`), the wind-down thaw and an atomic thaw + burn redemption, PASS 30/30 + 16/16
   (2026-10-31 UTC, [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md))
 - [x] `ReserveOracle` v2 with `trip()` by a listed watcher: 6 new Hardhat tests, trip drill PASS 9/9 + 9/9 on the stand-in (not V3)
-- [ ] `ReserveOracle` v2 on V3: its deposit is estimated to exceed what Ballast's V3 keys hold (v1 needed 138.53 tPOT; the keys hold 83.13; a v2 dry-run fails) ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))
+- [ ] `ReserveOracle` v2 on V3: its deposit is estimated to exceed what Ballast's V3 keys hold (v1 needed 138.53 tPOT; the keys hold 83.13; a read-only v2 dry-run from B returns `ok: false`) ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))
 - [ ] Benchmarks over many drills, reserves page
 
 **Honest limitations**

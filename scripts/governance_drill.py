@@ -113,7 +113,8 @@ def main() -> int:
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     stem = f"roles-governance-{profile.name}-{stamp}"
     run = Run("roles-governance", {**ident.as_dict(), "url": cfg.url}, role_of, decisions=[], source=source_pin(),
-              reserve={"label": "local-anvil (not Sepolia)", "evm_url": args.evm_url, "custodian": custodian},
+              reserve={"label": "local-anvil (not Sepolia)", "evm_chain_id": ANVIL_CHAIN_ID, "evm_url": args.evm_url,
+                       "custodian": custodian},
               roles=rm0.as_dict(), rotated={"M_watch'": m_watch2, "M_admin'": m_admin2, "A3": addr["A3"],
                                             "W3": addr["W3"]},
               overrides={"K": args.k, "W": args.w, "basis": "drill overrides; production K = 3 x H blocks, W ~ 24 h",

@@ -91,7 +91,10 @@ def main() -> int:
             evm_chain = None
             print(f"reserve chain not reachable at {args.evm_url} ({exc}); drill tx rows NOT re-checked")
         for run in evm_runs:
-            if evm_chain is None or run["reserve"]["evm_chain_id"] != evm_chain:
+            run_chain = run["reserve"].get("evm_chain_id")
+            if run_chain is None and str(run["reserve"].get("label", "")).startswith("local-anvil"):
+                run_chain = 31337  # runs that labelled the reserve but did not record its chain id
+            if evm_chain is None or run_chain != evm_chain:
                 continue
             for row in run["evm_steps"]:
                 evm_checked += 1

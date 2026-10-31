@@ -104,6 +104,7 @@ State checks (storage/events read at the step's block):
 
 Other runs, newest first, any verdict (full tables in the JSON):
 
+- asset 4401 — 2026-10-30T23:16:33Z — FAIL (7/8 steps as expected, 17/18 state checks) — source: `b77e02f` (clean) — [`evidence/sepolia-drill-20261030T231633Z.json`](../evidence/sepolia-drill-20261030T231633Z.json) — failed: watcher W2 freezes asset 4401 on V3 through M_watch (reason=deficit) -> Ok; freeze remark eb == the drain's Sepolia block
 - asset 4401 — 2026-10-30T21:23:30Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `9c2112e` (clean) — [`evidence/sepolia-drill-20261030T212330Z.json`](../evidence/sepolia-drill-20261030T212330Z.json) — failed: vault holds the 100.00 deposit; owner holds gas and >= the refill (30%)
 - asset 4401 — 2026-10-30T20:46:14Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `1328f88` (clean) — [`evidence/sepolia-drill-20261030T204614Z.json`](../evidence/sepolia-drill-20261030T204614Z.json) — failed: owner holds >= 100.00 test USDC and gas
 - asset 4401 — 2026-10-30T20:09:23Z — PASS (12/12 steps as expected, 18/18 state checks) — source: `cff62bc` (UNCOMMITTED CHANGES) — [`evidence/sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json)

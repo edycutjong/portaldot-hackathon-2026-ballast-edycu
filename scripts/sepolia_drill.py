@@ -285,7 +285,8 @@ def main() -> int:
         run.check("vault.owner() == the Sepolia deployer", vault.functions.owner().call(), owner, "sepolia latest")
         run.check("vault.usdc() == Circle test USDC", vault.functions.usdc().call(), SEPOLIA_USDC, "sepolia latest")
         run.check("vault.reserves() == 100.00", vault.functions.reserves().call(), DEPOSIT, "sepolia latest")
-        dep_block = max([r["block_number"] for r in tx_log] or [w3.eth.block_number])
+        # resume (--vault): the deposit is old and final; the finalized-head reads below still prove it
+        dep_block = max([r["block_number"] for r in tx_log] or [w3.eth.get_block("finalized")["number"]])
         wait_finality(dep_block, "the vault deploy + 100.00 deposit")
         for n, p in zip(names, providers):
             at = p.eth.get_block("finalized")["number"]
@@ -356,10 +357,15 @@ def main() -> int:
         who, freeze = freezes[0]
         fr = freeze["receipt"]
         remark = parse_remark(freeze["remark"])
+        eb = int(remark.get("eb", -1))
+        # A local watcher is already polling when the drain lands: eb is the drain block. The Actions runner starts
+        # after it, so its first reading is the drain block or a later one — either way the vault reads the post-drain 70.00.
+        eb_ok = (eb >= drain["block_number"] and remark.get("r") == str(DEPOSIT - amount)) if args.w2_actions \
+            else eb == drain["block_number"]
         run.step(f"watcher W{who} freezes asset {v3.breaker} on V3 through M_watch (reason={remark.get('reason')})",
                  "Ok + inner Ok + Assets.AssetFrozen + System.Remarked", fr,
                  fr["outcome"]["ok"] and all(o["ok"] for o in fr["inner"]) and remark.get("reason") == "deficit"
-                 and int(remark.get("eb", -1)) == drain["block_number"],
+                 and eb_ok,
                  ("Assets.AssetFrozen", "System.Remarked", "Multisig.MultisigExecuted"))
         if args.w2_actions:
             run.note("W1", "OFF for the whole drill (no `ballast watch` process before the drain; the freeze is W2's, from GitHub Actions)")
@@ -375,8 +381,12 @@ def main() -> int:
         run.note("drain -> freeze included (wall clock: " + ("this machine's drain, the Actions runner's clock; "
                  "includes workflow queue + runner start" if args.w2_actions else "one machine; ") + "Sepolia reserve + V3)",
                  f"{freeze['included_at'] - drained_at:.2f} s")
-        run.check("freeze remark eb == the drain's Sepolia block", remark.get("eb"), str(drain["block_number"]),
-                  fr["block_hash"])
+        if args.w2_actions:
+            run.check("freeze remark eb is at or after the drain's Sepolia block and r is the post-drain reserve",
+                      [eb >= drain["block_number"], remark.get("r")], [True, str(DEPOSIT - amount)], fr["block_hash"])
+        else:
+            run.check("freeze remark eb == the drain's Sepolia block", remark.get("eb"), str(drain["block_number"]),
+                      fr["block_hash"])
         run.check("trigger check ran after the drain was sent",
                   epoch(next(r for r in recs[who - 1] if r["event"] == "check" and r["decision"]["freeze"])["t"])
                   >= drain_sent, True, "watchdog log")

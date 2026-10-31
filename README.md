@@ -307,7 +307,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - [x] Multisig role split (`M_mint` 2-of-2, `M_admin` 2-of-3, `M_watch` 1-of-2), reserve bot with mint / thaw / set_team gates, SQLite decision log
 - [x] `BALLAST/1` attestations, oracle mirror after inclusion, `ballast verify` with per-type signers and a forged-remark negative control
 - [x] Portaldot V3 testnet: role split + `ReserveOracle` on Revive (PASS 16/16 + 6/6), role drill PASS 22/22 + 20/20, attestation drill PASS 15/15 + 6/6,
-  79/79 V3 extrinsics re-queried and final on 2026-10-24 (since extended to 261/261, see Receipts above; [`docs/PROOF.md`](docs/PROOF.md); reserve: local anvil, NOT Sepolia)
+  79/79 V3 extrinsics from the 2026-10-24 drills, re-queried and final on 2026-10-25 (since extended to 261/261, see Receipts above; [`docs/PROOF.md`](docs/PROOF.md); reserve: local anvil, NOT Sepolia)
 - [x] 342 automated tests (301 pytest + 20 forge + 21 Hardhat; [`evidence/test-run-2026-10-31-p26.txt`](evidence/test-run-2026-10-31-p26.txt))
 
 **Next phase**

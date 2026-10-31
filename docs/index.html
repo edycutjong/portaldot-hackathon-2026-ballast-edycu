@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ballast">
 <meta property="og:title" content="Ballast · when the vault runs short, the test dollar stops moving">
-<meta property="og:description" content="A reserve-gated circuit breaker for a custodial test dollar on Portaldot. 79/79 V3 extrinsics re-queried as final.">
+<meta property="og:description" content="A reserve-gated circuit breaker for a custodial test dollar on Portaldot. 261/261 V3 extrinsics re-queried as final.">
 <meta property="og:url" content="https://ballast.edycu.dev/">
 <meta property="og:image" content="https://ballast.edycu.dev/assets/og.png?v=20261025">
 <meta property="og:image:width" content="1200">
@@ -416,7 +416,7 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
      <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
      <a class="btn v3" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc79cc70675b5486c51e0409cc5f74b5d1608ee4f30fc45d5971754c65e39f624">See the freeze on V3</a>
     </div>
-    <p class="strip a5">Portaldot V3 testnet · 79/79 extrinsics final · re-queried 2026-10-25</p>
+    <p class="strip a5">Portaldot V3 testnet · 261/261 extrinsics final · re-queried 2026-10-31</p>
    </div>
    <div class="ringbox">
     <p class="stamp"><b>#170,112</b><span>Assets.AssetFrozen · extrinsic 170112-1 · watcher W2</span><span>BALLAST/1|freeze|a=4401|reason=deficit</span><span>12.22 s from drain to freeze · wall clock, one machine</span></p>
@@ -445,10 +445,10 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
    <div class="readings" id="readings">
     <p class="label">Recorded readings · Portaldot V3 testnet · 2026-10-24 run</p>
     <div class="rx">
-     <div><b><i data-count="79">79</i>/79</b><span>V3 extrinsics, every one re-queried as final</span><code>docs/PROOF.md</code></div>
+     <div><b><i data-count="79">79</i>/79</b><span>V3 extrinsics of the 2026-10-24 run, every one re-queried as final (261 across all runs)</span><code>docs/PROOF.md</code></div>
      <div><b class="w"><i data-count="12.22" data-dec="2">12.22</i><small>&nbsp;s</small></b><span>drain → freeze included (wall clock, one machine)</span><code>README.md · Demo</code></div>
      <div><b><i data-count="22">22</i>/22</b><span>role-drill steps as expected, plus 20/20 state checks</span><code>roles-drill-v3-20261024T045513Z</code></div>
-     <div><b><i data-count="274">274</i></b><span>offline tests, no chain: 239 pytest + 20 forge + 15 Hardhat</span><code>evidence/test-run-2026-10-24-p12.txt</code></div>
+     <div><b><i data-count="342">342</i></b><span>offline tests, no chain: 301 pytest + 20 forge + 21 Hardhat</span><code>evidence/test-run-2026-10-31-p26.txt</code></div>
     </div>
    </div>
    <div class="ringbox">
@@ -514,17 +514,17 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
     <div class="frame">
      <div class="bar"><i></i><i></i><i></i><span>ballast/build · read-only · Portaldot V3</span></div>
 <pre id="replay" aria-label="Terminal output of check_receipts.py against the V3 testnet"><span class="p">$</span> <span class="c">python scripts/check_receipts.py --profile v3 | grep -E '^\[|17011[245]-1|170133-1'</span>
-<span class="re">[v3 | V3] genesis 0xd4f9acbc… spec portaldot-v3/3002 head #182416</span>
+<span class="re">[v3 | V3] genesis 0xd4f9acbc… spec portaldot-v3/3002 head #261560</span>
 <span class="ok">ok</span> roles-drill-v3-20261024T045513Z.json  170112-1 Ok
 <span class="re">reorg roles-drill-v3-20261024T045513Z.json 170114-1: inclusion block 0x9d34fa883f… lost a fork; same extrinsic finalized in canonical #170114 0xe6ca737bce…</span>
 <span class="ok">ok</span> roles-drill-v3-20261024T045513Z.json  170114-1 <span class="er">Err(Assets.AssetNotLive)</span>
 <span class="ok">ok</span> roles-drill-v3-20261024T045513Z.json  170115-1 <span class="er">Err(Assets.NoPermission)</span>
 <span class="ok">ok</span> roles-drill-v3-20261024T045513Z.json  170133-1 Ok
-<span class="c">[v3] 79/79 receipts confirmed from 8 run(s)</span>
-<span class="c">[v3] all confirmed rows at or below the finalized head #182414</span>
-<span class="re">[reserve http://127.0.0.1:49545] 20/20 reserve-chain txs confirmed</span></pre>
+<span class="c">[v3] 261/261 receipts confirmed from 23 run(s)</span>
+<span class="c">[v3] all confirmed rows at or below the finalized head #261558</span>
+<span class="re">[reserve http://127.0.0.1:49545] 83/83 reserve-chain txs confirmed</span></pre>
     </div>
-    <figcaption>Real output, re-run read-only on 2026-10-25 01:35 UTC: <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/evidence/check-receipts-v3-20261025T013504Z.txt">evidence/check-receipts-v3-20261025T013504Z.txt</a>. The reserve line is the local anvil chain.</figcaption>
+    <figcaption>Real output of the read-only re-run on 2026-10-31 (finalized head #261558): <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/evidence/check-receipts-v3-20261031T034000Z.txt">evidence/check-receipts-v3-20261031T034000Z.txt</a>. The cover-run numbers above are from the 2026-10-24 drill. The reserve line is the local anvil chain.</figcaption>
    </figure>
   </div>
   <a class="video" href="https://youtu.be/jV5dCy1o3O8" data-yt="jV5dCy1o3O8">
@@ -598,11 +598,11 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
    <p><b>The dApp builder</b> deciding whether checkout may accept that dollar, who must tell users why it is safe.</p>
   </div>
   <ol class="path">
-   <li class="now"><b>Testnet, today</b><span>done</span><p>V3 drills pass; one person holds every key; reserve on local anvil.</p></li>
-   <li><b>Sepolia reserve</b><span>plan</span><p><code>ReserveVault</code> with 100.00 test USDC; a watcher on separate infrastructure.</p></li>
+   <li class="now"><b>Testnet, today</b><span>done</span><p>V3 drills pass, the Sepolia reserve is drilled with real finality; one person holds every key.</p></li>
+   <li><b>Outside watchers</b><span>plan</span><p>A watcher run by someone other than us; W2 on GitHub Actions is still ours.</p></li>
    <li><b>A real issuer</b><span>plan</span><p>Watcher and attester keys held by parties other than the issuer; community-watcher mode.</p></li>
   </ol>
-  <dl class="ledger"><div><dt>Funding · plan</dt><dd>An ecosystem grant to reach a Sepolia-backed deployment with outside watchers.</dd></div><div><dt>Today</dt><dd>No external users and no revenue. One person holds every key.</dd></div></dl>
+  <dl class="ledger"><div><dt>Funding · plan</dt><dd>An ecosystem grant to reach a deployment with outside watchers.</dd></div><div><dt>Today</dt><dd>No external users and no revenue. One person holds every key.</dd></div></dl>
  </div>
 </section>
 
@@ -626,7 +626,7 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
   <div class="quotes">
    <blockquote><p>Custody is trusted: the vault owner can move reserves. Ballast makes that visible and stops the shortfall from spreading.</p><cite>— README · Honest limitations</cite></blockquote>
    <blockquote><p>Freezing reads <strong>latest</strong> reserve state and can false-trip on a reorg; recovery is a thaw by <code>M_admin</code> once finalized reserves cover supply (a multisig round-trip).</p><cite>— README · Honest limitations</cite></blockquote>
-   <blockquote><p>Sepolia's real finality (~13-19 min) has not been exercised in a drill.</p><cite>— README · Honest limitations</cite></blockquote>
+   <blockquote><p>It is not real time, and the Actions watcher covers the reserve deficit only (outage and heartbeat stay with the operator watcher).</p><cite>— README · Honest limitations</cite></blockquote>
   </div>
  </div>
 </section>
@@ -636,9 +636,9 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
   <h2 id="faq-h">Questions a judge would ask</h2>
   <div>
    <details open><summary>Is this really on Portaldot V3?</summary>
-    <p>Yes: 79 V3 extrinsics on 2026-10-24, each linked to node-console in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a> and re-queried as final, again on 2026-10-25. Genesis, <code>:code</code> hash and spec <code>portaldot-v3</code>/3002 are pinned by the day-0 check (<code>evidence/v3-day0-20261020T152616Z.json</code>).</p></details>
+    <p>Yes: 261 V3 extrinsics from 23 runs (2026-10-24 to 2026-10-31), each linked to node-console in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a> and re-queried as final at head #261558 on 2026-10-31. Genesis, <code>:code</code> hash and spec <code>portaldot-v3</code>/3002 are pinned by the day-0 check (<code>evidence/v3-day0-20261020T152616Z.json</code>).</p></details>
    <details><summary>Is the reserve on Sepolia?</summary>
-    <p>No. In the V3 runs the reserve is a local anvil chain; the Sepolia vault is not deployed yet (it needs 100.00 test USDC). Every receipt names its chain.</p></details>
+    <p>Partly. Most V3 runs use a local anvil chain, but a <code>ReserveVault</code> with 100.00 test USDC is deployed on Sepolia (<code>0x7ceB…357b</code>) and the drill against it, with the real ~17-minute finality wait, passed on V3 (8/8 steps, 18/18 checks). Every receipt names its chain; the <a href="reserves/">reserves page</a> reads the vault live.</p></details>
    <details><summary>Is this a trustless bridge?</summary>
     <p>No. Custody is trusted; Ballast makes a drain visible and stops the shortfall from being minted over or spreading.</p></details>
    <details><summary>Can a watcher unfreeze the asset?</summary>
@@ -646,7 +646,7 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
    <details><summary>Who holds the keys?</summary>
     <p>In this build one person holds every operator key; the separation is enforced by the runtime, not by independent people. Root can override every role (V3 has a <code>Sudo</code> key set; who controls it is not known to us).</p></details>
    <details><summary>What happens if the bot stops?</summary>
-    <p>Nothing is enforced while it is stopped; the heartbeat rule freezes the asset if a watcher is running, and <code>ReserveOracle.isBacked(maxAge)</code> reads <code>false</code> when stale. That is the design; the outage and heartbeat drills ran on the stand-in, not yet on V3.</p></details>
+    <p>Nothing is enforced while it is stopped; the heartbeat rule freezes the asset if a watcher is running, and <code>ReserveOracle.isBacked(maxAge)</code> reads <code>false</code> when stale. That is the design; the outage and heartbeat drills passed on V3 on scratch assets, with a local anvil reserve.</p></details>
   </div>
  </div>
 </section>
@@ -667,11 +667,13 @@ footer .rel:hover, footer .rel:focus-visible { border-color: var(--crest); color
  <div class="wrap">
   <ul>
    <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu">Repository</a></li>
+   <li><a href="reserves/">Reserves page</a></li>
+   <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/BENCHMARKS.md">Benchmarks</a></li>
    <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/pitch-deck.pdf">Deck (PDF)</a></li>
    <li><a href="https://ballast.edycu.dev/deck/">Deck (HTML)</a></li>
    <li><a href="https://youtu.be/jV5dCy1o3O8">Demo video</a></li>
    <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/LICENSE">MIT license</a></li>
-   <li><a class="rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.0.1</a></li>
+   <li><a class="rel" href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest" aria-label="Latest release">v0.6.1</a></li>
   </ul>
   <p>Built for Portaldot Hacker House 2026 with Claude Code (Anthropic); the code, tests and prose were reviewed by the author. Testnet only: pUSDC-test is not money.</p>
  </div>

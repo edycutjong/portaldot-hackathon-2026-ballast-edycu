@@ -3,9 +3,14 @@
 Gates (pure functions, unit-tested):
   mint     sign <=> asset 1 not frozen (I7) and min(finalized, latest) reserves >= S1 + S2 + amount
   thaw     sign <=> asset 1 frozen, finality has passed the freeze (the deficit block `eb` the watcher saw, else
-                    the freeze's own time), and min(finalized, latest) reserves >= S1 + S2   (wind-down: not built)
-  set_team sign <=> the proposed team IS the role map (issuer M_mint, admin M_admin) and the freezer is unchanged —
-                    an admin swap would let one key thaw past the reserve gate
+                    the freeze's own time), and min(finalized, latest) reserves >= S1 + S2
+                    OR (wind-down branch, `final` given) B's final remark >= W blocks after the freeze and every
+                    holder with a balance individually frozen (ballast/governance.py)
+  set_team sign <=> the proposed team IS the role map (issuer M_mint, admin M_admin) and the freezer is unchanged,
+                    OR it moves exactly one of freezer / admin to a set B announced >= K blocks earlier
+                    (governance.rotation_gate) — an unannounced admin swap would let one key thaw past the reserve gate
+  redeem   sign <=> batch_all([thaw(who), burn(who, whole balance)]) after the holder's own redeem remark, the
+                    asset thawed by the wind-down, `final` posted (governance.redeem_gate)
 Both money gates also refuse while either asset's team differs from the role map (DISARMED) or S2 moved.
 S1 = supply of asset 1, S2 = supply of the control asset (fixed: its roles are keyless), both read at the head.
 Pending mints: the bot's approval is always the LAST one (2-of-2 / 2-of-3 with the operator first), so a signed
@@ -357,7 +362,13 @@ class ReserveBot:
                               event="Assets.Issued")
             return out
 
-    def cosign_thaw(self, max_lookback: int | None = None) -> dict:
+    def profile_k(self) -> int:
+        """K (blocks) from the chain's measured block time — the same K the watchers use for I8."""
+        head = self.substrate.get_block_number(None)
+        return derive_block_counts(round_block_time(lookback_ms(self.substrate, head))).heartbeat_freeze_k
+
+    def cosign_thaw(self, max_lookback: int | None = None, final: str | None = None, w: int | None = None) -> dict:
+        """`final` = extrinsic id of B's BALLAST/1|final remark: enables the wind-down branch (`w` = W in blocks)."""
         call = self.compose("thaw_asset")
         if self._pending(self.m_admin, call, self.rm.admin_proposers) is None:
             return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
@@ -386,35 +397,120 @@ class ReserveBot:
                              finalized_ts=fin.block_timestamp, anchor=anchor)
             if not view.ok and st["frozen"]:
                 gate = Gate(False, f"reserves unreadable: {view.reason}")
+            winddown = None
+            if final and not gate.sign:
+                from .governance import holders, read_remark, winddown_gate
+
+                rows = holders(self.substrate, self.dep.breaker, self.substrate.get_block_hash(now))
+                fb = (newer or freeze or {}).get("block_number")
+                wd = Gate(*winddown_gate(st["frozen"], read_remark(self.substrate, final), rows,
+                                         breaker=self.dep.breaker, b=self.rm.b, freeze_block=fb,
+                                         w=w if w is not None else lookback))
+                winddown = {"final": final, "freeze_block": fb, "w": w if w is not None else lookback,
+                            "holders": rows, "gate": wd.reason}
+                gate = wd if wd.sign else Gate(False, f"{gate.reason}; wind-down branch: {wd.reason}")
             if st["team_problems"]:
                 gate = Gate(False, "DISARMED: " + "; ".join(st["team_problems"]))
             row = self._record("thaw", gate, view, st, call_hash=op.call_hash)
             out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash,
                    "timepoint": op.timepoint, "state": st, "freeze": anchor, "reserves": view.as_dict(),
-                   "finalized": fin.as_dict(), "db_row": row}
+                   "finalized": fin.as_dict(), "winddown": winddown, "db_row": row}
             if gate.sign:
                 self._execute(self.m_admin, call, op, row, out, step="bot_thaw", label="Assets.thaw_asset",
                               event="Assets.AssetThawed")
             return out
 
-    def cosign_team(self, issuer: str, admin: str, freezer: str) -> dict:
+    def cosign_team(self, issuer: str, admin: str, freezer: str, announcement: str | None = None,
+                    k: int | None = None) -> dict:
+        """`announcement` = extrinsic id of B's BALLAST/1|watchers or |admins remark; `k` = K in blocks."""
+        from .governance import announcement_of, read_remark, rotation_gate
+
         call = self.compose("set_team", issuer=issuer, admin=admin, freezer=freezer)
         with self._lock():
             op = self._pending(self.m_mint, call, [self.rm.a])  # owner = M_mint
             if op is None:
                 return {"decision": "no-proposal", "reason": f"no pending M_mint proposal for {call_hash(call)}"}
-            current = self.substrate.query("Assets", "Asset", [self.dep.breaker]).value or {}
+            head = self.substrate.get_block_number(None)
+            current = self.substrate.query("Assets", "Asset", [self.dep.breaker],
+                                           block_hash=self.substrate.get_block_hash(head)).value or {}
             st = self.supplies()
-            gate = set_team_gate(current, {"issuer": issuer, "admin": admin, "freezer": freezer}, self.rm.m_mint,
-                                 self.rm.m_admin)
+            proposed = {"issuer": issuer, "admin": admin, "freezer": freezer}
+            ann, ann_error = None, None
+            if announcement:
+                posted = read_remark(self.substrate, announcement)
+                try:
+                    ann = announcement_of(posted, self.substrate.ss58_format or 42) if posted else None
+                except ValueError as exc:
+                    ann_error = str(exc)
+                if posted is None:
+                    ann_error = f"no BALLAST/1 remark at {announcement}"
+            rot = rotation_gate(current, proposed, breaker=self.dep.breaker, m_mint=self.rm.m_mint,
+                                m_admin=self.rm.m_admin, b=self.rm.b, announcement=ann, head=head,
+                                k=k if k is not None else self.profile_k())
+            gate = Gate(*rot) if rot is not None else set_team_gate(current, proposed, self.rm.m_mint, self.rm.m_admin)
+            if ann_error and not gate.sign:
+                gate = Gate(False, f"{gate.reason} ({ann_error})")
             row = self._record("set_team", gate, None, st, call_hash=op.call_hash)
             out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash,
-                   "timepoint": op.timepoint, "proposed": {"issuer": issuer, "admin": admin, "freezer": freezer},
+                   "timepoint": op.timepoint, "proposed": proposed, "announcement": announcement, "head": head,
                    "state": st, "db_row": row}
             if gate.sign:
                 self._execute(self.m_mint, call, op, row, out, step="bot_team", label="Assets.set_team",
                               event="Assets.TeamChanged")
             return out
+
+
+    def redeem_call(self, holder: str, amount: int) -> Any:
+        compose = self.substrate.compose_call
+        return compose(call_module="Utility", call_function="batch_all", call_params={"calls": [
+            self.compose("thaw", who=holder), self.compose("burn", who=holder, amount=amount)]})
+
+    def cosign_redeem(self, holder: str, amount: int, request: str, final: str) -> dict:
+        """Co-sign the admin's batch_all([thaw(holder), burn(holder, amount)]) per governance.redeem_gate."""
+        from .governance import holders, read_remark, redeem_gate
+
+        call = self.redeem_call(holder, amount)
+        with self._lock():
+            op = self._pending(self.m_admin, call, self.rm.admin_proposers)
+            if op is None:
+                return {"decision": "no-proposal", "reason": f"no pending M_admin proposal for {call_hash(call)}"}
+            head_hash = self.substrate.get_block_hash(self.substrate.get_block_number(None))
+            st = self.supplies(head_hash)
+            row_h = next((h for h in holders(self.substrate, self.dep.breaker, head_hash) if same(h["who"], holder)),
+                         None)
+            req = read_remark(self.substrate, request)
+            gate = Gate(*redeem_gate(req, read_remark(self.substrate, final), row_h, st["frozen"],
+                                     breaker=self.dep.breaker, b=self.rm.b, holder=holder, amount=amount))
+            if st["team_problems"]:
+                gate = Gate(False, "DISARMED: " + "; ".join(st["team_problems"]))
+            row = self._record("redeem", gate, None, st, call_hash=op.call_hash)
+            out = {"decision": gate.decision, "reason": gate.reason, "call_hash": op.call_hash,
+                   "timepoint": op.timepoint, "holder": holder, "amount": str(amount), "request": request,
+                   "evm": req.fields.get("evm") if req else None, "final": final, "state": st, "db_row": row}
+            if gate.sign:
+                self._execute(self.m_admin, call, op, row, out, step="bot_redeem", label="Utility.batch_all",
+                              event="Assets.Burned")
+            return out
+
+    def announce(self, text: str, *, step: str = "bot_announce") -> dict:
+        """B posts a governance remark (watchers / admins / final) as itself, never through a multisig."""
+        from .chain import ensure_connected, submit
+        from .remarks import parse
+
+        if parse(text)["type"] not in ("watchers", "admins", "final"):
+            raise ValueError(f"not a governance remark: {text!r}")
+        ensure_connected(self.substrate)
+        r = submit(self.substrate, self.profile, self.keypair, "System", "remark_with_event", {"remark": text},
+                   step=step)
+        return {"decision": "posted" if r.outcome.ok else "failed", "reason": text, "remark": text,
+                "receipt": r.as_dict(), "extrinsic_id": r.extrinsic_id}
+
+
+def lookback_ms(substrate: Any, head: int, sample: int = 20) -> int:
+    """Median block time (ms) over the last `sample` blocks."""
+    stamps = [substrate.query("Timestamp", "Now", block_hash=substrate.get_block_hash(n)).value
+              for n in range(max(head - sample, 0), head + 1)]
+    return int(statistics.median(b - a for a, b in zip(stamps, stamps[1:])))
 
 
 def operator_accounts(deployment: Deployment, ss58_format: int) -> tuple[MultisigAccount, MultisigAccount]:

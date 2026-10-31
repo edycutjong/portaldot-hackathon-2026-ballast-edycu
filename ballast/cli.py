@@ -418,9 +418,18 @@ def cmd_bot(args: argparse.Namespace) -> int:
         if args.bot_command == "cosign-mint":
             out = bot.cosign_mint(amount, beneficiary)
         elif args.bot_command == "cosign-thaw":
-            out = bot.cosign_thaw()
+            out = bot.cosign_thaw(final=args.final, w=args.w)
         elif args.bot_command == "cosign-team":
-            out = bot.cosign_team(*team)
+            out = bot.cosign_team(*team, announcement=args.announcement, k=args.k)
+        elif args.bot_command == "announce":
+            from .governance import announcement_text, final_text
+
+            if args.kind == "final":
+                text = final_text(dep.breaker, args.r)
+            else:
+                text = announcement_text(args.kind, dep.breaker, args.threshold,
+                                         _addresses(profile, (args.members or "").split(",")))
+            out = bot.announce(text)
         else:
             from .attest import run_attester
 
@@ -433,6 +442,8 @@ def cmd_bot(args: argparse.Namespace) -> int:
     _print_json(out)
     if out["decision"] == "signed-unknown":
         return 3
+    if out["decision"] == "posted":
+        return 0
     if out["decision"] != "signed":
         return 1
     return 0 if out.get("executed_ok") else 3
@@ -640,6 +651,19 @@ def build_parser() -> argparse.ArgumentParser:
     bt.add_argument("--issuer", required=True)
     bt.add_argument("--admin", required=True)
     bt.add_argument("--freezer", required=True)
+    bt.add_argument("--announcement", metavar="BLOCK-INDEX",
+                    help="extrinsic id of B's BALLAST/1|watchers or |admins rotation remark (moves freezer or admin)")
+    bt.add_argument("--k", type=int, help="K in blocks for the announcement age (default: the profile's measured K)")
+    bth = bsub.choices["cosign-thaw"]
+    bth.add_argument("--final", metavar="BLOCK-INDEX",
+                     help="extrinsic id of B's BALLAST/1|final remark: enables the wind-down branch")
+    bth.add_argument("--w", type=int, help="W in blocks for the wind-down trigger (default: the profile's W)")
+    bn = bsub.add_parser("announce", help="B posts a governance remark: a watcher/admin set to rotate to, or the "
+                         "wind-down's final haircut")
+    bn.add_argument("--kind", choices=("watchers", "admins", "final"), required=True)
+    bn.add_argument("--threshold", type=int, help="watchers: 1; admins: >= 2")
+    bn.add_argument("--members", help="comma-separated SS58 (or //Dev URIs on a stand-in)")
+    bn.add_argument("--r", help="final: the haircut reserves / (S1 + S2), in [0, 1)")
     ba = bsub.add_parser("attest", help="post BALLAST/1 attestations on change + a heartbeat every H blocks, "
                          "mirrored to ReserveOracle after each included remark")
     ba.add_argument("--heartbeat-blocks", type=int, help="H (default: the profile's measured H)")
@@ -657,7 +681,7 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--max-latest-age", type=float, default=120.0,
                        help="refuse when the latest reserve block is older than this (s; default 120, 0 = off — "
                        "only for a local reserve chain that mines on demand)")
-    for p in (bm, bsub.choices["cosign-thaw"], bt, ba):
+    for p in (bm, bsub.choices["cosign-thaw"], bt, ba, bn):
         deployment_args(p)
         p.add_argument("--provider", action="append", metavar="NAME=URL",
                        help="EVM provider, repeatable (default: the manifest's, else Sepolia tenderly + publicnode)")

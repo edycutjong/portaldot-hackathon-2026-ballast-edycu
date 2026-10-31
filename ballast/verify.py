@@ -41,7 +41,7 @@ from .remarks import block_remarks, parse
 from .sepolia import EvmRpc, ProviderError, balance_at
 from .watchdog import asset_state
 
-B_TYPES = ("attest", "heartbeat", "watchers", "evm-attester", "final")
+B_TYPES = ("attest", "heartbeat", "watchers", "admins", "evm-attester", "final")
 CONTROL_FLAGGED = ("Issued", "Burned", "TeamChanged", "OwnerChanged", "AssetThawed", "AssetStatusChanged",
                    "AssetFrozen", "Destroyed", "DestructionStarted")
 
@@ -148,7 +148,9 @@ class Verifier:
                 return Finding(kind="?", verdict="FAIL", detail=f"malformed remark from B: {exc}", **base)
             return Finding(kind="?", verdict="REJECTED", detail=f"malformed: {exc}", **base)
         kind = fields["type"]
-        if kind in ("attest", "heartbeat", "freeze") and fields.get("a") != str(self.roles.breaker):
+        scoped = ("attest", "heartbeat", "freeze", "watchers", "admins", "final", "redeem")
+        if kind in scoped and (kind in ("attest", "heartbeat", "freeze") or "a" in fields) \
+                and fields.get("a") != str(self.roles.breaker):
             return Finding(kind=kind, verdict="IGNORED", detail=f"asset {fields.get('a')} is not this deployment's", **base)
 
         def holds() -> bool:
@@ -162,6 +164,19 @@ class Verifier:
             return Finding(kind=kind, verdict="REJECTED", detail=f"sender {who}: {rule} (I5) — not counted", **base)
         if kind in ATTEST_TYPES:
             return self.check_attestation(fields, rem, base)
+        if kind in ("watchers", "admins") and "a" in fields:  # a rotation announcement (ballast/governance.py)
+            from .governance import announcement_of
+            from .governance import Posted as _Posted
+
+            try:
+                a = announcement_of(_Posted(rem["extrinsic_id"], rem["block_number"], rem["sender"], rem["sender"],
+                                            rem["text"], fields), self.substrate.ss58_format or 42)
+            except ValueError as exc:
+                return Finding(kind=kind, verdict="FAIL", detail=f"bad rotation announcement: {exc}", **base)
+            role = "freezer" if kind == "watchers" else "admin"
+            return Finding(kind=kind, verdict="ACCEPTED",
+                           detail=f"rotation announced by B: {role} -> t={a.threshold} m={len(a.members)} "
+                                  f"{a.address} (the bot co-signs the set_team only >= K blocks later)", **base)
         if kind == "watchers":
             members = fields.get("m", "").split(",")
             try:

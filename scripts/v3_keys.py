@@ -19,7 +19,8 @@ from ballast.chain_profile import get_profile  # noqa: E402
 from ballast.keys import create_seed, keypair, seed_path  # noqa: E402
 
 ROLES = {"a": "//BallastA", "a2": "//BallastA2", "b": "//BallastB", "w1": "//BallastW1", "w2": "//BallastW2",
-         "judge": "//BallastJudge", "peer": "//BallastPeer"}
+         "judge": "//BallastJudge", "peer": "//BallastPeer",
+         "a3": "//BallastA3", "w3": "//BallastW3"}  # P24 governance drill: the rotated-in admin and community watcher
 
 
 def main() -> int:

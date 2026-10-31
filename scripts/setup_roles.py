@@ -39,7 +39,6 @@ from ballast.keys import keypair  # noqa: E402
 from ballast.oracle import deploy as deploy_oracle  # noqa: E402
 from ballast.oracle import constructor_args, initcode  # noqa: E402
 from ballast.revive import dry_instantiate  # noqa: E402
-from eth_abi import encode  # noqa: E402
 from ballast.receipts import EVIDENCE, write_receipts_md  # noqa: E402
 from ballast.roles import JUDGE_URI, DEPLOYMENTS, Deployment, RoleMap, audit_team  # noqa: E402
 from ballast.rpc import node_rpc  # noqa: E402

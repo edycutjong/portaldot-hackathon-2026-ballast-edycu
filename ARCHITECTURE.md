@@ -150,7 +150,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 | `standin-upstream` | the profile the drain scratch drills and every timing before 2026-10-24 were measured on (the outage and heartbeat drills also ran on V3): polkadot-sdk `substrate-node` (`polkadot-stable2606-3`) `--dev`, 12 token decimals, 3000 ms measured blocks → H = 200, K = 600, W = 28,800, N = 2 blocks |
 | `standin-1002` | identity captured only (`evidence/standin-1002-identity.json`); the u64 Assets patch (`ballast/types_1002.py`) lives here alone. The drills were never run on it |
 
-**W2 on GitHub Actions.** `.github/workflows/watcher-w2.yml` runs `ballast watch` as W2 on a 5-minute schedule (best effort) with the seed in a repository secret; it covers the reserve deficit only. Proof and limits: `docs/W2-ACTIONS.md`.
+**W2 on GitHub Actions.** `.github/workflows/watcher-w2.yml` is configured to run `ballast watch` as W2 every 5 minutes (best effort; only manual dispatches have run so far) with the seed in a repository secret; it covers the reserve deficit only. Proof and limits: `docs/W2-ACTIONS.md`.
 
 ## Not built
 

@@ -154,6 +154,7 @@ SQLite `ballast.db` (gitignored; never the source of truth): `mint_request` (eve
 
 ## Not built
 
-Community-watcher mode (the "both providers short at the same block" rule); `ReserveOracle.trip()`; watcher-set rotation (K-block announcement);
-`M_admin` rotation; the wind-down branch (per-account freezes, `final` and `redeem` remarks are parsed by `verify` but no flow posts them); the
-reserves web page; the status HTTP endpoint.
+`ReserveOracle` v2 (with `trip()`) on V3: it is tested and drilled on the stand-in only, and the V3 mirror stays v1. A redemption CLI: the
+governance drill drives `ReserveBot.cosign_redeem` in-process. The reserves web page. The status HTTP endpoint. Community-watcher mode,
+watcher-set and `M_admin` rotations, and the wind-down with redemption ran on V3 on 2026-10-31 UTC; see
+[`docs/GOVERNANCE.md`](docs/GOVERNANCE.md).

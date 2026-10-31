@@ -13,6 +13,7 @@ extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** 
 | Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |
 |---|---|---|---|---|
 | Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality | v3 | Sepolia | PASS (8/8 steps as expected, 18/18 state checks) | [`sepolia-drill-20261031T002936Z.json`](../evidence/sepolia-drill-20261031T002936Z.json) |
+| Benchmark: back-to-back drain -> freeze -> thaw cycles on asset 4401 (local-anvil reserve), per-cycle latency | v3 | local-anvil (not Sepolia) | FAIL (10/10 steps as expected, 5/6 state checks) | [`roles-bench-v3-20261031T015842Z.json`](../evidence/roles-bench-v3-20261031T015842Z.json) |
 | Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | v3 | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-v3-20261031T012503Z.json`](../evidence/roles-governance-v3-20261031T012503Z.json) |
 | Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json) |
 | ReserveOracle v2: trip() by a listed watcher, refused for others, cleared only by a later post | standin-upstream (stand-in, NOT V3) | none — the oracle mirrors B's attestation; this drill posts a fixed drill status | PASS (9/9 steps as expected, 9/9 state checks) | [`oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json) |
@@ -114,6 +115,53 @@ Other runs, newest first, any verdict (full tables in the JSON):
 - asset 4401 — 2026-10-30T21:23:30Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `9c2112e` (clean) — [`evidence/sepolia-drill-20261030T212330Z.json`](../evidence/sepolia-drill-20261030T212330Z.json) — failed: vault holds the 100.00 deposit; owner holds gas and >= the refill (30%)
 - asset 4401 — 2026-10-30T20:46:14Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `1328f88` (clean) — [`evidence/sepolia-drill-20261030T204614Z.json`](../evidence/sepolia-drill-20261030T204614Z.json) — failed: owner holds >= 100.00 test USDC and gas
 - asset 4401 — 2026-10-30T20:09:23Z — PASS (12/12 steps as expected, 18/18 state checks) — source: `cff62bc` (UNCOMMITTED CHANGES) — [`evidence/sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json)
+
+### Benchmark — back-to-back drain -> freeze -> thaw cycles on asset 4401 (local-anvil reserve), latency per cycle — 2026-10-31T01:58:42Z
+
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-bench-v3-20261031T015842Z.json`](../evidence/roles-bench-v3-20261031T015842Z.json) · result: **FAIL** (10/10 steps as expected, 5/6 state checks) · source: `71cb007` (clean)
+
+Role map: `M_mint` 5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb (2-of-2 A, B) · `M_admin` 5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg (2-of-3 A, A2, B) · `M_watch` 5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c (1-of-2 watchers).
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0x22753E4264FDDc6181dc7cce468904A80a363E44`):
+
+| # | Step | Block | Tx hash | Observed |
+|---|---|---|---|---|
+| 1 | iter 1: custodian drains 10% (10.60) — release() | 1840 | `0x9d07311f8c8387899fabfe860489a5776eb241279ede8aa0a8b66c494af31324` | ✅ status 1 |
+| 2 | iter 1: custodian re-deposits 10.60 | 1841 | `0xa2b6e2e3c2c5fc3e0e3d64abca254f67271ed6e8708a43ac7d4b5f261ba71893` | ✅ status 1 |
+| 3 | iter 2: custodian drains 10% (10.60) — release() | 1907 | `0xf595bdaff6a5e211256f84bc0211e6b08224bab59993b3ef15f22161090253fb` | ✅ status 1 |
+| 4 | iter 2: custodian re-deposits 10.60 | 1908 | `0x8bd9204ae79e47d89771b5b9ecf634b34b1a8e4f6d2f88cf6fc518f68b56e4a5` | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | iter 1: watcher W1 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W1 (watcher)) | `260610-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 2 | iter 1: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260613-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 3 | iter 1: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260617-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+| 4 | iter 2: watcher W2 freezes asset 4401 through M_watch (reason=deficit) | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W2 (watcher)) | `260622-1` | Ok + inner Ok + Assets.AssetFrozen + System.Remarked | ✅ Ok · inner Ok · Assets.AssetFrozen, System.Remarked, Multisig.MultisigExecuted |
+| 5 | iter 2: A proposes thaw_asset through M_admin (first approval) | `Multisig.as_multi(Assets.thaw_asset) — first approval` (A (operator)) | `260625-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 6 | iter 2: bot B co-signs the thaw: finalized reserves >= S1 + S2 past the drain | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260630-1` | Ok + inner Ok + Assets.AssetThawed | ✅ Ok · inner Ok · Multisig.MultisigExecuted, Assets.AssetThawed |
+
+Block and transaction hashes (full):
+
+```
+ 1  260610-1 block 0x5d056dfc70b24b6fdf4556f313df7ee54761d12028b7444fb25187894b921c58  tx 0x27ead09cf03ab72db5b4c5a7f35b24c22faa6c4b548763637642eb8a07ac0dd0
+ 2  260613-1 block 0x69d887267bc57f9cc44fd55173e2f38d0503a7940f81e3afbcf01c0dc6debc5b  tx 0xb8a2df55593e86f412f134073e63b4577cbdf8d8241aa10c2bdc15e17a25bc3d
+ 3  260617-1 block 0xc1bd813e19175b8f5d7d9dd824c070e766744137d54ba76460540d827c744a87  tx 0xed8b22425bdf87820550329a1ab247f66f34f6d10841ed80180928a3faab4ef0
+ 4  260622-1 block 0x579976bb3c09879241623b1b05c0d8f3352c6600b01b9564595b500a008bae0c  tx 0x27854cdd0c8a60151dd8ac837bbc7d02c8b644b0e42d3734ebad86092b6e3c50
+ 5  260625-1 block 0xc74e4581dd905328fe2418d801b6413a14e4080c38b80d6fec9ab6d15ff3c24e  tx 0x223d1e124e91f3a0c36b02a52751aa381095a66db0fd4530e0bf487ee86b79bc
+ 6  260630-1 block 0x42eb3583d7dff1080c25023a028195010f3928d03395310e7814fe40da01ea74  tx 0x5eadecbee92583be0ce11a4e1059a2bbfead339fb43149c755d9893b0665f0d4
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ asset 4401 team == role map before the bench (ARMED): expected `[]`, observed `[]` at block `head`
+- ❌ level before the bench: vault reserves == S1 + S2: expected `100000000`, observed `106000000` at block `head`
+- ✅ iter 1: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x5d056dfc70b24b6fdf4556f313df7ee54761d12028b7444fb25187894b921c58`
+- ✅ iter 1: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0xc1bd813e19175b8f5d7d9dd824c070e766744137d54ba76460540d827c744a87`
+- ✅ iter 2: asset status after the freeze: expected `Frozen`, observed `Frozen` at block `0x579976bb3c09879241623b1b05c0d8f3352c6600b01b9564595b500a008bae0c`
+- ✅ iter 2: asset status after the thaw (Live) and level (reserves == supply): expected `['Live', True, 100000000]`, observed `['Live', True, 100000000]` at block `0x42eb3583d7dff1080c25023a028195010f3928d03395310e7814fe40da01ea74`
+
 
 ### Governance drill — announced watcher-set + M_admin rotations, community watcher, wind-down, redemption — 2026-10-31T01:25:03Z
 

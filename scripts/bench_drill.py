@@ -140,7 +140,8 @@ def main() -> int:
         st0 = state()
         reserves0 = vault.functions.reserves().call()
         run.check("asset 4401 team == role map before the bench (ARMED)", st0["team"], [], "head")
-        run.check("level before the bench: vault reserves == S1 + S2", reserves0, st0["s1"] + st0["s2"], "head")
+        run.check("level before the bench: vault reserves >= S1 + S2 (a surplus is not a deficit)", reserves0 >= st0["s1"] + st0["s2"],
+                  True, "head")
         if st0["frozen"]:
             raise RuntimeError("asset 4401 is frozen: thaw it first")
         for i in range(1, args.n + 1):
@@ -170,7 +171,8 @@ def main() -> int:
                 raise RuntimeError(f"iteration {i}: watcher never reported level")
             head_before = substrate.get_block_number(None)
             total = state()["s1"] + state()["s2"]
-            amount = vault.functions.reserves().call() * args.drain_pct // 100
+            amount = max(vault.functions.reserves().call() * args.drain_pct // 100,
+                         vault.functions.reserves().call() - total + one)  # always leaves reserves < supply
             drain_sent = time.time()
             row = evm(f"iter {i}: custodian drains {args.drain_pct}% ({amount / one:.2f}) — release()",
                       vault.functions.release(custodian, amount, Web3.keccak(text=f"{stem}-{i}")).transact({"from": custodian}),

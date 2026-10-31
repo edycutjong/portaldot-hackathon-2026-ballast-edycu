@@ -1,0 +1,2742 @@
+{
+  "kind": "roles-governance",
+  "chain": {
+    "profile": "standin-upstream",
+    "label": "standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)",
+    "is_standin": true,
+    "genesis_pinned": true,
+    "genesis_hash": "0x0c4402ef4ccc34d28b16523e1cf26831716527c61a65d8e0840ab26e1636c8a2",
+    "code_hash": "0x72e84be232be151b059440f89710895de0cb6b71b6529f97e9c02340765f1ec0",
+    "spec_name": "node",
+    "spec_version": 268,
+    "token_decimals": 12,
+    "decimals_source": "system_properties",
+    "head": 8942,
+    "multisig_shape": "weight-v2",
+    "block_counts": "not measured",
+    "notes": [
+      "polkadot-stable2606-3 substrate-node 3.0.0-dev-9d0dc6e8fbb, aarch64-apple-darwin"
+    ],
+    "url": "ws://127.0.0.1:49944"
+  },
+  "started_at": "2026-10-31T01:21:28Z",
+  "decisions": [
+    {
+      "command": "cosign-team (no announcement)",
+      "decision": "refused",
+      "reason": "the freezer would change without an announcement (a B-signed BALLAST/1|watchers remark >= K = 5 blocks earlier)",
+      "call_hash": "0x3b7c70e3a719da35492ef760d10687365b26049849ce34d4f777e325af367234",
+      "executed": null
+    },
+    {
+      "command": "cosign-team --announcement (younger than K)",
+      "decision": "refused",
+      "reason": "announced at #8951, 0 blocks ago < K = 5: too early",
+      "call_hash": "0x3b7c70e3a719da35492ef760d10687365b26049849ce34d4f777e325af367234",
+      "executed": null
+    },
+    {
+      "command": "cosign-team --announcement (after K)",
+      "decision": "signed",
+      "reason": "freezer -> the watchers set announced by B at 8951-2 (t=1, 3 members), 5 >= K = 5 blocks ago",
+      "call_hash": "0x3b7c70e3a719da35492ef760d10687365b26049849ce34d4f777e325af367234",
+      "executed": "8957-2"
+    },
+    {
+      "command": "cosign-team --announcement (admins, after K)",
+      "decision": "signed",
+      "reason": "admin -> the admins set announced by B at 8959-2 (t=2, 3 members), 5 >= K = 5 blocks ago",
+      "call_hash": "0xe8b605a2a66b99cb840afc6cc87611bda2869dd248e260f76c83f4cae2b1204b",
+      "executed": "8965-2"
+    },
+    {
+      "command": "cosign-thaw --final (peer still open)",
+      "decision": "refused",
+      "reason": "reserves unreadable: finalized: no provider answered a finalized reading; wind-down branch: 1 of 2 holders with a balance are not individually frozen",
+      "call_hash": "0xec441a762099811904aac7c499a68f6c7f02f33f48823d5168555a26251b8b95",
+      "executed": null
+    },
+    {
+      "command": "cosign-thaw --final (all holders frozen)",
+      "decision": "signed",
+      "reason": "wind-down: final r=0.7000 posted by B at 8985-2, 7 >= W = 5 blocks after the freeze, all 2 holders with a balance individually frozen",
+      "call_hash": "0xec441a762099811904aac7c499a68f6c7f02f33f48823d5168555a26251b8b95",
+      "executed": "8988-2"
+    },
+    {
+      "command": "cosign_redeem",
+      "decision": "signed",
+      "reason": "redeem: 9004-2 by the holder, final r=0.7000 posted by B at 8985-2; burn 30000000 and release r x amount = 21000000 to 0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+      "call_hash": "0xa94d6cf328f006b0298ecf484905dc5ed05b0b6681e8b55427be230b7dfcfe0d",
+      "executed": "9006-2"
+    }
+  ],
+  "source": {
+    "git_head": "d296528a81984838a9971b1f18b5e7bc260fb59e",
+    "dirty": false
+  },
+  "reserve": {
+    "label": "local-anvil (not Sepolia)",
+    "evm_url": "http://127.0.0.1:49545",
+    "custodian": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "vault": "0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B",
+    "usdc": "0xCA8c8688914e0F7096c920146cd0Ad85cD7Ae8b9"
+  },
+  "roles": {
+    "A": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+    "A2": "5CrSYRCx8aUEUJ12LR9Dmqy43HAAZvwkrJEqyorDACz9neit",
+    "B": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+    "watchers": [
+      "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
+      "5HgSEohhWXvezpfRriLAiKVGjn8PQwYsseSiNriggXtFuSoP"
+    ],
+    "ss58_format": 42,
+    "M_mint": {
+      "address": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "B"
+      ]
+    },
+    "M_admin": {
+      "address": "5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "A2",
+        "B"
+      ]
+    },
+    "M_watch": {
+      "address": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D",
+      "threshold": 1,
+      "signatories": [
+        "W1",
+        "W2"
+      ]
+    },
+    "control_keyless": {
+      "owner": {
+        "address": "5Hd3Ex8NE9DN1YKfL7GT596izJPzzFCDbqzdNYTmKTzyhC35",
+        "derivation": "blake2_256(\"ballast:a2-owner:v1\")"
+      },
+      "issuer": {
+        "address": "5CFqicciCJqSLxpruCpZCFSav78UQqE1zaoQ3YT3VRz6Sd63",
+        "derivation": "blake2_256(\"ballast:a2-issuer:v1\")"
+      },
+      "admin": {
+        "address": "5HWsvYp1arXWVsVoEMpCcKCNfivhkoQtYTTfpN9Hh7YxQFNS",
+        "derivation": "blake2_256(\"ballast:a2-admin:v1\")"
+      },
+      "freezer": {
+        "address": "5C86CJba7bqEntLPbWYXMVasmKDodYs5ueMaCBrLiHgdWqDw",
+        "derivation": "blake2_256(\"ballast:a2-freezer:v1\")"
+      }
+    }
+  },
+  "rotated": {
+    "M_watch'": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK",
+    "M_admin'": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+    "A3": "5HnN8FaiK5eEe9CbRM47XMkktHnWzUDy76X45C1kGHv4JYEM",
+    "W3": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj"
+  },
+  "overrides": {
+    "K": 5,
+    "W": 5,
+    "basis": "drill overrides; production K = 3 x H blocks, W ~ 24 h",
+    "providers": "one local anvil under two URLs (anvil-a 127.0.0.1, anvil-b localhost)"
+  },
+  "steps": [
+    {
+      "name": "funder tops up the accounts below their working balance",
+      "expected": "Ok",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "fund",
+        "call": "Utility.batch_all[1 x Balances.transfer_keep_alive]",
+        "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "extrinsic_id": "8943-2",
+        "block_number": 8943,
+        "block_hash": "0xb6ba808b9d4eb9938b5a78afee1daa9321b7242ce1cdeb989468921f18e5ee82",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xddb0d1928c41d91c75f338a63bcda678e28cb875921500cc9dc061cd113c2c0e",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+              "amount": 1520807889862
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "NewAccount",
+            "attributes": {
+              "account": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Endowed",
+            "attributes": {
+              "account": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "free_balance": 1000000000000000
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Transfer",
+            "attributes": {
+              "from": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+              "to": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "amount": 1000000000000000
+            }
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "ItemCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "BatchCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1520807889862
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+              "actual_fee": 1520807889862,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 823706263,
+                  "proof_size": 16265
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A creates scratch asset 3001",
+      "expected": "Ok + Assets.Created",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Assets.Created"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "create",
+        "call": "Assets.create",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8944-2",
+        "block_number": 8944,
+        "block_hash": "0x3e5e06e083c32446bca051f9e4416acd09272629913ca00d7a9c4fe32db44cc0",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xf5af6f159c24780baea182a72056d2032e48709685ffd203f31193991426b560",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 1601216144788
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 10000000000000000
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Created",
+            "attributes": {
+              "asset_id": 3001,
+              "creator": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "owner": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1601216144788
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 1601216144788,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1241192000,
+                  "proof_size": 12350
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "set_metadata pUSDC-gov (6 decimals)",
+      "expected": "Ok + Assets.MetadataSet",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Assets.MetadataSet"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "metadata",
+        "call": "Assets.set_metadata",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8945-2",
+        "block_number": 8945,
+        "block_hash": "0xf470671c5941710dcfb1b2c1cd36739c4f06e43fee2861c965ff643dfae5b118",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xbeb6ff99e14ef8ea1ad6a3e6a47ea582c928cfd56c139a03061d580ae5e5711b",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 1320769247137
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 2800000000000000
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "MetadataSet",
+            "attributes": {
+              "asset_id": 3001,
+              "name": "pUSDC-gov",
+              "symbol": "pUSDC-gov",
+              "decimals": 6,
+              "is_frozen": false
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1320769247137
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 1320769247137,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 784193450,
+                  "proof_size": 12350
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A mints 30.00 to the judge (scratch S1, before the team hand-over)",
+      "expected": "Ok + Assets.Issued",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Assets.Issued"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "mint_judge",
+        "call": "Assets.mint",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8946-2",
+        "block_number": 8946,
+        "block_hash": "0x7ca71e98f46a9daa5fb06743f13bd38738db17f80dcd1335fe717145efdabe61",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x9cae62be6c746ded2380ce05d7da45b1961e202ee022d94c5c0e2c4bc8e6b04b",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 1480860950482
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Issued",
+            "attributes": {
+              "asset_id": 3001,
+              "owner": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "amount": 30000000
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1480860950482
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 1480860950482,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 877972000,
+                  "proof_size": 12350
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A mints 20.00 to the peer (scratch S1, before the team hand-over)",
+      "expected": "Ok + Assets.Issued",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Assets.Issued"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "mint_peer",
+        "call": "Assets.mint",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8947-2",
+        "block_number": 8947,
+        "block_hash": "0x238fb1376624b87e72e5397c8738efbb8a3aa102daee4de5ea04d1b7125c7c9a",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xf92700402da7f431421097cb39dff5b294aa90fa745a6d2f9659ff86478d552b",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 1480860948604
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Issued",
+            "attributes": {
+              "asset_id": 3001,
+              "owner": "5FjeWiBdmuBUHK7t9hhAdNtcvzWAUySVCRPPQbNwz7v4Vqgr",
+              "amount": 20000000
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1480860948604
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 1480860948604,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 877972000,
+                  "proof_size": 12350
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A hands the team over: issuer M_mint, admin M_admin, freezer M_watch {W1, W2}",
+      "expected": "Ok + Assets.TeamChanged",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Assets.TeamChanged"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "team0",
+        "call": "Assets.set_team",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8948-2",
+        "block_number": 8948,
+        "block_hash": "0xa29f741093c78a9282b90aa022b12659ec71a4844b645449b922ac8a667d8549",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x64abc37f46af73c5e5eab681cb117d2685fc675844419d4fa038022f13782ec5",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 2100727386359
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "TeamChanged",
+            "attributes": {
+              "asset_id": 3001,
+              "issuer": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "admin": "5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM",
+              "freezer": "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2100727386359
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 2100727386359,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 741391000,
+                  "proof_size": 12350
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A transfers ownership to M_mint",
+      "expected": "Ok + Assets.OwnerChanged",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Assets.OwnerChanged"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "owner0",
+        "call": "Assets.transfer_ownership",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8949-2",
+        "block_number": 8949,
+        "block_hash": "0x8f91eaa5808dc097afa437470fd81ec12960041d2bcde1ff16a4773ac8b74884",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x7169d35670f4b4cb008812fab8440f2d75ce4bc1207f5981bce6b1cc2c884eba",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 1440753581281
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "ReserveRepatriated",
+            "attributes": {
+              "from": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "to": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "amount": 12800000000000000,
+              "destination_status": "Reserved"
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "OwnerChanged",
+            "attributes": {
+              "asset_id": 3001,
+              "owner": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1440753581281
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 1440753581281,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 768180000,
+                  "proof_size": 12350
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A proposes set_team(freezer = M_watch' {W1, W2, W3}) through M_mint",
+      "expected": "Ok + Multisig.NewMultisig",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Multisig.NewMultisig"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "propose_team_w",
+        "call": "Multisig.as_multi(Assets.set_team(freezer=M_watch')) \u2014 first approval",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8950-2",
+        "block_number": 8950,
+        "block_hash": "0x6991091cc60d01cd1a4a1098a75cbda200cb11044bf736b572052755b3b52b05",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x8bcf997b09b4e0cf92cc32b51492bd95ed5850eb9156f26f48926a9ea358f79b",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 2500917299704
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "NewMultisig",
+            "attributes": {
+              "approving": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "multisig": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "call_hash": "0x3b7c70e3a719da35492ef760d10687365b26049849ce34d4f777e325af367234"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 175863885
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2500741435819
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 2500741435819,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 755761439,
+                  "proof_size": 15486
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "B announces the watcher set {W1, W2, W3} 1-of-3 (BALLAST/1|watchers)",
+      "expected": "Ok + System.Remarked",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [
+        "System.Remarked"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "announce_watchers",
+        "call": "System.remark_with_event",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "8951-2",
+        "block_number": 8951,
+        "block_hash": "0xf4ecfbfc243a2ba5e1c7bb57a6147c64913e1c85f760f3b56f96f07c7945029f",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x28810a6c673e7ad35ff4593fb43ec107ac06e82d44a70def208379e5f9fd5921",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 2890596338147
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "Remarked",
+            "attributes": {
+              "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "hash": "0x6927bcc6dbe8dc390bcf04903345ffb35beb62b8bca6a84923e50ff907ae7d02"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2890596338147
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 2890596338147,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 607382708,
+                  "proof_size": 8675
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "bot co-signs (cosign-team --announcement (after K))",
+      "expected": "Ok, executed",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "bot_team",
+        "call": "Multisig.as_multi(Assets.set_team) \u2014 final approval",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "8957-2",
+        "block_number": 8957,
+        "block_hash": "0x191fed26d77e0d6096a8de377360584dee6d2cfc1313fcf12c16ce502e9ebd15",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x270d18fd9f8e479c315726aca23312417d8a485ed6ecace264336624b77d2da8",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 2621536500986
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Unreserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "TeamChanged",
+            "attributes": {
+              "asset_id": 3001,
+              "issuer": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "admin": "5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM",
+              "freezer": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK"
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "timepoint": {
+                "height": 8950,
+                "index": 2
+              },
+              "multisig": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "call_hash": "0x3b7c70e3a719da35492ef760d10687365b26049849ce34d4f777e325af367234",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2621536500986
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 2621536500986,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1568837602,
+                  "proof_size": 27836
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "W1 tries to freeze through the OLD M_watch {W1, W2}",
+      "expected": "Err(Assets.NoPermission)",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "W1 (watcher)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "freeze_old_set",
+        "call": "Multisig.as_multi_threshold_1(Assets.freeze_asset) via old M_watch",
+        "signer": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
+        "extrinsic_id": "8958-2",
+        "block_number": 8958,
+        "block_hash": "0x41351ece5a3996a6fa9b02e0ee736183de3682f2af3053426edcbd61ea6d224c",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xeb646ae3989c4d3efc7fee1c441d2ddf0d17ebe1565946ede1dd455416a87296",
+        "outcome": {
+          "ok": false,
+          "pallet": "Assets",
+          "error": "NoPermission",
+          "text": "Err(Assets.NoPermission)"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
+              "amount": 1450918802510
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1450918802510
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5C7iVxxiAvdPFuddh1UmsNiCLmz91wQMXhRdLVx2C2dTq8Ne",
+              "actual_fee": 1450918802510,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicFailed",
+            "attributes": {
+              "dispatch_error": {
+                "Module": {
+                  "index": 39,
+                  "error": "0x02000000"
+                }
+              },
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 937156970,
+                  "proof_size": 16347
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "B announces the admin set {A, A3, B} 2-of-3 (A2 retired; BALLAST/1|admins)",
+      "expected": "Ok + System.Remarked",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [
+        "System.Remarked"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "announce_admins",
+        "call": "System.remark_with_event",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "8959-2",
+        "block_number": 8959,
+        "block_hash": "0x63d2e607177ba200ec07cfe3867439ef9f0b11c37c9db0e05306f57b3d38abb2",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x0d5a683c674ebb13542dc1028adbe867c5fc11b0decbc1b673ed6ffe6d67a246",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 2870596304168
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "Remarked",
+            "attributes": {
+              "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "hash": "0x72f1fbd6b184e453e8ee94198c2e1cd5600209d6703826aafbf604e24e513645"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2870596304168
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 2870596304168,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 607357936,
+                  "proof_size": 8675
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A proposes set_team(admin = M_admin' {A, A3, B}) through M_mint",
+      "expected": "Ok + Multisig.NewMultisig",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Multisig.NewMultisig"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "propose_team_a",
+        "call": "Multisig.as_multi(Assets.set_team(admin=M_admin')) \u2014 first approval",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8960-2",
+        "block_number": 8960,
+        "block_hash": "0x4dace1ce0bf37d2e1c958aa312e801d3614b12726e08df32a08896bb5b724a13",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xcf713b28c442062b1786e47829929b1dec22b18d2c5b040877b228ce00140693",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 2500917279495
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "NewMultisig",
+            "attributes": {
+              "approving": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "multisig": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "call_hash": "0xe8b605a2a66b99cb840afc6cc87611bda2869dd248e260f76c83f4cae2b1204b"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 175859493
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2500741420002
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 2500741420002,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 755761439,
+                  "proof_size": 15486
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "bot co-signs (cosign-team --announcement (admins, after K))",
+      "expected": "Ok, executed",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "bot_team",
+        "call": "Multisig.as_multi(Assets.set_team) \u2014 final approval",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "8965-2",
+        "block_number": 8965,
+        "block_hash": "0x2b64ba40eeaaf91ea3699e283c5f1e8341ff47c025297902febe2952708e6a36",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xd6608a04bd3379ea4d1c4e8d2f8600c22ddeb9dd8992ae633030e813c9efc063",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 2621536472449
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Unreserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "TeamChanged",
+            "attributes": {
+              "asset_id": 3001,
+              "issuer": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "admin": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+              "freezer": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK"
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "timepoint": {
+                "height": 8960,
+                "index": 2
+              },
+              "multisig": "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+              "call_hash": "0xe8b605a2a66b99cb840afc6cc87611bda2869dd248e260f76c83f4cae2b1204b",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2621536472449
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 2621536472449,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1568837602,
+                  "proof_size": 27836
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "W3 (community watcher) freezes through M_watch' once every provider reads short at one block",
+      "expected": "Ok + Assets.AssetFrozen",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "W3 (community watcher)",
+      "events_seen": [
+        "Assets.AssetFrozen"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "watchdog_freeze",
+        "call": "Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]",
+        "signer": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+        "extrinsic_id": "8978-2",
+        "block_number": 8978,
+        "block_hash": "0xc2f79eadeda4f06f7cd872dd4f49ad5ee42e99a79260c437e1c8e264316dda74",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xca594ba44626772a25b755c072022885437e7d0cf4deb4ea4a4e08aa1317f354",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "amount": 3330988088809
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "Remarked",
+            "attributes": {
+              "sender": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "hash": "0xd7061bc871928f113b1044a8b454fb8bb4a234aa6df8c91a9a3f5035d781a780"
+            }
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "ItemCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "AssetFrozen",
+            "attributes": {
+              "asset_id": 3001
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "timepoint": {
+                "height": 8978,
+                "index": 2
+              },
+              "multisig": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK",
+              "call_hash": "0x542a86060f3109e38a465e98b586bd68090907d165c46fdac99d312d2d6fccb3",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "ItemCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "BatchCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 3330988088809
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "actual_fee": 3330988088809,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1008057010,
+                  "proof_size": 20344
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "judge transfers 1.00 while the asset is frozen",
+      "expected": "Err(Assets.AssetNotLive)",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "Judge (holder)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "transfer_frozen",
+        "call": "Assets.transfer",
+        "signer": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+        "extrinsic_id": "8979-2",
+        "block_number": 8979,
+        "block_hash": "0x668fbbe5eb9e9ecbc3adcadf28b4a218a5c86931bc7854b4b8d89d305c5a1ce4",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x3189606be5b73c5dcad0d58e94e2f897206de306b42c14df5a335db3b8d2ca7c",
+        "outcome": {
+          "ok": false,
+          "pallet": "Assets",
+          "error": "AssetNotLive",
+          "text": "Err(Assets.AssetNotLive)"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "amount": 1471126559891
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1471126559891
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "actual_fee": 1471126559891,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicFailed",
+            "attributes": {
+              "dispatch_error": {
+                "Module": {
+                  "index": 39,
+                  "error": "0x10000000"
+                }
+              },
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1149673000,
+                  "proof_size": 14883
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "W3 freezes the judge's account through M_watch' (wind-down step 1)",
+      "expected": "Ok + Assets.Frozen",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "W3 (community watcher)",
+      "events_seen": [
+        "Assets.Frozen"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "freeze_judge",
+        "call": "Multisig.as_multi_threshold_1(Assets.freeze)",
+        "signer": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+        "extrinsic_id": "8984-2",
+        "block_number": 8984,
+        "block_hash": "0x954bb22f1b0ead10d3b8e8b78df0141d72e7362fef1444bcb4b65e0572af8497",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xe479a94173a0a94a74e298d4760f6f88ff6eba9e686a34c4bf9047d4dcc1ce2a",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "amount": 2100948079912
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Frozen",
+            "attributes": {
+              "asset_id": 3001,
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS"
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "timepoint": {
+                "height": 8984,
+                "index": 2
+              },
+              "multisig": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK",
+              "call_hash": "0xbd637542ced78d993e58bdac593ce01272d50b4aab155cdd82bb25d333124119",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2100948079912
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "actual_fee": 2100948079912,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 967153071,
+                  "proof_size": 16347
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "B posts final r = 70.00 / 100.00 = 0.7000 (BALLAST/1|final)",
+      "expected": "Ok + System.Remarked",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [
+        "System.Remarked"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "announce_final",
+        "call": "System.remark_with_event",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "8985-2",
+        "block_number": 8985,
+        "block_hash": "0x767fcd7073ee75cf14395b1efc5c12ac4d0d4c63e013e48fb93b2227c3ef712b",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x6e3f6317c527377528ca33997571cb855f8152e672aa781e9e7a6becf243e37f",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 1410594516367
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "Remarked",
+            "attributes": {
+              "sender": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "hash": "0x9703d5799552c98ff0512095a640f3b43d33414086189ec1308487f621b962f3"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1410594516367
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 1410594516367,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 605561966,
+                  "proof_size": 8675
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A proposes thaw_asset through M_admin'",
+      "expected": "Ok + Multisig.NewMultisig",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Multisig.NewMultisig"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "propose_thaw",
+        "call": "Multisig.as_multi(Assets.thaw_asset via M_admin') \u2014 first approval",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "8986-2",
+        "block_number": 8986,
+        "block_hash": "0x499d188b9e9bbdd0319f067a1427b6f241ee3055f6bf261e2121778592c2f964",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x543e977ca7eb136f87dc014633bd521754ec34eb51adc5d4c4b6a3117c99531e",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 1830917216829
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "NewMultisig",
+            "attributes": {
+              "approving": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "multisig": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+              "call_hash": "0xec441a762099811904aac7c499a68f6c7f02f33f48823d5168555a26251b8b95"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 175872934
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1830741343895
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 1830741343895,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 755725678,
+                  "proof_size": 15486
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "W3 freezes the peer's account through M_watch' (wind-down step 1)",
+      "expected": "Ok + Assets.Frozen",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "W3 (community watcher)",
+      "events_seen": [
+        "Assets.Frozen"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "freeze_peer",
+        "call": "Multisig.as_multi_threshold_1(Assets.freeze)",
+        "signer": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+        "extrinsic_id": "8987-2",
+        "block_number": 8987,
+        "block_hash": "0xd7860dd65d1cf1384d176cbfa2503fd47ed824bdf99850c44147f3f8cfbd573f",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x22af2e295b3be94b673dbcf86e84b82e7554747c74b11589a22a6c3f88dd270d",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "amount": 2100948073623
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Frozen",
+            "attributes": {
+              "asset_id": 3001,
+              "who": "5FjeWiBdmuBUHK7t9hhAdNtcvzWAUySVCRPPQbNwz7v4Vqgr"
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "timepoint": {
+                "height": 8987,
+                "index": 2
+              },
+              "multisig": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK",
+              "call_hash": "0x4279797036b5867c6c487c234422e08933a7f167e438d7141310fdc1f798bd3b",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2100948073623
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5EeuoJHwaS4NMuSc4hB2oh4t4ptRfoXeC5k6TJ4ZvjhdArGj",
+              "actual_fee": 2100948073623,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 967153071,
+                  "proof_size": 16347
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "bot co-signs (cosign-thaw --final (all holders frozen))",
+      "expected": "Ok, executed",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "bot_thaw",
+        "call": "Multisig.as_multi(Assets.thaw_asset) \u2014 final approval",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "8988-2",
+        "block_number": 8988,
+        "block_hash": "0x4c1e356452ad2ce3482622abeb5d782f89eb51b8678c326063c2ed3933c587fb",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x712338d2e5173827434439327da4fe9850f34caf8ef04c3459c92818a5b02392",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 1951536610055
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Unreserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "AssetThawed",
+            "attributes": {
+              "asset_id": 3001
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "timepoint": {
+                "height": 8986,
+                "index": 2
+              },
+              "multisig": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+              "call_hash": "0xec441a762099811904aac7c499a68f6c7f02f33f48823d5168555a26251b8b95",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1951536610055
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 1951536610055,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1569062272,
+                  "proof_size": 27836
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "judge transfers 1.00 after the thaw (account still frozen)",
+      "expected": "Err(Assets.Frozen)",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "Judge (holder)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "transfer_acct_frozen",
+        "call": "Assets.transfer",
+        "signer": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+        "extrinsic_id": "9003-2",
+        "block_number": 9003,
+        "block_hash": "0xb0465431123c2776ddb939ffc374627e806a29c4c4f89fb459698d3c8f50c4d7",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xa93db25e7f3c4f4e9e9abebb20f7ce50ccf4b4b95fb2daa505a5ae535b201c1e",
+        "outcome": {
+          "ok": false,
+          "pallet": "Assets",
+          "error": "Frozen",
+          "text": "Err(Assets.Frozen)"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "amount": 1471126498820
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1471126498820
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "actual_fee": 1471126498820,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicFailed",
+            "attributes": {
+              "dispatch_error": {
+                "Module": {
+                  "index": 39,
+                  "error": "0x04000000"
+                }
+              },
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1149673000,
+                  "proof_size": 14883
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "judge asks first: BALLAST/1|redeem with its EVM address",
+      "expected": "Ok + System.Remarked",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "Judge (holder)",
+      "events_seen": [
+        "System.Remarked"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "redeem_request",
+        "call": "System.remark_with_event",
+        "signer": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+        "extrinsic_id": "9004-2",
+        "block_number": 9004,
+        "block_hash": "0xe22f48813d99a67107f3b5906fe7c5cb4ddbfaa0868eeb182d2d7d61aaf1042d",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0xa2622da69d9f46d46f80b8a10492ddf158cb92960df1a4eda50b3419ab3fe19d",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "amount": 1800594965583
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "Remarked",
+            "attributes": {
+              "sender": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "hash": "0x42e65e87a9b22ec9f295d30eb13c8487ef03c7fb583608cebbfe1b24c1b46308"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 1800594965583
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "actual_fee": 1800594965583,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 606045020,
+                  "proof_size": 8675
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "A proposes batch_all([thaw(judge), burn(judge, 30.00)]) through M_admin'",
+      "expected": "Ok + Multisig.NewMultisig",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "A (operator)",
+      "events_seen": [
+        "Multisig.NewMultisig"
+      ],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "propose_redeem",
+        "call": "Multisig.as_multi(Utility.batch_all[thaw(judge), burn(judge, 30.00)] via M_admin') \u2014 first approval",
+        "signer": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+        "extrinsic_id": "9005-2",
+        "block_number": 9005,
+        "block_hash": "0x8e52968f00b80eea780498287cb3e728d3210cc40dcfd618818b788353780ea1",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x464a8cf533bd249515be921a9f8bcd71bb8e68c119d4b7f74633e8442687e88b",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 2600917333285
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Reserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "NewMultisig",
+            "attributes": {
+              "approving": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "multisig": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+              "call_hash": "0xa94d6cf328f006b0298ecf484905dc5ed05b0b6681e8b55427be230b7dfcfe0d"
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 175882503
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2600741450782
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "actual_fee": 2600741450782,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 755865741,
+                  "proof_size": 15486
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "bot co-signs (cosign_redeem)",
+      "expected": "Ok, executed",
+      "as_expected": true,
+      "counted": true,
+      "signer_role": "B (reserve bot)",
+      "events_seen": [],
+      "receipt": {
+        "profile": "standin-upstream",
+        "step": "bot_redeem",
+        "call": "Multisig.as_multi(Utility.batch_all) \u2014 final approval",
+        "signer": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+        "extrinsic_id": "9006-2",
+        "block_number": 9006,
+        "block_hash": "0x081cc662d20bf082fae62678b35191ac5a5d518a5012f6332e1bdef87c44a39c",
+        "extrinsic_index": 2,
+        "extrinsic_hash": "0x7e76d85e16bfd30335d29b5d286e88870642bdc2f2e055454d14c661d4dba44b",
+        "outcome": {
+          "ok": true,
+          "pallet": null,
+          "error": null,
+          "text": "Ok"
+        },
+        "inner": [
+          {
+            "ok": true,
+            "pallet": null,
+            "error": null,
+            "text": "Ok"
+          }
+        ],
+        "events": [
+          {
+            "module_id": "Balances",
+            "event_id": "Withdraw",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 2741908448565
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Unreserved",
+            "attributes": {
+              "who": "5DCpXb4rDjsgAGPXzSg2f6btNPKx3WZ7WJ95X9BtRF1NSydm",
+              "amount": 927000000000000
+            }
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Thawed",
+            "attributes": {
+              "asset_id": 3001,
+              "who": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS"
+            }
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "ItemCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Assets",
+            "event_id": "Burned",
+            "attributes": {
+              "asset_id": 3001,
+              "owner": "5D7xatXmfPbRJs4mcRr5ozeo3U5nouqZUtM78KRBTwYxY1MS",
+              "balance": 30000000
+            }
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "ItemCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Utility",
+            "event_id": "BatchCompleted",
+            "attributes": null
+          },
+          {
+            "module_id": "Multisig",
+            "event_id": "MultisigExecuted",
+            "attributes": {
+              "approving": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "timepoint": {
+                "height": 9005,
+                "index": 2
+              },
+              "multisig": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+              "call_hash": "0xa94d6cf328f006b0298ecf484905dc5ed05b0b6681e8b55427be230b7dfcfe0d",
+              "result": {
+                "Ok": []
+              }
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "amount": 481338598
+            }
+          },
+          {
+            "module_id": "Balances",
+            "event_id": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2741427109967
+            }
+          },
+          {
+            "module_id": "TransactionPayment",
+            "event_id": "TransactionFeePaid",
+            "attributes": {
+              "who": "5H3fsDXHTcaH327awtUTUr7XPmW3oTd4bPo8BmUUYNnKN7u4",
+              "actual_fee": 2741427109967,
+              "tip": 0
+            }
+          },
+          {
+            "module_id": "System",
+            "event_id": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1457135187,
+                  "proof_size": 26833
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "evm_steps": [
+    {
+      "name": "deploy MockUSDC (test-only token)",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0xd3f049a1cadc663a175a4434f141fb23f35b94b3500072d32601d74f14724078",
+      "block_number": 1830,
+      "block_hash": "0xfde2aeff7400c666db7065d850ff3656c70739ccdaf3149c37a71735dd50f741",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": null,
+      "contract": "0xCA8c8688914e0F7096c920146cd0Ad85cD7Ae8b9"
+    },
+    {
+      "name": "deploy ReserveVault(usdc), owner = custodian",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0x5c1999dea676c727482dc16a8c4c32a4ba73b447c8d5ef6a49cecb3b5a3b09c5",
+      "block_number": 1831,
+      "block_hash": "0x083f425696e7850b71bbbdfdfec65e00229c55c45f23cc8f1b70415d87e114aa",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": null,
+      "contract": "0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B"
+    },
+    {
+      "name": "deposit S1 + S2 = 100.00",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0xaa656cd944cabe5693bfe0627ff34e26db8d875e82631347c934777e675a83f0",
+      "block_number": 1832,
+      "block_hash": "0x8dd934226148f511f919d5bdc9daf6a5d8d54791ed0a5b7881b72db35d712f41",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0xCA8c8688914e0F7096c920146cd0Ad85cD7Ae8b9",
+      "contract": null
+    },
+    {
+      "name": "custodian drains 30.00 (30%) from the vault",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0x93266a7aeed015b75ae5cc28b73053e0f2664760cd52f582573bb809db0ad711",
+      "block_number": 1833,
+      "block_hash": "0x9a39eff103384fab402a174f59fa55769982ee5aa901518ea34b98341292214f",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B",
+      "contract": null,
+      "amount": 30000000
+    },
+    {
+      "name": "custodian releases r x 30.00 = 21.00 to the judge's EVM address, redeemId = redeem_id(9004-2)",
+      "expected": "status 1",
+      "as_expected": true,
+      "counted": true,
+      "chain": "local-anvil (not Sepolia)",
+      "tx_hash": "0x17215858d3b3a28147525fb7930f23ad59f23f7cf28d246244edac0a828636b9",
+      "block_number": 1834,
+      "block_hash": "0xd237d795e2896c521a2ab356e3bb9e3b79e0a001f726c560572481ab002ccd66",
+      "status": 1,
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": "0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B",
+      "contract": null,
+      "amount": 21000000,
+      "redeem_request": "9004-2",
+      "redeem_id": "0xf52dce908193e553ac9153b523f5f400de1aed3abc3b9f2e5a9fd2502d15e25d"
+    }
+  ],
+  "state_checks": [
+    {
+      "what": "scratch team == role map (owner/issuer M_mint, admin M_admin, freezer M_watch)",
+      "expected": [
+        "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+        "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+        "5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM",
+        "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D"
+      ],
+      "observed": [
+        "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+        "5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb",
+        "5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM",
+        "5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D"
+      ],
+      "ok": true,
+      "block_hash": "0x8f91eaa5808dc097afa437470fd81ec12960041d2bcde1ff16a4773ac8b74884"
+    },
+    {
+      "what": "bot refuses an unannounced watcher rotation",
+      "expected": [
+        "refused",
+        true
+      ],
+      "observed": [
+        "refused",
+        true
+      ],
+      "ok": true,
+      "block_hash": "bot"
+    },
+    {
+      "what": "bot refuses before the announcement is K blocks old",
+      "expected": [
+        "refused",
+        true
+      ],
+      "observed": [
+        "refused",
+        true
+      ],
+      "ok": true,
+      "block_hash": "bot"
+    },
+    {
+      "what": "freezer after the co-signed rotation == M_watch'",
+      "expected": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK",
+      "observed": "5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK",
+      "ok": true,
+      "block_hash": "head"
+    },
+    {
+      "what": "asset still live after the old set's attempt",
+      "expected": false,
+      "observed": false,
+      "ok": true,
+      "block_hash": "head"
+    },
+    {
+      "what": "admin after the co-signed rotation == M_admin'",
+      "expected": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+      "observed": "5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq",
+      "ok": true,
+      "block_hash": "head"
+    },
+    {
+      "what": "community watcher, every provider down for 30 s: exit 4 (not frozen), no freeze submitted",
+      "expected": [
+        4,
+        false
+      ],
+      "observed": [
+        4,
+        false
+      ],
+      "ok": true,
+      "block_hash": "watcher log"
+    },
+    {
+      "what": "\u2026its checks all read 'outage' with 'never fail-closed'",
+      "expected": true,
+      "observed": true,
+      "ok": true,
+      "block_hash": "watcher log"
+    },
+    {
+      "what": "the freeze's trigger: community mode, pinned block, every provider short",
+      "expected": [
+        "community",
+        true,
+        2
+      ],
+      "observed": [
+        "community",
+        true,
+        2
+      ],
+      "ok": true,
+      "block_hash": "watcher log"
+    },
+    {
+      "what": "bot refuses the wind-down thaw while a holder is open",
+      "expected": [
+        "refused",
+        true
+      ],
+      "observed": [
+        "refused",
+        true
+      ],
+      "ok": true,
+      "block_hash": "bot"
+    },
+    {
+      "what": "asset live after the wind-down thaw",
+      "expected": false,
+      "observed": false,
+      "ok": true,
+      "block_hash": "head"
+    },
+    {
+      "what": "every holder with a balance individually frozen",
+      "expected": [
+        [
+          "Judge (holder)",
+          true
+        ],
+        [
+          "Peer (holder)",
+          true
+        ]
+      ],
+      "observed": [
+        [
+          "Judge (holder)",
+          true
+        ],
+        [
+          "Peer (holder)",
+          true
+        ]
+      ],
+      "ok": true,
+      "block_hash": "head"
+    },
+    {
+      "what": "community watcher after the thaw: deficit but winddown-hold, no freeze (exit 4)",
+      "expected": [
+        true,
+        false,
+        4
+      ],
+      "observed": [
+        true,
+        false,
+        4
+      ],
+      "ok": true,
+      "block_hash": "watcher log"
+    },
+    {
+      "what": "the redemption executed atomically: Thawed + Burned in one extrinsic",
+      "expected": [
+        true,
+        true
+      ],
+      "observed": [
+        true,
+        true
+      ],
+      "ok": true,
+      "block_hash": "receipt"
+    },
+    {
+      "what": "after the redemption: S1, reserves, and r unchanged",
+      "expected": [
+        20000000,
+        49000000,
+        "0.7000"
+      ],
+      "observed": [
+        20000000,
+        49000000,
+        "0.7000"
+      ],
+      "ok": true,
+      "block_hash": "head + evm latest"
+    },
+    {
+      "what": "the judge's EVM address received r x 30.00",
+      "expected": 21000000,
+      "observed": 21000000,
+      "ok": true,
+      "block_hash": "evm latest"
+    }
+  ],
+  "notes": {
+    "watchers": "W1, W2 and W3 run on ONE machine; W3 plays the community watcher (no separate operator yet)",
+    "funding": {
+      "wanted": {
+        "A (operator)": "15919000000000000",
+        "W1 (watcher)": "500000000000000",
+        "W3 (community watcher)": "1000000000000000",
+        "Judge (holder)": "500000000000000",
+        "Peer (holder)": "300000000000000",
+        "B (reserve bot)": "2000000000000000"
+      },
+      "topped_up": 1,
+      "ed": "100000000000000",
+      "multisig_deposit": "1119000000000000"
+    },
+    "community_freeze_seconds_after_drain_sent (one sample, poll every block)": 3.72
+  },
+  "asset_id": 3001,
+  "assets": {
+    "breaker": 3001,
+    "control": 2,
+    "decimals": 6
+  },
+  "governance": {
+    "announce_watchers": "8951-2",
+    "announce_admins": "8959-2",
+    "final": "8985-2",
+    "redeem_request": "9004-2",
+    "r": "0.7000",
+    "freeze_block": 8978,
+    "manifest": "deployments/standin-upstream-gov.json"
+  },
+  "finished_at": "2026-10-31T01:24:39Z",
+  "passed": 30,
+  "counted_steps": 30,
+  "observation_steps": 0,
+  "verdict": "PASS"
+}

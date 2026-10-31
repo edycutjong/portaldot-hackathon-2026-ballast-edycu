@@ -13,6 +13,7 @@ extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** 
 | Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |
 |---|---|---|---|---|
 | Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality | v3 | Sepolia | PASS (8/8 steps as expected, 18/18 state checks) | [`sepolia-drill-20261031T002936Z.json`](../evidence/sepolia-drill-20261031T002936Z.json) |
+| Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | v3 | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-v3-20261031T012503Z.json`](../evidence/roles-governance-v3-20261031T012503Z.json) |
 | Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json) |
 | ReserveOracle v2: trip() by a listed watcher, refused for others, cleared only by a later post | standin-upstream (stand-in, NOT V3) | none — the oracle mirrors B's attestation; this drill posts a fixed drill status | PASS (9/9 steps as expected, 9/9 state checks) | [`oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json) |
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | v3 | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-v3-20261024T045513Z.json`](../evidence/roles-drill-v3-20261024T045513Z.json) |
@@ -113,6 +114,106 @@ Other runs, newest first, any verdict (full tables in the JSON):
 - asset 4401 — 2026-10-30T21:23:30Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `9c2112e` (clean) — [`evidence/sepolia-drill-20261030T212330Z.json`](../evidence/sepolia-drill-20261030T212330Z.json) — failed: vault holds the 100.00 deposit; owner holds gas and >= the refill (30%)
 - asset 4401 — 2026-10-30T20:46:14Z — FAIL (8/8 steps as expected, 17/18 state checks) — source: `1328f88` (clean) — [`evidence/sepolia-drill-20261030T204614Z.json`](../evidence/sepolia-drill-20261030T204614Z.json) — failed: owner holds >= 100.00 test USDC and gas
 - asset 4401 — 2026-10-30T20:09:23Z — PASS (12/12 steps as expected, 18/18 state checks) — source: `cff62bc` (UNCOMMITTED CHANGES) — [`evidence/sepolia-drill-20261030T200923Z.json`](../evidence/sepolia-drill-20261030T200923Z.json)
+
+### Governance drill — announced watcher-set + M_admin rotations, community watcher, wind-down, redemption — 2026-10-31T01:25:03Z
+
+Chain: **Portaldot V3 testnet** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-governance-v3-20261031T012503Z.json`](../evidence/roles-governance-v3-20261031T012503Z.json) · result: **PASS** (30/30 steps as expected, 16/16 state checks) · source: `1e28678` (clean)
+
+Role map: `M_mint` 5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb (2-of-2 A, B) · `M_admin` 5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg (2-of-3 A, A2, B) · `M_watch` 5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c (1-of-2 watchers).
+
+- watchers: W1, W2 and W3 run on ONE machine; W3 plays the community watcher (no separate operator yet)
+- funding: {'wanted': {'A (operator)': '1537000000000000', 'W1 (watcher)': '50000000000000', 'W3 (community watcher)': '100000000000000', 'Judge (holder)': '50000000000000', 'Peer (holder)': '30000000000000', 'B (reserve bot)': '200000000000000'}, 'topped_up': 3, 'ed': '10000000000000', 'multisig_deposit': '1119000000000000'}
+- community_freeze_seconds_after_drain_sent (one sample, poll every block): 7.01
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0xfcDB4564c18A9134002b9771816092C9693622e3`):
+
+| # | Step | Block | Tx hash | Observed |
+|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 1835 | `0x57f68abf941884296661f39f0c6ba9887f46a403487d021391a510412deca49e` | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc), owner = custodian | 1836 | `0x6287296955333828da0515aff7063a6ab82741ba46ebd08e49a34c99d3b3c365` | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 | 1837 | `0x96b6fe173c4da57b7ebbf014b8a9b1743e7019ab036a7f5b1850078f3d962aa7` | ✅ status 1 |
+| 4 | custodian drains 30.00 (30%) from the vault | 1838 | `0xce8879224fcb330f6d715ecc647c33b621eba61764fd69934c5877e36f004877` | ✅ status 1 |
+| 5 | custodian releases r x 30.00 = 21.00 to the judge's EVM address, redeemId = redeem_id(260325-1) | 1839 | `0x8209e93eaa34aee9f40ea732e6a58dffc904c0e710e7b46b95af5a6357a0b465` | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | funder tops up the accounts below their working balance | `Utility.batch_all[3 x Balances.transfer_keep_alive]` (5Fk6ZzKT5EcWHV3RZkYjgi7EEA1JT3aHaEhkSP2gGyv3DP96) | `260271-1` | Ok | ✅ Ok |
+| 2 | A creates scratch asset 4601 | `Assets.create` (A (operator)) | `260272-1` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-gov (6 decimals) | `Assets.set_metadata` (A (operator)) | `260273-1` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | A mints 30.00 to the judge (scratch S1, before the team hand-over) | `Assets.mint` (A (operator)) | `260274-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 5 | A mints 20.00 to the peer (scratch S1, before the team hand-over) | `Assets.mint` (A (operator)) | `260275-1` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 6 | A hands the team over: issuer M_mint, admin M_admin, freezer M_watch {W1, W2} | `Assets.set_team` (A (operator)) | `260276-1` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | A transfers ownership to M_mint | `Assets.transfer_ownership` (A (operator)) | `260277-1` | Ok + Assets.OwnerChanged | ✅ Ok · Assets.OwnerChanged |
+| 8 | A proposes set_team(freezer = M_watch' {W1, W2, W3}) through M_mint | `Multisig.as_multi(Assets.set_team(freezer=M_watch')) — first approval` (A (operator)) | `260278-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 9 | B announces the watcher set {W1, W2, W3} 1-of-3 (BALLAST/1|watchers) | `System.remark_with_event` (B (reserve bot)) | `260279-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 10 | bot co-signs (cosign-team --announcement (after K)) | `Multisig.as_multi(Assets.set_team) — final approval` (B (reserve bot)) | `260285-1` | Ok, executed | ✅ Ok · inner Ok |
+| 11 | W1 tries to freeze through the OLD M_watch {W1, W2} | `Multisig.as_multi_threshold_1(Assets.freeze_asset) via old M_watch` (W1 (watcher)) | `260286-1` | Err(Assets.NoPermission) | ✅ Err(Assets.NoPermission) |
+| 12 | B announces the admin set {A, A3, B} 2-of-3 (A2 retired; BALLAST/1|admins) | `System.remark_with_event` (B (reserve bot)) | `260287-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 13 | A proposes set_team(admin = M_admin' {A, A3, B}) through M_mint | `Multisig.as_multi(Assets.set_team(admin=M_admin')) — first approval` (A (operator)) | `260288-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 14 | bot co-signs (cosign-team --announcement (admins, after K)) | `Multisig.as_multi(Assets.set_team) — final approval` (B (reserve bot)) | `260293-1` | Ok, executed | ✅ Ok · inner Ok |
+| 15 | W3 (community watcher) freezes through M_watch' once every provider reads short at one block | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W3 (community watcher)) | `260304-1` | Ok + Assets.AssetFrozen | ✅ Ok · inner Ok · Assets.AssetFrozen |
+| 16 | judge transfers 1.00 while the asset is frozen | `Assets.transfer` (Judge (holder)) | `260305-1` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+| 17 | W3 freezes the judge's account through M_watch' (wind-down step 1) | `Multisig.as_multi_threshold_1(Assets.freeze)` (W3 (community watcher)) | `260310-1` | Ok + Assets.Frozen | ✅ Ok · inner Ok · Assets.Frozen |
+| 18 | B posts final r = 70.00 / 100.00 = 0.7000 (BALLAST/1|final) | `System.remark_with_event` (B (reserve bot)) | `260311-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 19 | A proposes thaw_asset through M_admin' | `Multisig.as_multi(Assets.thaw_asset via M_admin') — first approval` (A (operator)) | `260312-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 20 | W3 freezes the peer's account through M_watch' (wind-down step 1) | `Multisig.as_multi_threshold_1(Assets.freeze)` (W3 (community watcher)) | `260313-1` | Ok + Assets.Frozen | ✅ Ok · inner Ok · Assets.Frozen |
+| 21 | bot co-signs (cosign-thaw --final (all holders frozen)) | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `260314-1` | Ok, executed | ✅ Ok · inner Ok |
+| 22 | judge transfers 1.00 after the thaw (account still frozen) | `Assets.transfer` (Judge (holder)) | `260324-1` | Err(Assets.Frozen) | ✅ Err(Assets.Frozen) |
+| 23 | judge asks first: BALLAST/1|redeem with its EVM address | `System.remark_with_event` (Judge (holder)) | `260325-1` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 24 | A proposes batch_all([thaw(judge), burn(judge, 30.00)]) through M_admin' | `Multisig.as_multi(Utility.batch_all[thaw(judge), burn(judge, 30.00)] via M_admin') — first approval` (A (operator)) | `260326-1` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 25 | bot co-signs (cosign_redeem) | `Multisig.as_multi(Utility.batch_all) — final approval` (B (reserve bot)) | `260327-1` | Ok, executed | ✅ Ok · inner Ok |
+
+Block and transaction hashes (full):
+
+```
+ 1  260271-1 block 0x36639f28d4f2b248be108abc613f9c16ebf65341a3aa2304f752ce15c6fc26a7  tx 0x7d2eb007a9fa13e849e3cb2236bb02d540dbd2aa645e2a88b453a729f3940491
+ 2  260272-1 block 0xc94986df365c41c7a06b694237416c771df22041b299edce3262908a1d2a20b1  tx 0x2d1eb8870a1f30ce139a7b52781a40992081ca86c9036061cb734ac310d9c519
+ 3  260273-1 block 0x099f3c96145224978be83b9796358f892abe5b12eba6e50f51a588601598073e  tx 0x5754cac9bbdf8a9b46daee101c1bd2909614f5111af84a9b9c3d91914e0d7bb0
+ 4  260274-1 block 0x581e826e4b3b83f0626fbffe293f36a10462c69aeb7d59ef26b0c751bc5db02d  tx 0xeebc622cb783d8c420e2c80c3d411a1e7dadae1c84b56d6e9ba6d031262c5a6a
+ 5  260275-1 block 0xf2ebf95f910eb45866780ea860e832622c97e92211236517186c9d15d1231144  tx 0x96a5131bdf6a59efa71bf743123d3ae1f4112db534e37266b9df1882e3a652ec
+ 6  260276-1 block 0xc70ae7d4b4c4ae1610b704709f7a3c7890709f82278536ebe090cb625099eca6  tx 0x1b4102f7eebcc06fba7a5b305d6da7edbaac5b8f3258ac211a8ac8aaa81850bd
+ 7  260277-1 block 0x6eefd9ec69ca0b616c2006faa37f6549ddf49b46ec8927022226cb3338299113  tx 0xf0d21ba6e54aaeed6ffc49341a64c8e07e9bd4668f6276bdb385bae5799f216e
+ 8  260278-1 block 0x97432b08a6191e7f952cf9834e24d3fd6ca07c3101c4e26c363ba9beb046ed61  tx 0x3958290eea29f88b117ef4b07efb650c886cb50d6e4f55289072ab5d070ba613
+ 9  260279-1 block 0x92633917514c885996d0f0c9a3d7a6a38bd25053c3d551e06476407a5acb7cdf  tx 0x7419a5e58f3f2f519627859cf25a6b54c4848036cfcfb536706ecdc0c405e656
+10  260285-1 block 0x5e8af1f8b55ae7c357003a05f3bdb90f8e9491c635f2e1680e2b8dd755b7c746  tx 0x6ae47cb874e95c029b18195394f833969061fa4421f156601d8dc8d4c8cfeb63
+11  260286-1 block 0x92b96844671b665b24f9c8d7060066454f4fed3122a94d874bf2082f64894dfa  tx 0x575a4aa82bb1efcf42e77965a48fc27f2cd660b6bd73351dae1380ba667ddfc4
+12  260287-1 block 0xb489f912934e73dd59a252c745b4636927ae9d2322ac673ff7dcecec3b7974c9  tx 0x6a2b168c3cc8a265afdf2dc99aa0c3cd87a8f344f531aa4c73e20c4e3dc11314
+13  260288-1 block 0x89a5382b2bcd659b68d201f03a9902197a89450e1ea786874580f05a3e62fad7  tx 0xe544e492587fc2147d52ec917191bb9533489050248b36dcfa8e53a6e05e6af2
+14  260293-1 block 0x49febe672afe0011fe98c3046cb6610d5ea3430ee8b92d5d0aca9e0101070520  tx 0xa5c900635f2f4c41c20cec38589d08ca0da8263b8b46ead94985c6a1225dee35
+15  260304-1 block 0x254c60932cea8088ccab8459c15802dc7c63e1b0e03ab209a713fcf6f14b5461  tx 0xe2e4adcdf156698f0161bc0019309a6fcbb32abfdb6c67e9e1cc25c3fdaa7f87
+16  260305-1 block 0x90956ff2adc25c652ee217d7500c2bee32caabf207b043f1bdb26c9c94090022  tx 0xbe6d7818d56e09d35ab134ba6fe3ce8e2ce839c25700ee15c5cbb3cd4074f7d8
+17  260310-1 block 0x42e94bbf3dc65c62022b10355f9d33a191983f9c34f8bb2b5b0add8e662ac757  tx 0x50b0e5c30c2954d961e771ca1e646862a91669e060b3978b97ba236993af2ed2
+18  260311-1 block 0xb4e1153c9232c1e1f921599e05a63335c1659463b18503096c5527e26b177e42  tx 0xb39b835304598dbc617d032654c96795ab25e50018ef753b5e30010a3e5e5b4f
+19  260312-1 block 0x8a01d64b67362719d660343331ca8d4ade802fc9bc281719085222394627019f  tx 0x173ae306a31aa7f60d8ab5f83ece715b4a37d49450b9d73747c0c504152eb09b
+20  260313-1 block 0x19aa51f227d9ac4c7e1d3f143a3d7e4df934e6d4899bbe6470786041a8c9f3e8  tx 0xeba6e56b6c3d92605128aea1a19ea704fbc4201916816f5ee979d151653d28c6
+21  260314-1 block 0xbc0aa49465068badaccdb1463c6ab0591968fbbaa8fec30334415d077e0f7563  tx 0xffaf338f0c8caab70f54ee114621767c817c94b2cee5684eb3e212526f5cae50
+22  260324-1 block 0x17552de979c917fc55cf1a57ef8576c17bdde528557df1c4efa5f5e83e48c330  tx 0x10b8e388c00d34ad39c6e0da5483db43de4afcc4ea8bfcfa91edf069f754fd0a
+23  260325-1 block 0x82f960a817db4f0ef63f64c898fc800ec6012290c1e26056e546cc0746d6547d  tx 0xc2d2143e09b7a596cf34eeba7a75c4916d177a14b3608bbb83d55b8678bbbec2
+24  260326-1 block 0x8c9913a7506488897258d7c2e47d84bd9887898e0af5054c93e85d9f21dea3e5  tx 0x83c8da1d948af2b3d80645523af2cee39ef612607cb7ce3e31a8b839a9522d25
+25  260327-1 block 0x145900ca5039ab4e0af5e09d91a1d74b5a44c342ea8e3dcabfd22df50cc4fd4b  tx 0x2a489f5499dfe7fa259ba9027e05bfdcb3fe4f8d5f808da584c0a5a61373ceae
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ scratch team == role map (owner/issuer M_mint, admin M_admin, freezer M_watch): expected `['5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb', '5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb', '5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg', '5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c']`, observed `['5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb', '5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb', '5HZshac58eX5TC2AErdfvU2m4rHVtoQUv31479nd1jaHbGRg', '5CpFnhgHCreAk1bvwHJTxsQoDu6N7eivEBANZH44JqwJCK5c']` at block `0x6eefd9ec69ca0b616c2006faa37f6549ddf49b46ec8927022226cb3338299113`
+- ✅ bot refuses an unannounced watcher rotation: expected `['refused', True]`, observed `['refused', True]` at block `bot`
+- ✅ bot refuses before the announcement is K blocks old: expected `['refused', True]`, observed `['refused', True]` at block `bot`
+- ✅ freezer after the co-signed rotation == M_watch': expected `5FmRH9FrR8GZxFnwAYUccEQfVYSnacGbJtri4W4tL87qRUH3`, observed `5FmRH9FrR8GZxFnwAYUccEQfVYSnacGbJtri4W4tL87qRUH3` at block `head`
+- ✅ asset frozen after the old set's attempt (must stay false): expected `False`, observed `False` at block `head`
+- ✅ admin after the co-signed rotation == M_admin': expected `5E1pU3Ur1Rfwpd3eMqCmN3KuTc9stK7Hf4TFZGHNuvgHAc1Z`, observed `5E1pU3Ur1Rfwpd3eMqCmN3KuTc9stK7Hf4TFZGHNuvgHAc1Z` at block `head`
+- ✅ community watcher, every provider down for 30 s: exit 4 (not frozen), no freeze submitted: expected `[4, False]`, observed `[4, False]` at block `watcher log`
+- ✅ …its checks all read 'outage' with 'never fail-closed': expected `True`, observed `True` at block `watcher log`
+- ✅ the freeze's trigger: community mode, pinned block, every provider short: expected `['community', True, 2]`, observed `['community', True, 2]` at block `watcher log`
+- ✅ bot refuses the wind-down thaw while a holder is open: expected `['refused', True]`, observed `['refused', True]` at block `bot`
+- ✅ asset frozen after the wind-down thaw (must be false): expected `False`, observed `False` at block `head`
+- ✅ every holder with a balance individually frozen: expected `[['Judge (holder)', True], ['Peer (holder)', True]]`, observed `[['Judge (holder)', True], ['Peer (holder)', True]]` at block `head`
+- ✅ community watcher after the thaw: deficit but winddown-hold, no freeze (exit 4): expected `[True, False, 4]`, observed `[True, False, 4]` at block `watcher log`
+- ✅ the redemption executed atomically: Thawed + Burned in one extrinsic: expected `[True, True]`, observed `[True, True]` at block `receipt`
+- ✅ after the redemption: S1, reserves, and r unchanged: expected `[20000000, 49000000, '0.7000']`, observed `[20000000, 49000000, '0.7000']` at block `head + evm latest`
+- ✅ the judge's EVM address received r x 30.00: expected `21000000`, observed `21000000` at block `evm latest`
+
 
 ### Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw — 2026-10-24T04:55:14Z
 

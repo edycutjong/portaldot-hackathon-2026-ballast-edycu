@@ -1,0 +1,81 @@
+{
+  "profile": "v3",
+  "genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "breaker": 4601,
+  "control": 4402,
+  "decimals": 6,
+  "s2": 50000000,
+  "roles": {
+    "A": "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+    "A2": "5FRBEpK4dqqaRquHta3jB1aJHpgi7Y3nhjKRqJDdwhih8e7z",
+    "B": "5DLftfqommHyxsuNaH5wpA9imFJ6AoB9MXFrFu5BRLiNRv2R",
+    "watchers": [
+      "5DG4akHnFL58yotBXtZ1tiqXeWASRh5em1iJSS3qQa6ssgU6",
+      "5HmYD3NyvhBGBGcjhfDPS4bCW2mFYP54KY874jSgHPE2Sf39",
+      "5FEw5dPNuyaKKKmLaU3PbzwWMhSWDysgD1Fzw1BsxjftS7hR"
+    ],
+    "ss58_format": 42,
+    "admins": [
+      "5H6Mw4GcufDEd6fDpWG1gHRACrfuEWggSWhYANh1qyNTchqL",
+      "5EPHKRukQVoH29qQoZbg7wiNnibZdUJyzi3hCgtnMxomnG9R",
+      "5DLftfqommHyxsuNaH5wpA9imFJ6AoB9MXFrFu5BRLiNRv2R"
+    ],
+    "M_mint": {
+      "address": "5Gs33AvvC3XAZC6nJoRg2ybLbrUiNKSiFu78u1r13J3L2sUb",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "B"
+      ]
+    },
+    "M_admin": {
+      "address": "5E1pU3Ur1Rfwpd3eMqCmN3KuTc9stK7Hf4TFZGHNuvgHAc1Z",
+      "threshold": 2,
+      "signatories": [
+        "A",
+        "5EPHKRukQVoH29qQoZbg7wiNnibZdUJyzi3hCgtnMxomnG9R",
+        "B"
+      ]
+    },
+    "M_watch": {
+      "address": "5FmRH9FrR8GZxFnwAYUccEQfVYSnacGbJtri4W4tL87qRUH3",
+      "threshold": 1,
+      "signatories": [
+        "W1",
+        "W2",
+        "W3"
+      ]
+    },
+    "control_keyless": {
+      "owner": {
+        "address": "5Hd3Ex8NE9DN1YKfL7GT596izJPzzFCDbqzdNYTmKTzyhC35",
+        "derivation": "blake2_256(\"ballast:a2-owner:v1\")"
+      },
+      "issuer": {
+        "address": "5CFqicciCJqSLxpruCpZCFSav78UQqE1zaoQ3YT3VRz6Sd63",
+        "derivation": "blake2_256(\"ballast:a2-issuer:v1\")"
+      },
+      "admin": {
+        "address": "5HWsvYp1arXWVsVoEMpCcKCNfivhkoQtYTTfpN9Hh7YxQFNS",
+        "derivation": "blake2_256(\"ballast:a2-admin:v1\")"
+      },
+      "freezer": {
+        "address": "5C86CJba7bqEntLPbWYXMVasmKDodYs5ueMaCBrLiHgdWqDw",
+        "derivation": "blake2_256(\"ballast:a2-freezer:v1\")"
+      }
+    }
+  },
+  "reserve": {
+    "label": "local-anvil (not Sepolia)",
+    "evm_chain_id": 31337,
+    "vault": "0xfcDB4564c18A9134002b9771816092C9693622e3",
+    "erc20": "0xD42912755319665397FF090fBB63B1a31aE87Cee",
+    "custodian": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "providers": [
+      "anvil=http://127.0.0.1:49545"
+    ]
+  },
+  "oracle": null,
+  "created_at": "2026-10-31T01:25:03Z",
+  "setup_evidence": "roles-governance-v3-20261031T012503Z.json"
+}

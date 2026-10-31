@@ -298,7 +298,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - [x] Chain profiles (`v3` pinned to the live chain, `standin-upstream`, `standin-1002`), genesis / `:code` identification, block-time-derived constants
 - [x] Assets role split + watcher-set freeze, refused freezer thaw, refused frozen transfer, admin thaw (6 spike runs, 5 PASS and 1 recorded FAIL kept as history)
 - [x] `ReserveVault` + 20 Foundry tests; reserve reader on two providers with block-hash pinning; watchdog with deficit, fail-closed and heartbeat rules
-- [x] `ReserveOracle` + 15 Hardhat tests; deployed on the stand-in's Revive pallet, then on V3's
+- [x] `ReserveOracle` v1 + 15 Hardhat tests; deployed on the stand-in's Revive pallet, then on V3's (v2 adds `trip()` and 6 tests, 21 in total, stand-in only)
 - [x] Multisig role split (`M_mint` 2-of-2, `M_admin` 2-of-3, `M_watch` 1-of-2), reserve bot with mint / thaw / set_team gates, SQLite decision log
 - [x] `BALLAST/1` attestations, oracle mirror after inclusion, `ballast verify` with per-type signers and a forged-remark negative control
 - [x] Portaldot V3 testnet: role split + `ReserveOracle` on Revive (PASS 16/16 + 6/6), role drill PASS 22/22 + 20/20, attestation drill PASS 15/15 + 6/6,
@@ -310,7 +310,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - [x] The scratch-asset outage and heartbeat drills on V3 (2026-10-30 UTC, assets 4501/4503, local anvil reserve; [`docs/PROOF.md`](docs/PROOF.md))
 - [x] W2 on GitHub Actions (`.github/workflows/watcher-w2.yml`, cron `*/5` configured but no scheduled run has fired yet, manual dispatch proven, secret seed): a healthy-reserve dispatch is a no-op, and with W1 off the Sepolia drill's freeze `259731-1` was signed by W2 on Actions (2026-10-31 UTC, [`docs/W2-ACTIONS.md`](docs/W2-ACTIONS.md))
 - [x] Governance branches on V3 (scratch asset 4601, local anvil reserve, drill K = W = 5 blocks): announced watcher-set and `M_admin` rotations,
-  a community watcher's freeze (`ballast watch --community`), the wind-down thaw and an atomic thaw + burn redemption, PASS 30/30 + 16/16
+  a community watcher's freeze (`ballast watch --community`; its two providers were one local anvil, run by the team, no outside operator yet), the wind-down thaw and an atomic thaw + burn redemption, PASS 30/30 + 16/16
   (2026-10-31 UTC, [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md))
 - [x] `ReserveOracle` v2 with `trip()` by a listed watcher: 6 new Hardhat tests, trip drill PASS 9/9 + 9/9 on the stand-in (not V3)
 - [ ] `ReserveOracle` v2 on V3: its deposit is estimated to exceed what Ballast's V3 keys hold (v1 needed 138.53 tPOT; the keys hold 83.13; a read-only v2 dry-run from B returns `ok: false`) ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))

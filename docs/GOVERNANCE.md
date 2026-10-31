@@ -13,9 +13,9 @@ The drills are `scripts/governance_drill.py` and `scripts/trip_drill.py`.
 | The same drill, rehearsal | stand-in `standin-upstream` (not V3), asset 3001 | [`evidence/roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json), PASS 30/30 (25 stand-in extrinsics + 5 anvil transactions) + 16/16 |
 | `ReserveOracle` v2 with `trip()` | stand-in `standin-upstream` only (**not V3**, see below) | [`evidence/oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json), PASS 9/9 + 9/9 |
 
-Both drill runs started from committed code (`source.dirty: false`). The V3 run wrote its three watcher logs as
-`*.log`, which the repo ignores. They were renamed to `*.watchdog.jsonl` after the run with their content unchanged,
-and the script now writes that name. `python scripts/check_receipts.py --profile v3`
+Both drill runs started from committed code (`source.dirty: false`). Both wrote their watcher logs as `*.log`, which
+the repo ignores. They were renamed by hand to `*.watchdog.jsonl` after the runs, and those runs' evidence JSON does
+not name them. Commit `83c093e` made the script write that name and record it. `python scripts/check_receipts.py --profile v3`
 re-queried all V3 extrinsics, 165 of them, at finalized head #260355
 ([`evidence/check-receipts-v3-20261031T013443Z.txt`](../evidence/check-receipts-v3-20261031T013443Z.txt)). Five of
 the 165 rows were re-included in the canonical block at the same height after short forks. Only one of them,
@@ -70,8 +70,12 @@ the custodian drained 30.00 of the 100.00 reserve, W3 froze asset 4601 through `
 
 ## 3. Wind-down and redemption
 
-This is the branch for a reserve that stays short. The wind-down freezes every holder's account first, thaws the
-asset, and burns only after that thaw. A burn on a frozen asset is not exercised anywhere in this repo's evidence.
+This is the branch for a reserve that stays short. Every holder's account is frozen first, then the asset is thawed,
+and burns happen only after that thaw. The bot enforces that order (`winddown_gate`, `redeem_gate`), and a watcher
+holds off re-freezing (`winddown-hold`). The other steps are plain calls: `Assets.freeze(who)` by a listed watcher,
+the thaw and redeem proposals, the holder's `redeem` remark and the custodian's release. In the drill,
+`scripts/governance_drill.py` sent them, and Ballast has no tool that does this yet. A burn on a frozen asset is not
+exercised anywhere in this repo's evidence.
 
 | V3 step | Extrinsic | Outcome |
 |---|---|---|
@@ -98,10 +102,12 @@ Revive pallet, `block.number` is the Portaldot block: the drill measured `trippe
 extrinsic 8879-2. This has not been measured on V3's Revive yet. This phase added 6 Hardhat tests (the watcher list and `trip()`), for 21 in total.
 
 On the stand-in, a non-watcher's `trip()` reverted, W1's `trip()` turned `isBacked` false, and a post with
-`pdBlock = trippedBlock` reverted (`TripNotCleared`). A post from a later block cleared the trip.
+`pdBlock = trippedBlock` reverted (`Revive.ContractReverted`; the Hardhat tests name the error `TripNotCleared`, and
+the drill did not record the reason). A post from a later block cleared the trip.
 
 **Not on V3 yet.** The v1 mirror on V3 (`0x4832…155e`) needed 138.53 tPOT in deposits (code upload plus storage),
-and the v2 initcode is larger at 2,960 bytes. The v2 deposit itself is not measured, so the shortfall is an estimate. All of Ballast's V3 keys together hold 83.13 tPOT free. A read-only deploy dry-run from B returns `ok: false`; the
+and the v2 initcode is 2,960 bytes against v1's 1,818
+([`evidence/v3-day0-20261020T152616Z.json`](../evidence/v3-day0-20261020T152616Z.json)). The v2 deposit itself is not measured, so the shortfall is an estimate. All of Ballast's V3 keys together hold 83.13 tPOT free. A read-only deploy dry-run from B returns `ok: false`; the
 failure reason is not recorded, and B holds 34.52 tPOT
 ([`evidence/v3-oracle-v2-sizing-20261031.json`](../evidence/v3-oracle-v2-sizing-20261031.json), read-only,
 `scripts/oracle_v2_sizing.py`). The v1 mirror (source: commit `70f1b84^`) still answers on V3 and has no `trip()`. Its last post is from #170249

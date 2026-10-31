@@ -151,6 +151,10 @@ class FakeSubstrate:
         self.assets, self.metadata_, self.free = assets, metadata or {}, free
         self.composed = []
         self.nonce = 7
+        self.accounts = [(W1, {"balance": 60, "status": "Liquid"})]  # asset-1 holders (wind-down rule)
+
+    def query_map(self, module, item, params, block_hash=None, page_size=100):
+        return [(SimpleNamespace(value=who), SimpleNamespace(value=v)) for who, v in self.accounts]
 
     def query(self, module, item, params, block_hash=None):
         if item == "Asset":
@@ -599,3 +603,60 @@ def test_watchdog_counts_heartbeat_in_blocks_and_resets_on_a_new_nonce(monkeypat
     assert submitted, "nonce unchanged for K blocks must freeze"
     remark = submitted[0][2]["calls"][0]["params"]["remark"]
     assert "|reason=no-heartbeat|" in remark and "|n=8|" in remark
+
+
+# --- community-watcher rule and the wind-down hold -------------------------------------------------------------
+def test_community_one_provider_short_does_not_freeze():
+    from ballast.watchdog import ONE_SHORT
+
+    d, _ = decide(100, False, compare([ok("a", 70), ok("b", 100)]), None, 0.0, community=True)
+    assert d.action == ONE_SHORT and not d.freeze
+    d, _ = decide(100, False, compare([ok("a", 70), down("b")]), None, 0.0, community=True)
+    assert d.action == ONE_SHORT and not d.freeze
+
+
+def test_community_every_provider_short_is_a_deficit_candidate():
+    d, _ = decide(100, False, compare([ok("a", 70), ok("b", 69)]), None, 0.0, community=True)
+    assert d.action == DEFICIT
+
+
+def test_community_never_fails_closed():
+    comp = compare([down("a"), down("b")])
+    d, since = decide(100, False, comp, None, 0.0, fail_closed_after=5, community=True)
+    d, _ = decide(100, False, comp, since, 10_000.0, fail_closed_after=5, community=True)
+    assert d.action == OUTAGE and not d.freeze and "never fail-closed" in d.detail
+
+
+def test_community_heartbeat_still_freezes_when_one_provider_is_short():
+    hb = {"bot": "b", "nonce": 3, "since": 1, "stale_blocks": 12, "k": 10}
+    d, _ = decide(100, False, compare([ok("a", 70), ok("b", 100)]), None, 0.0, heartbeat=hb, community=True)
+    assert d.action == NO_HEARTBEAT
+
+
+def test_community_check_confirms_at_one_pinned_block_then_freezes(monkeypatch):
+    dog, _, submitted, logs = make_dog(monkeypatch, reserves=70, providers=[FakeEvm("a", 70), FakeEvm("b", 70)])
+    dog.cfg.community = True
+    record = dog.check(10, H)
+    assert record["decision"]["action"] == DEFICIT and record["mode"] == "community"
+    assert record["pinned"]["block"] == 16 and len(submitted) == 1
+
+
+def test_community_check_with_one_short_provider_submits_nothing(monkeypatch):
+    dog, _, submitted, _ = make_dog(monkeypatch, reserves=70, providers=[FakeEvm("a", 70), FakeEvm("b", 100)])
+    dog.cfg.community = True
+    assert dog.check(10, H)["decision"]["action"] == "one-short" and submitted == []
+
+
+def test_winddown_hold_when_every_holder_is_frozen(monkeypatch):
+    dog, substrate, submitted, _ = make_dog(monkeypatch, reserves=70)
+    substrate.accounts = [(W1, {"balance": 30, "status": "Frozen"}), (W2, {"balance": 30, "status": "Frozen"}),
+                          (OUTSIDER, {"balance": 0, "status": "Liquid"})]
+    record = dog.check(10, H)
+    assert record["decision"]["action"] == "winddown-hold" and submitted == []
+    assert record["holders"] == {"with_balance": 2, "frozen": 2}
+
+
+def test_deficit_still_freezes_while_one_holder_is_open(monkeypatch):
+    dog, substrate, submitted, _ = make_dog(monkeypatch, reserves=70)
+    substrate.accounts = [(W1, {"balance": 30, "status": "Frozen"}), (W2, {"balance": 30, "status": "Liquid"})]
+    assert dog.check(10, H)["decision"]["action"] == DEFICIT and len(submitted) == 1

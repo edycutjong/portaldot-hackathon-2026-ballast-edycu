@@ -174,6 +174,8 @@ def cmd_watch(args: argparse.Namespace) -> int:
         balance_of_data(args.holder)  # holder and token must be EVM addresses before anything is armed
         balance_of_data(args.token)
         providers = providers_from(args.provider or SEPOLIA_PROVIDERS, timeout=args.timeout)
+        if args.community and len(providers) < 2:
+            raise ValueError("--community needs at least two providers: it freezes only when every one reads short")
         cfg = load_chain_config(args.config, profile=args.profile, url=args.url)
         if not cfg.url.startswith(("ws://", "wss://")):
             # submitting with wait-for-inclusion needs a websocket: an http URL would arm a watcher that cannot freeze
@@ -212,6 +214,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
         read_deadline_s=2 * args.timeout,  # two requests per reading, each bounded by --timeout
         bot=bot,
         heartbeat_k=heartbeat_k if bot else None,
+        community=args.community,
     )
     try:
         log = JsonLog(args.log, profile=ident.profile.name, chain=ident.profile.label, breaker=args.breaker)
@@ -232,7 +235,8 @@ def cmd_watch(args: argparse.Namespace) -> int:
             log("not-armed", message=f"{type(exc).__name__}: {exc}" if not isinstance(exc, RuntimeError) else str(exc))
             return 2
         log.context["reserve"] = pre["reserve"]
-        log("start", **pre, poll_blocks=poll_blocks, fail_closed_after=args.fail_closed_after,
+        log("start", **pre, poll_blocks=poll_blocks, mode="community" if args.community else "operator",
+            fail_closed_after="never (community)" if args.community else args.fail_closed_after,
             heartbeat={"bot": bot, "k": heartbeat_k} if bot else "off",
             max_block_age=args.max_block_age or "off",
             supply_ids=supply_ids, providers=[p.name for p in providers], erc20=args.token, holder=args.holder,
@@ -563,8 +567,9 @@ def build_parser() -> argparse.ArgumentParser:
     res.add_argument("--note", help="free-text label stored in the report (e.g. what the holder address is)")
     res.set_defaults(func=cmd_reserves)
 
-    w = sub.add_parser("watch", help="run an OPERATOR watcher: freeze on reserve deficit (either provider) or "
-                       "total provider outage (I6); the community-watcher rule is not implemented")
+    w = sub.add_parser("watch", help="run a watcher: OPERATOR (default) freezes on a reserve deficit on either "
+                       "provider or a total provider outage (I6); --community freezes only when every provider "
+                       "reads short at one pinned block, and never on an outage")
     w.add_argument("--breaker", type=int, required=True, help="asset id to freeze (asset 1)")
     w.add_argument("--supply-assets", required=True,
                    help="comma-separated ids of EVERY asset the reserve backs, incl. the breaker "
@@ -589,6 +594,8 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--bot", help="reserve bot account (SS58, or //Dev on a stand-in): freeze if its nonce does not "
                    "move for K blocks (I8, heartbeat)")
     w.add_argument("--heartbeat-k", type=int, help="K in blocks (default: the profile's measured K = 3 x H)")
+    w.add_argument("--community", action="store_true",
+                   help="community-watcher rule: every provider short at the same block; no fail-closed (I6 off)")
     w.add_argument("--until-frozen", action="store_true", help="exit 0 once the breaker asset is frozen")
     w.add_argument("--max-seconds", type=float, help="stop after this many seconds (exit 4 if --until-frozen)")
     w.add_argument("--log", metavar="FILE", help="append JSON-lines records to FILE")

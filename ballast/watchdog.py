@@ -22,8 +22,13 @@ Loop (one watcher key, freeze-only):
      so `batch_all` reverts the remark with a failed freeze; the receipt is still checked for Assets.AssetFrozen and
      every inner multisig result (I9). A failed freeze is logged `critical` and retried on the next poll (up to
      FAST_RETRIES in a row, then every N blocks — never abandoned); a freeze lost to another watcher is `freeze-raced`.
-Scope: an OPERATOR watcher (freeze on either provider short; fail-closed I6). The community-watcher rule (both
-providers short at the same block, no I6) is not implemented here.
+Two modes. OPERATOR (default): freeze on either provider short; fail-closed I6; heartbeat I8. COMMUNITY
+(`community=True`, `ballast watch --community`): freeze on a deficit only when EVERY provider answers and reads short,
+confirmed by a second read of every provider pinned to one Sepolia block (the lowest latest block among them; same
+hash everywhere); one provider short is `one-short`, a total outage is only `outage` — never fail-closed, because one
+community watcher's bad network must not freeze the asset for everyone (architecture I6). I8 applies in both modes.
+Wind-down (both modes): a deficit does not re-freeze a thawed asset while every holder with a balance is individually
+frozen (`winddown-hold`, spec.md "Shortfall end state" step 2).
 Every record is one JSON line (`log`) with the chain profile and the reserve label on it.
 """
 
@@ -60,6 +65,7 @@ FEE_HEADROOM = 10  # the watcher key must hold ED + 10 x the freeze extrinsic's 
 
 LEVEL, DEFICIT, OUTAGE, FAIL_CLOSED, ALREADY_FROZEN = "level", "deficit", "outage", "fail-closed", "already-frozen"
 NO_HEARTBEAT = "no-heartbeat"
+ONE_SHORT, WINDDOWN_HOLD = "one-short", "winddown-hold"  # community: not every provider short; wind-down in progress
 REMARK_REASON = {DEFICIT: "deficit", FAIL_CLOSED: "providers-down", NO_HEARTBEAT: "no-heartbeat"}
 
 
@@ -128,15 +134,26 @@ def decide(
     now: float,
     fail_closed_after: float = FAIL_CLOSED_AFTER_S,
     heartbeat: dict | None = None,
+    community: bool = False,
 ) -> tuple[Decision, float | None]:
     """Pure decision for one check. Returns (decision, new outage_since).
-    `heartbeat` (I8): {"stale_blocks": blocks since the bot's nonce last moved, "k": K, …} — stale >= K freezes."""
+    `heartbeat` (I8): {"stale_blocks": blocks since the bot's nonce last moved, "k": K, …} — stale >= K freezes.
+    `community`: a deficit needs every provider answering and short (the caller then confirms it at one pinned
+    block); no fail-closed."""
     ok = comparison.ok
     outage_since = None if ok else (outage_since if outage_since is not None else now)
     reserves_min = comparison.min_reserves
     if frozen:
         return Decision(ALREADY_FROZEN, supply, reserves_min, detail="asset not live (frozen); no transaction"), outage_since
     short = comparison.short(supply)
+    if short and community and (comparison.failed or len(short) < len(comparison.readings) or len(short) < 2):
+        if heartbeat is not None and heartbeat["stale_blocks"] >= heartbeat["k"]:
+            short = []  # fall through to I8 below
+        else:
+            names = ",".join(r.provider for r in short)
+            return (Decision(ONE_SHORT, supply, reserves_min, short=[r.as_dict() for r in short],
+                             detail=f"community watcher: {names} short, but not every provider (of "
+                                    f"{len(comparison.readings)}) answers short — no freeze"), outage_since)
     if short:
         worst = min(short, key=lambda r: r.reserves)
         return (
@@ -158,6 +175,10 @@ def decide(
         )
     if not ok:
         down = round(now - outage_since, 1)
+        if community:
+            return Decision(OUTAGE, supply, None, down_for_s=down,
+                            detail=f"every provider unreachable for {down}s (community watcher: never fail-closed, "
+                                   "I6 is operator-only)"), outage_since
         if down > fail_closed_after:
             return Decision(FAIL_CLOSED, supply, None, down_for_s=down,
                             detail=f"every provider unreachable for {down}s > {fail_closed_after}s"), outage_since
@@ -245,6 +266,7 @@ class WatchConfig:
     read_deadline_s: float | None = 20.0  # a provider still busy after this is a failed reading
     bot: str | None = None  # I8: the reserve bot's account; its nonce must move at least every K blocks
     heartbeat_k: int | None = None
+    community: bool = False  # the community-watcher rule (module docstring)
 
 
 class Watchdog:
@@ -376,8 +398,23 @@ class Watchdog:
         comparison = compare(readings)
         heartbeat = self.heartbeat(state_head, state_hash)
         decision, self.outage_since = decide(
-            supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after, heartbeat
+            supply, frozen, comparison, self.outage_since, self.clock(), self.cfg.fail_closed_after, heartbeat,
+            self.cfg.community,
         )
+        pinned = None
+        if decision.action == DEFICIT and self.cfg.community:
+            decision, pinned = self.confirm_same_block(decision, comparison, supply)
+        holders_seen = None
+        if decision.action == DEFICIT:
+            from .governance import holders, winddown_hold
+
+            rows = holders(self.substrate, self.cfg.breaker_id, state_hash)
+            holders_seen = {"with_balance": sum(1 for h in rows if h["balance"] > 0),
+                            "frozen": sum(1 for h in rows if h["balance"] > 0 and h["frozen"])}
+            if winddown_hold(rows):
+                decision = Decision(WINDDOWN_HOLD, supply, decision.reserves_min, short=decision.short,
+                                    detail=f"deficit, but all {holders_seen['with_balance']} holders with a balance are "
+                                           "individually frozen (wind-down): re-freezing the asset changes nothing")
         record = self.log(
             "check",
             head=number,
@@ -389,10 +426,29 @@ class Watchdog:
             reserves=comparison.as_dict(),
             heartbeat=heartbeat,
             decision=decision.as_dict(),
+            **({"mode": "community", "pinned": pinned} if self.cfg.community else {}),
+            **({"holders": holders_seen} if holders_seen else {}),
         )
         if decision.freeze:
             self.freeze(decision, number)
         return record
+
+    def confirm_same_block(self, decision: Decision, comparison: Any, supply: int) -> tuple[Decision, dict]:
+        """Community rule: re-read EVERY provider at one block (the lowest latest block they reported); a deficit
+        stands only if all answer, all name the same block hash, and all read short there."""
+        pin = min(r.block_number for r in comparison.ok)
+        readings = read_all(self.providers, self.cfg.token, self.cfg.holder, pin, None, self.cfg.read_deadline_s)
+        again = compare(readings)
+        hashes = {r.block_hash for r in again.ok}
+        short = again.short(supply)
+        info = {"block": pin, "readings": [r.as_dict() for r in readings], "disagreements": again.disagreements}
+        if again.failed or len(hashes) != 1 or again.disagreements or len(short) != len(readings):
+            return Decision(ONE_SHORT, supply, again.min_reserves, short=[r.as_dict() for r in short],
+                            detail=f"community watcher: not every provider reads short at one pinned block #{pin} "
+                                   "— no freeze"), info
+        return Decision(DEFICIT, supply, again.min_reserves, short=[r.as_dict() for r in short],
+                        detail=f"community watcher: every provider ({len(readings)}) reads short at the same block "
+                               f"#{pin} {next(iter(hashes))[:12]}…"), info
 
     def heartbeat(self, number: int, block_hash: str) -> dict | None:
         """I8, counted in blocks: how long the bot's nonce has stood still (from when this watcher first saw it)."""

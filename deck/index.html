@@ -287,7 +287,7 @@ body.debug-contrast .contrast-check, body.debug-contrast .slide :is(h1, h2, h3, 
     <p class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><clipPath id="bl-c"><circle cx="226" cy="256" r="156"/></clipPath></defs><rect x="8" y="8" width="496" height="496" rx="104" fill="#0C2536"/><rect x="40" y="318" width="380" height="200" fill="#3FD9B5" clip-path="url(#bl-c)"/><rect x="40" y="318" width="380" height="8" fill="#B8FFEC" clip-path="url(#bl-c)"/><circle cx="226" cy="256" r="156" fill="none" stroke="#6F92A6" stroke-width="40"/><rect x="36" y="236" width="316" height="40" fill="#F4F1E6"/><rect x="398" y="236" width="80" height="40" fill="#3E5A6C"/><rect x="354" y="150" width="40" height="212" rx="6" fill="#FF5B2E"/></svg><span><b>BALLAST</b> a reserve-gated circuit breaker for a custodial test dollar on Portaldot.</span></p>
   </div>
   <div class="run"><div class="bar">re-run read-only 2026-10-31 · evidence/check-receipts-v3-20261031T034000Z.txt</div>
-<pre><span class="p">$</span> <span class="c">python scripts/check_receipts.py --profile v3 | grep '^\[v3\]'</span>
+<pre><span class="p">$</span> <span class="c">python scripts/check_receipts.py --profile v3 | grep -E '^\[v3\] (261|all)'</span>
 [v3] 261/261 receipts confirmed from 23 run(s)
 [v3] all confirmed rows at or below the finalized head #261558</pre></div>
   <p class="proof">On the Portaldot V3 testnet, 2026-10-24: watcher W2 froze asset 4401 in extrinsic

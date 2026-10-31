@@ -73,8 +73,7 @@ h1 em.unk { color: var(--amber); }
 .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(63,217,181,.55), var(--before)); transition: width 1.1s var(--ease); }
 .fill.short { background: linear-gradient(90deg, rgba(255,91,46,.5), var(--after)); }
 .fill::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 3px; background: var(--crest); box-shadow: 0 0 14px var(--crest); }
-.supply-tick { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--ink); left: 100%; }
-.gauge-scale { display: flex; justify-content: space-between; margin-top: 8px; font: 400 12px/1.3 var(--font-data); color: var(--muted); }
+.gauge-scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin-top: 8px; font: 400 12px/1.3 var(--font-data); color: var(--muted); }
 
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 30px 0 0; }
 .card { border: 1px solid var(--rule); background: rgba(8,27,40,.62); padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -105,7 +104,8 @@ h1 em.unk { color: var(--amber); }
 
   <p class="eyebrow">Reserves · read-only · from your browser</p>
   <h1 id="verdict">Reading the <em class="unk">load line</em>&hellip;</h1>
-  <p class="sub" id="sub">Sepolia vault balance against the Portaldot V3 supply of the breaker asset. Nothing here is written or signed.</p>
+  <div aria-live="polite"><p class="sub" id="sub">Sepolia vault balance against the Portaldot V3 supply of the breaker (4401) and control (4402) assets. Nothing here is written or signed.</p></div>
+  <noscript><p class="sub">This page reads its numbers with JavaScript. The last recorded values are in <a href="snapshot.json">snapshot.json</a>.</p></noscript>
 
   <div class="srcline" id="srcline" aria-live="polite">
     <span class="pill" id="pill-sepolia">Sepolia vault: reading</span>
@@ -114,8 +114,8 @@ h1 em.unk { color: var(--amber); }
   </div>
 
   <div class="gauge" role="img" aria-label="Reserve as a share of supply" id="gauge">
-    <div class="track"><div class="fill" id="fill"></div><div class="supply-tick" id="tick"></div></div>
-    <div class="gauge-scale"><span>0</span><span id="gauge-mid">reserve &divide; supply</span><span id="gauge-max">supply</span></div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <div class="gauge-scale"><span>0</span><span id="gauge-mid">reserve &divide; supply</span><span id="gauge-max">= supply</span></div>
   </div>
 
   <div class="cards">
@@ -132,7 +132,7 @@ h1 em.unk { color: var(--amber); }
       <h2 id="h-sup">Asset supply</h2>
       <div class="big" id="sup-big">&ndash;<small>pUSDC-test</small></div>
       <dl class="rows" id="sup-rows"></dl>
-      <p class="note">Breaker asset 4401 + control asset 4402, read from chain storage. Status is the head; a <span class="chip bad">Frozen</span> breaker means the watchers tripped.</p>
+      <p class="note">Breaker asset 4401 + control asset 4402, read from chain storage. Status is read at the head; <i>Frozen</i> means a watcher freeze went through (a trip or a drill).</p>
       <div class="links" id="sup-links"></div>
     </section>
     <section class="card" aria-labelledby="h-att">
@@ -149,8 +149,8 @@ h1 em.unk { color: var(--amber); }
     <p><b>What this page is.</b> A read of three public sources. It is not an audit and it does not sign anything. The drills that prove the breaker
     (freeze, refused transfer, gated thaw) are in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md">PROOF.md</a>;
     latency and fee over many drills are in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>.</p>
-    <p><b>Two reserve chains.</b> The vault above is on real Ethereum <b>Sepolia</b>. Most V3 drills (and every attestation the oracle mirrors) used a
-    <b>local anvil</b> reserve chain, not Sepolia; the attestation card says which chain its reserves figure came from.</p>
+    <p><b>Two reserve chains.</b> The vault above is on real Ethereum <b>Sepolia</b>. Most V3 drills (and the attestations the oracle last mirrored) used a
+    <b>local anvil</b> reserve chain, not Sepolia; the attestation card says so for its figure.</p>
     <p><b>Static fallback.</b> If a source cannot be reached from your browser, that panel shows <code>snapshot.json</code>, a read taken at the
     time printed in its pill, and says &ldquo;static snapshot&rdquo;. It is a record, not a live value.</p>
   </div>
@@ -175,7 +175,7 @@ const ONE = 1e6;
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => (Number(n) / ONE).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const short = (h) => h.slice(0, 8) + "…" + h.slice(-6);
-const state = { reserve: null, supply: null, breakerStatus: null, att: null };
+const state = { reserve: null, supply: null, statuses: [], att: null, attMode: "static" };
 
 function timeout(ms, p) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout " + ms + " ms")), ms))]);
@@ -205,7 +205,9 @@ function links(id, list) {
 async function readSepolia() {
   const data = "0x70a08231" + "0".repeat(24) + VAULT.slice(2).toLowerCase();
   const out = [];
+  const failed = [];
   await Promise.all(SEPOLIA.map(async (p) => {
+   try {
     const row = { name: p.name };
     for (const tag of ["latest", "finalized"]) {
       const b = await rpc(p.url, "eth_getBlockByNumber", [tag, false]);
@@ -213,8 +215,10 @@ async function readSepolia() {
       row[tag] = { block: Number(hexBig(b.number)), balance: Number(hexBig(bal)) };
     }
     out.push(row);
+   } catch (e) { failed.push(p.name + ": " + e.message); }
   }));
-  if (!out.length) throw new Error("no provider answered");
+  if (!out.length) throw new Error("no provider answered (" + failed.join("; ") + ")");
+  out.failed = failed;
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 function renderSepolia(providers, live, stamp) {
@@ -227,8 +231,9 @@ function renderSepolia(providers, live, stamp) {
     ["providers agree", chip(fins.every((f) => f === fins[0]) ? "yes" : "NO", fins.every((f) => f === fins[0]) ? "ok" : "bad")],
     ["latest (not final)", providers.map((p) => fmt(p.latest.balance)).join(" · ")],
   ]);
-  links("res-links", [["vault on Etherscan", "https://sepolia.etherscan.io/address/" + VAULT], ["token", "https://sepolia.etherscan.io/token/" + USDC + "?a=" + VAULT]]);
-  pill("pill-sepolia", live ? "live" : "static", live ? "Sepolia vault: live, read just now" : "Sepolia vault: static snapshot " + stamp);
+  links("res-links", [["vault on Etherscan", "https://sepolia.etherscan.io/address/" + VAULT], ["USDC held by the vault", "https://sepolia.etherscan.io/token/" + USDC + "?a=" + VAULT]]);
+  const part = providers.failed && providers.failed.length ? " (" + providers.length + " of " + SEPOLIA.length + " providers answered)" : "";
+  pill("pill-sepolia", live ? "live" : "static", live ? "Sepolia vault: live, read just now" + part : "Sepolia vault: static snapshot " + stamp + why());
 }
 
 /* ---------------- V3 supply over WSS ---------------- */
@@ -240,6 +245,7 @@ function readV3() {
     const timer = setTimeout(() => done(reject, new Error("V3 websocket timeout")), 12000);
     const call = (method, params) => new Promise((res, rej) => { const id = ++n; pending.set(id, { res, rej }); ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params })); });
     ws.onerror = () => done(reject, new Error("V3 websocket error"));
+    ws.onclose = () => done(reject, new Error("V3 websocket closed"));
     ws.onmessage = (m) => { const j = JSON.parse(m.data); const p = pending.get(j.id); if (!p) return; pending.delete(j.id); j.error ? p.rej(new Error(j.error.message)) : p.res(j.result); };
     ws.onopen = async () => {
       try {
@@ -263,25 +269,32 @@ function readV3() {
 function renderV3(v3, live, stamp) {
   const a = v3.assets;
   const total = a[4401].supply + a[4402].supply;
-  state.supply = total; state.breakerStatus = a[4401].status;
+  state.supply = total;
   $("sup-big").replaceChildren(document.createTextNode(fmt(total)), Object.assign(document.createElement("small"), { textContent: "pUSDC-test" }));
+  state.statuses = [a[4401].status, a[4402].status];
   rows("sup-rows", [
     ["4401 breaker", fmt(a[4401].supply)],
     ["4401 status", chip(a[4401].status, a[4401].status === "Live" ? "ok" : "bad")],
     ["4402 control", fmt(a[4402].supply)],
+    ["4402 status", chip(a[4402].status, a[4402].status === "Live" ? "ok" : "bad")],
     [live ? "head" : "finalized", "#" + (v3.head_block || v3.finalized_block)],
   ]);
   links("sup-links", [["node console", "https://node-console.portaldot.dev/"], ["PROOF.md", "https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/docs/PROOF.md"]]);
-  pill("pill-v3", live ? "live" : "static", live ? "V3 supply: live, head #" + v3.head_block : "V3 supply: static snapshot " + stamp);
+  pill("pill-v3", live ? "live" : "static", live ? "V3 supply: live, head #" + v3.head_block : "V3 supply: static snapshot " + stamp + why());
 }
 
-/* ---------------- ReserveOracle.status() ---------------- */
+/* ---------------- ReserveOracle.status() + isBacked(3600) ---------------- */
 async function readOracle() {
   const r = await rpc(V3_EVM, "eth_call", [{ to: ORACLE, data: "0x200d2ed2" }, "latest"]);
   const h = r.slice(2);
   if (h.length !== 8 * 64) throw new Error("unexpected status() length");
   const w = (i) => BigInt("0x" + h.slice(i * 64, (i + 1) * 64));
-  return { s1: Number(w(0)), s2: Number(w(1)), reserves: Number(w(2)), sep_block: Number(w(3)), pd_block: Number(w(5)), frozen: w(6) === 1n, updated_at: Number(w(7)) };
+  const o = { s1: Number(w(0)), s2: Number(w(1)), reserves: Number(w(2)), sep_block: Number(w(3)), pd_block: Number(w(5)), frozen: w(6) === 1n, updated_at: Number(w(7)) };
+  try {  // isBacked(3600): fresh within an hour, not frozen, reserves cover the posted supply
+    const ib = await rpc(V3_EVM, "eth_call", [{ to: ORACLE, data: "0xdbd8a87f" + (3600).toString(16).padStart(64, "0") }, "latest"]);
+    o.is_backed_3600 = BigInt(ib) === 1n;
+  } catch (e) { o.is_backed_3600 = null; }
+  return o;
 }
 function ago(sec) {
   if (sec < 90) return Math.round(sec) + " s";
@@ -292,41 +305,56 @@ function ago(sec) {
 function renderOracle(o, live, stamp) {
   state.att = o;
   const age = Date.now() / 1000 - o.updated_at;
+  const fresh = age < 3600;
+  const covers = o.reserves >= o.s1 + o.s2;
+  state.attMode = !live ? "static" : fresh ? "live" : "stale";
   $("att-big").replaceChildren(document.createTextNode(fmt(o.reserves)), Object.assign(document.createElement("small"), { textContent: "reserves" }));
   rows("att-rows", [
-    ["S1 + S2 (supply)", fmt(o.s1 + o.s2)],
-    ["covers supply", chip(o.reserves >= o.s1 + o.s2 ? "yes" : "no", o.reserves >= o.s1 + o.s2 ? "ok" : "bad")],
+    ["S1 + S2 at post time", fmt(o.s1 + o.s2)],
+    ["covered supply then", chip(covers ? "yes" : "no", covers ? "ok" : "bad")],
     ["mirror frozen flag", chip(o.frozen ? "frozen" : "not frozen", o.frozen ? "bad" : "ok")],
     ["V3 block of the post", "#" + o.pd_block],
     ["posted", ago(age) + " ago"],
-    ["fresh (< 1 h)?", chip(age < 3600 ? "yes" : "STALE", age < 3600 ? "ok" : "warn")],
+    ["fresh (< 1 h)?", chip(fresh ? "yes" : "STALE", fresh ? "ok" : "warn")],
+    ["isBacked(1 h)", o.is_backed_3600 == null ? "not read" : chip(String(o.is_backed_3600), o.is_backed_3600 ? "ok" : "warn")],
   ]);
-  $("att-note").textContent = "The reserves figure was read from the local anvil reserve chain (reserve block #" + o.sep_block +
-    ", not Sepolia) during the attestation drill. The oracle's isBacked() fails closed once a post is older than its max age.";
-  links("att-links", [["oracle on Revive", "https://node-console.portaldot.dev/"], ["ARCHITECTURE.md", "https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/ARCHITECTURE.md"]]);
-  pill("pill-oracle", live ? "live" : "static", live ? "Attestation mirror: live, posted " + ago(age) + " ago" : "Attestation mirror: static snapshot " + stamp);
+  $("att-note").textContent = "This is the last post to the mirror, not the current state: it can differ from the supply above. The reserves figure in it came from the local anvil " +
+    "reserve chain (reserve block #" + o.sep_block + ", not Sepolia) during the Oct 24 attestation drill. isBacked() fails closed once a post is older than the age you ask for, so a stale mirror reports false.";
+  links("att-links", [["V3 node console", "https://node-console.portaldot.dev/"], ["ARCHITECTURE.md", "https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/blob/main/ARCHITECTURE.md"]]);
+  pill("pill-oracle", live && fresh ? "live" : "static", live ? (fresh ? "Attestation mirror: live, posted " + ago(age) + " ago" : "Attestation mirror: read live, but STALE (posted " + ago(age) + " ago)") : "Attestation mirror: static snapshot " + stamp + why());
 }
 
 /* ---------------- verdict + gauge ---------------- */
+let lastWhy = "";
+function why() { return lastWhy ? " (live read failed: " + lastWhy + ")" : ""; }
+const live = (id) => $(id).classList.contains("live");
+function setVerdict(parts, cls) {
+  $("verdict").replaceChildren(...parts.map(([t, em]) => em ? Object.assign(document.createElement("em"), { className: cls || "", textContent: t }) : document.createTextNode(t)));
+}
 function paint() {
-  const v = $("verdict"), fill = $("fill");
-  if (state.reserve == null || state.supply == null) return;
+  const fill = $("fill");
+  if (state.reserve == null || state.supply == null) {
+    const bad = [["pill-sepolia", "Sepolia vault"], ["pill-v3", "V3 supply"]].filter(([id]) => state.reserve == null && id === "pill-sepolia" || state.supply == null && id === "pill-v3").map(([, n]) => n);
+    setVerdict([["Could not read the ", false], ["load line", true]], "unk");
+    $("sub").textContent = "No live read and no snapshot for: " + bad.join(", ") + ". Nothing is shown rather than a guess. Try again later, or see docs/PROOF.md for recorded drills.";
+    return;
+  }
   const ratio = state.reserve / state.supply;
   const level = state.reserve >= state.supply;
-  const frozen = state.breakerStatus === "Frozen";
-  const pct = Math.min(ratio, 1.25) / 1.25 * 100;
-  fill.style.width = pct + "%"; fill.classList.toggle("short", !level);
-  $("tick").style.left = (1 / 1.25 * 100) + "%";
-  $("gauge-max").textContent = "supply " + fmt(state.supply);
-  $("gauge-mid").textContent = "reserve " + fmt(state.reserve) + " · " + (ratio * 100).toFixed(1) + "% of supply";
+  const nonLive = state.statuses.filter((x) => x !== "Live");
+  const core = live("pill-sepolia") && live("pill-v3");
+  fill.style.width = Math.min(ratio, 1) * 100 + "%"; fill.classList.toggle("short", !level);
+  $("gauge-max").textContent = "= supply " + fmt(state.supply);
+  $("gauge-mid").textContent = "reserve " + fmt(state.reserve) + " · " + (ratio * 100).toFixed(1) + "% of supply" + (ratio > 1 ? " (surplus)" : "");
   $("gauge").setAttribute("aria-label", "Reserve " + fmt(state.reserve) + " against supply " + fmt(state.supply));
-  const stale = document.querySelectorAll(".pill.static").length > 0;
-  v.replaceChildren(document.createTextNode(level ? "The load line is " : "Reserves are "),
-    Object.assign(document.createElement("em"), { className: level ? "" : "short", textContent: level ? "level" : "short" }),
-    document.createTextNode(frozen ? " · breaker frozen" : ""));
-  $("sub").textContent = (level ? "Reserves cover supply: " : "Reserves are below supply: ") + fmt(state.reserve) + " test USDC in the Sepolia vault (finalized) against " +
-    fmt(state.supply) + " pUSDC-test on Portaldot V3. " + (frozen && level ? "The breaker is frozen while the Sepolia vault is level: a drill on the local anvil reserve chain (or a trip) is waiting for its finality-gated thaw. " : "") +
-    (stale ? "At least one panel is a static snapshot, labelled below." : "All three panels were read from your browser just now.");
+  if (core) setVerdict([[level ? "The load line is " : "Reserves are ", false], [level ? "level" : "short", true]], level ? "" : "short");
+  else setVerdict([["Last recorded: ", false], [level ? "level" : "short", true]], "unk");
+  const parts = [];
+  parts.push((level ? "Reserves cover supply: " : "Reserves are below supply: ") + fmt(state.reserve) + " test USDC in the Sepolia vault (finalized) against " + fmt(state.supply) + " pUSDC-test on Portaldot V3.");
+  if (nonLive.length) parts.push("A V3 asset is not Live (" + state.statuses.join(" / ") + "): a watcher freeze or a drill is in effect; the thaw is gated on Sepolia finality, see PROOF.md.");
+  parts.push(core ? "Vault and supply were read from your browser just now." : "At least one of vault and supply is a static snapshot, labelled in its pill.");
+  parts.push(state.attMode === "live" ? "The attestation mirror was read live and is fresh." : state.attMode === "stale" ? "The attestation mirror was read live but its last post is stale (age on its card)." : "The attestation mirror is a static snapshot.");
+  $("sub").textContent = parts.join(" ");
 }
 
 async function load() {
@@ -341,8 +369,9 @@ async function load() {
   await Promise.all(jobs.map(async ([read, render, fallback, pillId, name]) => {
     try { render(await read(), true, stamp); }
     catch (e) {
+      lastWhy = String(e.message || e).slice(0, 90);
       if (fallback) render(fallback, false, stamp);
-      else pill(pillId, "err", name + ": unreachable (" + e.message + "), no snapshot");
+      else pill(pillId, "err", name + ": unreachable (" + lastWhy + "), no snapshot");
     }
   }));
   paint();

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-31T03:34:45Z",
+  "generated_at": "2026-10-31T03:42:30Z",
   "kind": "reserves-snapshot (read-only; no transaction)",
   "sepolia": {
     "vault": "0x7ceB7c3EBDBCC75e585599e5dd944286F009357b",
@@ -8,22 +8,22 @@
       {
         "name": "publicnode",
         "latest": {
-          "block": 12031179,
+          "block": 12031217,
           "balance": 100000000
         },
         "finalized": {
-          "block": 12031106,
+          "block": 12031137,
           "balance": 100000000
         }
       },
       {
         "name": "tenderly",
         "latest": {
-          "block": 12031179,
+          "block": 12031217,
           "balance": 100000000
         },
         "finalized": {
-          "block": 12031106,
+          "block": 12031137,
           "balance": 100000000
         }
       }
@@ -31,8 +31,8 @@
   },
   "v3": {
     "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
-    "finalized_block": 261556,
-    "finalized_hash": "0xcb96295091997c17e506439ff33cb89a08cac820e7bdfff0595c70413dd1093c",
+    "finalized_block": 261633,
+    "finalized_hash": "0xd451c0272765fc3c5173a36e6ef94b246009f587620b541d149e2561bef24842",
     "assets": {
       "4401": {
         "supply": 50000000,
@@ -48,6 +48,7 @@
   },
   "oracle": {
     "address": "0x4832cdb7a89c0539fb2e762ab94fcdb5710a155e",
+    "is_backed_3600": false,
     "s1": 56000000,
     "s2": 50000000,
     "reserves": 106000000,

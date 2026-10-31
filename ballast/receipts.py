@@ -217,6 +217,8 @@ ROLE_TITLES = {
     "roles-drill": "Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw",
     "roles-attest": "Attestations — BALLAST/1 remarks by B, ReserveOracle mirror, `ballast verify` + negative control",
     "sepolia-drill": "Sepolia drill — real ReserveVault + 100.00 test USDC, drain -> freeze on V3, thaw only after Sepolia finality",
+    "roles-governance": "Governance drill — announced watcher-set + M_admin rotations, community watcher, wind-down, redemption",
+    "oracle-trip": "ReserveOracle v2 — trip() by a listed watcher, cleared only by a later post",
 }
 
 
@@ -313,7 +315,7 @@ def render_receipts_md() -> str:
                     f"Chain label: {group[0]['chain']['label']}", ""]
         else:
             out += [f"## V3 receipts — {profile}", "", f"Chain label: {group[0]['chain']['label']}", ""]
-        kinds = (("sepolia-drill", None), ("roles-drill", None), ("roles-attest", None), ("roles-setup", None), ("drill", "drain"), ("drill", "outage"),
+        kinds = (("sepolia-drill", None), ("roles-governance", None), ("oracle-trip", None), ("roles-drill", None), ("roles-attest", None), ("roles-setup", None), ("drill", "drain"), ("drill", "outage"),
                  ("drill", "heartbeat"), ("oracle-deploy", None), ("spike-assets", None))
         for kind, scenario in kinds:
             runs_k = [r for r in group if r.get("kind", "spike-assets") == kind and r.get("scenario") == scenario]
@@ -327,7 +329,8 @@ def render_receipts_md() -> str:
                 if i == 0:
                     render = {"drill": render_drill_section, "oracle-deploy": render_oracle_section,
                               "roles-setup": render_roles_section, "roles-drill": render_roles_section, "sepolia-drill": render_roles_section,
-                              "roles-attest": render_roles_section}
+                              "roles-attest": render_roles_section, "roles-governance": render_roles_section,
+                              "oracle-trip": render_roles_section}
                     out += render.get(kind, render_spike_section)(run)
                 else:
                     if i == 1:
@@ -346,6 +349,8 @@ def render_receipts_md() -> str:
 
 INDEX_ROWS = (
     ("sepolia-drill", None, "Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality"),
+    ("roles-governance", None, "Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption"),
+    ("oracle-trip", None, "ReserveOracle v2: trip() by a listed watcher, refused for others, cleared only by a later post"),
     ("roles-drill", None, "Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate)"),
     ("roles-attest", None, "Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED)"),
     ("roles-setup", None, "Role split: asset 1 owner/issuer M_mint, admin M_admin, freezer M_watch; asset 2 keyless"),

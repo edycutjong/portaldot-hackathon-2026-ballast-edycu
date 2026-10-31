@@ -20,7 +20,7 @@
   [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-ballast-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/releases/latest)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/workflows/ci.yml)
   ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
-  ![Tests: 274 passing](https://img.shields.io/badge/tests-274%20passing-brightgreen?style=flat)
+  ![Tests: 342 passing](https://img.shields.io/badge/tests-342%20passing-brightgreen?style=flat)
   ![Drills: Portaldot V3 testnet + stand-in](https://img.shields.io/badge/drills-Portaldot%20V3%20testnet%20%2B%20stand--in-brightgreen?style=flat)
   ![Reserve: Sepolia drill + local anvil](https://img.shields.io/badge/reserve-Sepolia%20drill%20%2B%20local%20anvil-orange?style=flat)
 
@@ -195,8 +195,10 @@ chains that recorded them: **486/486 stand-in extrinsics and 111/111 anvil trans
 ([`evidence/test-run-2026-10-14-p5.txt`](evidence/test-run-2026-10-14-p5.txt)). These are **stand-in receipts, not V3**: the stand-in is a local
 `--dev` node with no public explorer, and a fresh node run produces new hashes. **V3 receipts** are in
 [`docs/PROOF.md`](docs/PROOF.md), each with a https://node-console.portaldot.dev/ link: `python scripts/check_receipts.py --profile v3` re-fetched
-79/79 extrinsics, all at or below the finalized head #170291 ([`evidence/v3-finality.json`](evidence/v3-finality.json)). Three were first included in
-a block that lost a fork; the same extrinsic is in the canonical block at the same height, and PROOF.md links that block. V3 IDs: assets 4401
+261/261 extrinsics from 23 runs, all at or below the finalized head #261558, plus 83/83 reserve-chain transactions on the local anvil
+([`evidence/check-receipts-v3-20261031T034000Z.txt`](evidence/check-receipts-v3-20261031T034000Z.txt), 2026-10-31 UTC; the first 79 of them were re-queried at #170291 on
+2026-10-24, [`evidence/v3-finality.json`](evidence/v3-finality.json)). Some were first included in a block that lost a fork; the same extrinsic is in the
+canonical block at the same height, and PROOF.md links that block. Failed and errored runs are kept in PROOF.md with their verdicts. V3 IDs: assets 4401
 (breaker) and 4402 (control), `ReserveOracle` `0x4832…155e`, role addresses in [`deployments/v3.json`](deployments/v3.json).
 
 **Sepolia.** On 2026-10-30 (UTC) `ReserveVault` was deployed on Ethereum Sepolia at `0x7ceB7c3EBDBCC75e585599e5dd944286F009357b` (owner: the testnet deployer `0xDEf7…9300`, token: Circle test USDC `0x1c7D…7238`), source-verified on Sourcify (`exact_match`; not verified on Etherscan), and funded with exactly 100.00 test USDC (deploy tx `0x6e3fc886…479a`, deposit `0x28d963c4…b245`, both final on publicnode and Tenderly after a wait of about 842 s). The V3 supply was levelled to S1 50.00 + S2 50.00 first (the judge account's 6.00 surplus was burned through `M_admin`, A + A2). The drill then ran against that vault with the real finality wait: the vault owner released 30.00, W1/W2 (two processes, one machine) froze asset 4401 on V3 about 10 s later, the judge transfer was refused (`AssetNotLive`), W1's thaw was refused (`NoPermission`), the owner re-deposited 30.00, and the bot refused the thaw until both providers' finalized head passed the drain (the wait was 1,026 s; finalized `12029641` on both) and only then co-signed it. Clean-pinned PASS: [`evidence/sepolia-drill-20261030T220145Z.json`](evidence/sepolia-drill-20261030T220145Z.json) (8/8 steps, 18/18 state checks; freeze `258434-1`, thaw `258627-1`); the first run, the Sepolia deploy and deposit are in [`evidence/sepolia-drill-20261030T200923Z.json`](evidence/sepolia-drill-20261030T200923Z.json); two `--vault` re-runs between them failed one harness precheck (product steps 8/8) and are kept as history. Every Sepolia transaction was re-read from both providers at or below the finalized head ([`evidence/sepolia-drill-reread-20261030T224700Z.txt`](evidence/sepolia-drill-reread-20261030T224700Z.txt), 20/20). Rows are labelled `Sepolia` in [`docs/PROOF.md`](docs/PROOF.md). The second keyless provider is now Tenderly's public gateway because drpc.org's free plan stopped serving Sepolia (error 35, first seen 2026-10-30 UTC).
@@ -221,7 +223,7 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
 cp ballast.toml.example ballast.toml        # profile = standin-upstream, ws://127.0.0.1:49944
 
-pytest -q                                   # 239 tests, offline (metadata fixtures are sha256-pinned)
+pytest -q                                   # 301 tests, offline (metadata fixtures are sha256-pinned)
 forge test                                  # 20 ReserveVault tests
 npm ci && npx hardhat test                  # 15 ReserveOracle tests
 
@@ -269,7 +271,10 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 
 - **Video:** demo: https://youtu.be/jV5dCy1o3O8
 - **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, printed from [`deck/index.html`](deck/index.html); figures pinned to build `0071879`).
-- **Live demo:** no hosted UI. The V3 runs are public: every extrinsic in [`docs/PROOF.md`](docs/PROOF.md) opens on https://node-console.portaldot.dev/.
+- **Live pages:** the landing, https://ballast.edycu.dev/, and a read-only **reserves page**, https://ballast.edycu.dev/reserves/ (the Sepolia `ReserveVault` read on two providers, V3 supply of assets 4401/4402 over WSS and the `ReserveOracle` mirror, read from the browser; every panel is labelled live, static fallback or stale, and the oracle mirror is stale by design, last posted 2026-10-24 on a local anvil). There is no operator UI. The V3 runs are public: every extrinsic in [`docs/PROOF.md`](docs/PROOF.md) opens on https://node-console.portaldot.dev/.
+- **Benchmarks** ([`docs/BENCHMARKS.md`](docs/BENCHMARKS.md), [`evidence/bench-summary-20261031T034735Z.json`](evidence/bench-summary-20261031T034735Z.json); wall clock, drain to freeze included on V3): 35 counted freeze drills; local-anvil reserve p50 / p95 12.31 / 16.71 s (n = 26); real Sepolia reserve with the watchers on one machine 10.61 / 11.25 s (n = 6, so p95 is the maximum); W2 on GitHub Actions 64.44 / 70.73 s (n = 3, includes workflow queue and install, one machine's drain clock against the runner's). Freeze fee 0.0299 to 0.0308 tPOT. One harness-check sample is excluded and listed.
+- **Sepolia drill with real finality** (vault `0x7ceB…357b`, 100.00 test USDC; PASS 8/8 steps + 18/18 state checks, [`evidence/sepolia-drill-20261030T220145Z.json`](evidence/sepolia-drill-20261030T220145Z.json)): Sepolia `release` -> W1 freeze `258434-1` on V3 10.26 s later -> refused judge transfer `AssetNotLive`, refused watcher thaw `NoPermission` -> refill -> the bot refused the thaw until both providers' finalized head passed the drain (1,026 s) -> co-signed thaw `258627-1` -> transfer OK. The drills before it that FAILED or ERRORED are kept in [`docs/PROOF.md`](docs/PROOF.md).
+- **W2 on GitHub Actions** ([`docs/W2-ACTIONS.md`](docs/W2-ACTIONS.md)): with W1 off, run [`41150496088`](https://github.com/edycutjong/portaldot-hackathon-2026-ballast-edycu/actions/runs/41150496088) froze asset 4401 through W2 (`259731-1`, `reason=deficit`). A dispatch with level reserves is a no-op. The `*/5` cron fired once in its first ~19 hours.
 - **What a reviewer can verify without us:** `docs/RECEIPTS.md` (every step with extrinsic ids and hashes), `evidence/` (raw JSON, watchdog logs),
   and the commands above on a fresh chain (they produce new ids and hashes; the committed receipts re-fetch only against the author's node).
 - **On V3** (6000 ms blocks, local anvil reserve, wall clock, one machine): drain to freeze included took 12.22 s in the passing V3 role drill
@@ -302,19 +307,19 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
 - [x] Multisig role split (`M_mint` 2-of-2, `M_admin` 2-of-3, `M_watch` 1-of-2), reserve bot with mint / thaw / set_team gates, SQLite decision log
 - [x] `BALLAST/1` attestations, oracle mirror after inclusion, `ballast verify` with per-type signers and a forged-remark negative control
 - [x] Portaldot V3 testnet: role split + `ReserveOracle` on Revive (PASS 16/16 + 6/6), role drill PASS 22/22 + 20/20, attestation drill PASS 15/15 + 6/6,
-  79/79 V3 extrinsics re-queried and final ([`docs/PROOF.md`](docs/PROOF.md); reserve: local anvil, NOT Sepolia)
-- [x] 274 automated tests (239 pytest + 20 forge + 15 Hardhat, [`evidence/test-run-2026-10-24-p12.txt`](evidence/test-run-2026-10-24-p12.txt))
+  79/79 V3 extrinsics re-queried and final on 2026-10-24 (since extended to 261/261, see Receipts above; [`docs/PROOF.md`](docs/PROOF.md); reserve: local anvil, NOT Sepolia)
+- [x] 342 automated tests (301 pytest + 20 forge + 21 Hardhat; [`evidence/test-run-2026-10-31-p26.txt`](evidence/test-run-2026-10-31-p26.txt))
 
 **Next phase**
 - [x] `ReserveVault` on Sepolia with 100.00 test USDC and the drill against it, including the real finality wait (2026-10-30 UTC, [`docs/PROOF.md`](docs/PROOF.md))
 - [x] The scratch-asset outage and heartbeat drills on V3 (2026-10-30 UTC, assets 4501/4503, local anvil reserve; [`docs/PROOF.md`](docs/PROOF.md))
-- [x] W2 on GitHub Actions (`.github/workflows/watcher-w2.yml`, cron `*/5` configured but no scheduled run has fired yet, manual dispatch proven, secret seed): a healthy-reserve dispatch is a no-op, and with W1 off the Sepolia drill's freeze `259731-1` was signed by W2 on Actions (2026-10-31 UTC, [`docs/W2-ACTIONS.md`](docs/W2-ACTIONS.md))
+- [x] W2 on GitHub Actions (`.github/workflows/watcher-w2.yml`, cron `*/5` configured; one schedule-triggered run (`41159712874`, 2026-10-31 02:22 UTC) logged two reserves-level checks and no freeze, the freeze proofs are manual dispatches, secret seed): a healthy-reserve dispatch is a no-op, and with W1 off the Sepolia drill's freeze `259731-1` was signed by W2 on Actions (2026-10-31 UTC, [`docs/W2-ACTIONS.md`](docs/W2-ACTIONS.md))
 - [x] Governance branches on V3 (scratch asset 4601, local anvil reserve, drill K = W = 5 blocks): announced watcher-set and `M_admin` rotations,
   a community watcher's freeze (`ballast watch --community`; its two providers were one local anvil, run by the team, no outside operator yet), the wind-down thaw and an atomic thaw + burn redemption, PASS 30/30 + 16/16
   (2026-10-31 UTC, [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md))
 - [x] `ReserveOracle` v2 with `trip()` by a listed watcher: 6 new Hardhat tests, trip drill PASS 9/9 + 9/9 on the stand-in (not V3)
 - [ ] `ReserveOracle` v2 on V3: its deposit is estimated to exceed what Ballast's V3 keys hold (v1 needed 138.53 tPOT; the keys hold 83.13; a read-only v2 dry-run from B returns `ok: false`) ([`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#4-reserveoracletrip-v2-stand-in-only))
-- [ ] Benchmarks over many drills, reserves page
+- [x] Benchmarks over 35 freeze drills ([`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)) and a reserves page, https://ballast.edycu.dev/reserves/ (reads the Sepolia vault, V3 supply and the oracle mirror from the browser; each panel labelled live / static / stale)
 
 **Honest limitations**
 - Custody is trusted: the vault owner can move reserves. Ballast makes that visible and stops the shortfall from spreading.
@@ -327,7 +332,7 @@ CI (`.github/workflows/`) is offline: ruff, the pytest suite, forge and Hardhat 
   bot visible by freezing, but only if a watcher is running.
 - `ReserveOracle` is as fresh as the bot's last post; `isBacked(maxAge)` reads `false` when stale, never "backed" by default.
 - The drills use drill overrides where noted (fail-closed 15 s instead of 300 s, K = 10 instead of 600) and a mock token on a local anvil
-  chain in the role drills, whose finality is emulated by mining 65 blocks; the Sepolia drill waited out real finality (841 to 1,168 s per wait across the Sepolia drills, 2026-10-30 and 2026-10-31 UTC). The earlier Sepolia drill ran both watchers on one machine; the Actions drill ran W2 on GitHub with W1 off. The Actions workflow has a 5-minute best-effort schedule that has not fired yet (the evidence runs were manual dispatches); it is not real time, and the Actions watcher covers the reserve deficit only (outage and heartbeat stay with the operator watcher).
+  chain in the role drills, whose finality is emulated by mining 65 blocks; the Sepolia drill waited out real finality (841 to 1,168 s per wait across the Sepolia drills, 2026-10-30 and 2026-10-31 UTC). The earlier Sepolia drill ran both watchers on one machine; the Actions drill ran W2 on GitHub with W1 off. The Actions workflow has a 5-minute best-effort schedule that fired once in the first ~19 hours after it was enabled (the freeze evidence runs were manual dispatches); it is not real time, and the Actions watcher covers the reserve deficit only (outage and heartbeat stay with the operator watcher).
 
 <a id="team"></a>
 

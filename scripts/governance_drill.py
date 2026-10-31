@@ -285,7 +285,7 @@ def main() -> int:
               "call": compose("Assets", "freeze_asset", {"id": breaker})}, "Err(Assets.NoPermission)",
              lambda r: str(r.outcome) == "Err(Assets.NoPermission)", step="freeze_old_set",
              label="Multisig.as_multi_threshold_1(Assets.freeze_asset) via old M_watch")
-        run.check("asset still live after the old set's attempt", asset_state(breaker, details(breaker)).frozen, False,
+        run.check("asset frozen after the old set's attempt (must stay false)", asset_state(breaker, details(breaker)).frozen, False,
                   "head")
 
         # --- 2. M_admin rotation ---------------------------------------------------------------------------------
@@ -386,7 +386,7 @@ def main() -> int:
         freeze_account("Peer", "freeze_peer")
         out = decided("cosign-thaw --final (all holders frozen)", bot.cosign_thaw(final=fin, w=args.w, max_lookback=200))
         st = details(breaker)
-        run.check("asset live after the wind-down thaw", asset_state(breaker, st).frozen, False, "head")
+        run.check("asset frozen after the wind-down thaw (must be false)", asset_state(breaker, st).frozen, False, "head")
         rows = holders(substrate, breaker)
         run.check("every holder with a balance individually frozen",
                   sorted((role_of.get(h["who"], h["who"]), h["frozen"]) for h in rows if h["balance"] > 0),

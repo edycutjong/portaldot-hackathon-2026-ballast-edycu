@@ -13,6 +13,8 @@ extrinsic is also listed in [`PROOF.md`](PROOF.md)), the Portaldot **stand-in** 
 | Run | Portaldot chain | Reserve chain | Newest result (clean source preferred) | Evidence |
 |---|---|---|---|---|
 | Breaker drill against a REAL Sepolia ReserveVault (100.00 test USDC): freeze on V3, thaw after Sepolia finality | v3 | Sepolia | PASS (8/8 steps as expected, 18/18 state checks) | [`sepolia-drill-20261031T002936Z.json`](../evidence/sepolia-drill-20261031T002936Z.json) |
+| Governance branches on a scratch asset: announced rotations, community watcher, wind-down, redemption | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (30/30 steps as expected, 16/16 state checks) | [`roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json) |
+| ReserveOracle v2: trip() by a listed watcher, refused for others, cleared only by a later post | standin-upstream (stand-in, NOT V3) | none — the oracle mirrors B's attestation; this drill posts a fixed drill status | PASS (9/9 steps as expected, 9/9 state checks) | [`oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json) |
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | v3 | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-v3-20261024T045513Z.json`](../evidence/roles-drill-v3-20261024T045513Z.json) |
 | Breaker drill on the role-split asset 1 (gated mint, over-mint refused, freeze, gated thaw, team gate) | standin-upstream (stand-in, NOT V3) | local-anvil (not Sepolia) | PASS (22/22 steps as expected, 20/20 state checks) | [`roles-drill-standin-upstream-20261014T150211Z.json`](../evidence/roles-drill-standin-upstream-20261014T150211Z.json) |
 | Attestations + ReserveOracle mirror + `ballast verify` (negative control REJECTED) | v3 | local-anvil (not Sepolia) | PASS (15/15 steps as expected, 6/6 state checks) | [`roles-attest-v3-20261024T050653Z.json`](../evidence/roles-attest-v3-20261024T050653Z.json) |
@@ -482,6 +484,149 @@ produces new hashes (same steps, same outcomes). V3 runs, once funded, are liste
 
 Earlier V3 reachability probe (the old DNS names): [`evidence/v3-probe-2026-10-14-p5.txt`](../evidence/v3-probe-2026-10-14-p5.txt) (V3 reachability probe — 2026-10-14T14:59:52Z (P5)).
 Current V3 identity (read-only day-0 check): [`evidence/v3-day0-20261020T152616Z.json`](../evidence/v3-day0-20261020T152616Z.json).
+
+### Governance drill — announced watcher-set + M_admin rotations, community watcher, wind-down, redemption — 2026-10-31T01:21:28Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **local-anvil (not Sepolia)** · raw JSON: [`evidence/roles-governance-standin-upstream-20261031T012128Z.json`](../evidence/roles-governance-standin-upstream-20261031T012128Z.json) · result: **PASS** (30/30 steps as expected, 16/16 state checks) · source: `d296528` (clean)
+
+Role map: `M_mint` 5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb (2-of-2 A, B) · `M_admin` 5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM (2-of-3 A, A2, B) · `M_watch` 5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D (1-of-2 watchers).
+
+- watchers: W1, W2 and W3 run on ONE machine; W3 plays the community watcher (no separate operator yet)
+- funding: {'wanted': {'A (operator)': '15919000000000000', 'W1 (watcher)': '500000000000000', 'W3 (community watcher)': '1000000000000000', 'Judge (holder)': '500000000000000', 'Peer (holder)': '300000000000000', 'B (reserve bot)': '2000000000000000'}, 'topped_up': 1, 'ed': '100000000000000', 'multisig_deposit': '1119000000000000'}
+- community_freeze_seconds_after_drain_sent (one sample, poll every block): 3.72
+
+Reserve-chain transactions (local-anvil (not Sepolia); vault `0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B`):
+
+| # | Step | Block | Tx hash | Observed |
+|---|---|---|---|---|
+| 1 | deploy MockUSDC (test-only token) | 1830 | `0xd3f049a1cadc663a175a4434f141fb23f35b94b3500072d32601d74f14724078` | ✅ status 1 |
+| 2 | deploy ReserveVault(usdc), owner = custodian | 1831 | `0x5c1999dea676c727482dc16a8c4c32a4ba73b447c8d5ef6a49cecb3b5a3b09c5` | ✅ status 1 |
+| 3 | deposit S1 + S2 = 100.00 | 1832 | `0xaa656cd944cabe5693bfe0627ff34e26db8d875e82631347c934777e675a83f0` | ✅ status 1 |
+| 4 | custodian drains 30.00 (30%) from the vault | 1833 | `0x93266a7aeed015b75ae5cc28b73053e0f2664760cd52f582573bb809db0ad711` | ✅ status 1 |
+| 5 | custodian releases r x 30.00 = 21.00 to the judge's EVM address, redeemId = redeem_id(9004-2) | 1834 | `0x17215858d3b3a28147525fb7930f23ad59f23f7cf28d246244edac0a828636b9` | ✅ status 1 |
+
+Portaldot extrinsics:
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | funder tops up the accounts below their working balance | `Utility.batch_all[1 x Balances.transfer_keep_alive]` (5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY) | `8943-2` | Ok | ✅ Ok |
+| 2 | A creates scratch asset 3001 | `Assets.create` (A (operator)) | `8944-2` | Ok + Assets.Created | ✅ Ok · Assets.Created |
+| 3 | set_metadata pUSDC-gov (6 decimals) | `Assets.set_metadata` (A (operator)) | `8945-2` | Ok + Assets.MetadataSet | ✅ Ok · Assets.MetadataSet |
+| 4 | A mints 30.00 to the judge (scratch S1, before the team hand-over) | `Assets.mint` (A (operator)) | `8946-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 5 | A mints 20.00 to the peer (scratch S1, before the team hand-over) | `Assets.mint` (A (operator)) | `8947-2` | Ok + Assets.Issued | ✅ Ok · Assets.Issued |
+| 6 | A hands the team over: issuer M_mint, admin M_admin, freezer M_watch {W1, W2} | `Assets.set_team` (A (operator)) | `8948-2` | Ok + Assets.TeamChanged | ✅ Ok · Assets.TeamChanged |
+| 7 | A transfers ownership to M_mint | `Assets.transfer_ownership` (A (operator)) | `8949-2` | Ok + Assets.OwnerChanged | ✅ Ok · Assets.OwnerChanged |
+| 8 | A proposes set_team(freezer = M_watch' {W1, W2, W3}) through M_mint | `Multisig.as_multi(Assets.set_team(freezer=M_watch')) — first approval` (A (operator)) | `8950-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 9 | B announces the watcher set {W1, W2, W3} 1-of-3 (BALLAST/1|watchers) | `System.remark_with_event` (B (reserve bot)) | `8951-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 10 | bot co-signs (cosign-team --announcement (after K)) | `Multisig.as_multi(Assets.set_team) — final approval` (B (reserve bot)) | `8957-2` | Ok, executed | ✅ Ok · inner Ok |
+| 11 | W1 tries to freeze through the OLD M_watch {W1, W2} | `Multisig.as_multi_threshold_1(Assets.freeze_asset) via old M_watch` (W1 (watcher)) | `8958-2` | Err(Assets.NoPermission) | ✅ Err(Assets.NoPermission) |
+| 12 | B announces the admin set {A, A3, B} 2-of-3 (A2 retired; BALLAST/1|admins) | `System.remark_with_event` (B (reserve bot)) | `8959-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 13 | A proposes set_team(admin = M_admin' {A, A3, B}) through M_mint | `Multisig.as_multi(Assets.set_team(admin=M_admin')) — first approval` (A (operator)) | `8960-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 14 | bot co-signs (cosign-team --announcement (admins, after K)) | `Multisig.as_multi(Assets.set_team) — final approval` (B (reserve bot)) | `8965-2` | Ok, executed | ✅ Ok · inner Ok |
+| 15 | W3 (community watcher) freezes through M_watch' once every provider reads short at one block | `Utility.batch_all[System.remark_with_event, Multisig.as_multi_threshold_1(Assets.freeze_asset)]` (W3 (community watcher)) | `8978-2` | Ok + Assets.AssetFrozen | ✅ Ok · inner Ok · Assets.AssetFrozen |
+| 16 | judge transfers 1.00 while the asset is frozen | `Assets.transfer` (Judge (holder)) | `8979-2` | Err(Assets.AssetNotLive) | ✅ Err(Assets.AssetNotLive) |
+| 17 | W3 freezes the judge's account through M_watch' (wind-down step 1) | `Multisig.as_multi_threshold_1(Assets.freeze)` (W3 (community watcher)) | `8984-2` | Ok + Assets.Frozen | ✅ Ok · inner Ok · Assets.Frozen |
+| 18 | B posts final r = 70.00 / 100.00 = 0.7000 (BALLAST/1|final) | `System.remark_with_event` (B (reserve bot)) | `8985-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 19 | A proposes thaw_asset through M_admin' | `Multisig.as_multi(Assets.thaw_asset via M_admin') — first approval` (A (operator)) | `8986-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 20 | W3 freezes the peer's account through M_watch' (wind-down step 1) | `Multisig.as_multi_threshold_1(Assets.freeze)` (W3 (community watcher)) | `8987-2` | Ok + Assets.Frozen | ✅ Ok · inner Ok · Assets.Frozen |
+| 21 | bot co-signs (cosign-thaw --final (all holders frozen)) | `Multisig.as_multi(Assets.thaw_asset) — final approval` (B (reserve bot)) | `8988-2` | Ok, executed | ✅ Ok · inner Ok |
+| 22 | judge transfers 1.00 after the thaw (account still frozen) | `Assets.transfer` (Judge (holder)) | `9003-2` | Err(Assets.Frozen) | ✅ Err(Assets.Frozen) |
+| 23 | judge asks first: BALLAST/1|redeem with its EVM address | `System.remark_with_event` (Judge (holder)) | `9004-2` | Ok + System.Remarked | ✅ Ok · System.Remarked |
+| 24 | A proposes batch_all([thaw(judge), burn(judge, 30.00)]) through M_admin' | `Multisig.as_multi(Utility.batch_all[thaw(judge), burn(judge, 30.00)] via M_admin') — first approval` (A (operator)) | `9005-2` | Ok + Multisig.NewMultisig | ✅ Ok · Multisig.NewMultisig |
+| 25 | bot co-signs (cosign_redeem) | `Multisig.as_multi(Utility.batch_all) — final approval` (B (reserve bot)) | `9006-2` | Ok, executed | ✅ Ok · inner Ok |
+
+Block and transaction hashes (full):
+
+```
+ 1    8943-2 block 0xb6ba808b9d4eb9938b5a78afee1daa9321b7242ce1cdeb989468921f18e5ee82  tx 0xddb0d1928c41d91c75f338a63bcda678e28cb875921500cc9dc061cd113c2c0e
+ 2    8944-2 block 0x3e5e06e083c32446bca051f9e4416acd09272629913ca00d7a9c4fe32db44cc0  tx 0xf5af6f159c24780baea182a72056d2032e48709685ffd203f31193991426b560
+ 3    8945-2 block 0xf470671c5941710dcfb1b2c1cd36739c4f06e43fee2861c965ff643dfae5b118  tx 0xbeb6ff99e14ef8ea1ad6a3e6a47ea582c928cfd56c139a03061d580ae5e5711b
+ 4    8946-2 block 0x7ca71e98f46a9daa5fb06743f13bd38738db17f80dcd1335fe717145efdabe61  tx 0x9cae62be6c746ded2380ce05d7da45b1961e202ee022d94c5c0e2c4bc8e6b04b
+ 5    8947-2 block 0x238fb1376624b87e72e5397c8738efbb8a3aa102daee4de5ea04d1b7125c7c9a  tx 0xf92700402da7f431421097cb39dff5b294aa90fa745a6d2f9659ff86478d552b
+ 6    8948-2 block 0xa29f741093c78a9282b90aa022b12659ec71a4844b645449b922ac8a667d8549  tx 0x64abc37f46af73c5e5eab681cb117d2685fc675844419d4fa038022f13782ec5
+ 7    8949-2 block 0x8f91eaa5808dc097afa437470fd81ec12960041d2bcde1ff16a4773ac8b74884  tx 0x7169d35670f4b4cb008812fab8440f2d75ce4bc1207f5981bce6b1cc2c884eba
+ 8    8950-2 block 0x6991091cc60d01cd1a4a1098a75cbda200cb11044bf736b572052755b3b52b05  tx 0x8bcf997b09b4e0cf92cc32b51492bd95ed5850eb9156f26f48926a9ea358f79b
+ 9    8951-2 block 0xf4ecfbfc243a2ba5e1c7bb57a6147c64913e1c85f760f3b56f96f07c7945029f  tx 0x28810a6c673e7ad35ff4593fb43ec107ac06e82d44a70def208379e5f9fd5921
+10    8957-2 block 0x191fed26d77e0d6096a8de377360584dee6d2cfc1313fcf12c16ce502e9ebd15  tx 0x270d18fd9f8e479c315726aca23312417d8a485ed6ecace264336624b77d2da8
+11    8958-2 block 0x41351ece5a3996a6fa9b02e0ee736183de3682f2af3053426edcbd61ea6d224c  tx 0xeb646ae3989c4d3efc7fee1c441d2ddf0d17ebe1565946ede1dd455416a87296
+12    8959-2 block 0x63d2e607177ba200ec07cfe3867439ef9f0b11c37c9db0e05306f57b3d38abb2  tx 0x0d5a683c674ebb13542dc1028adbe867c5fc11b0decbc1b673ed6ffe6d67a246
+13    8960-2 block 0x4dace1ce0bf37d2e1c958aa312e801d3614b12726e08df32a08896bb5b724a13  tx 0xcf713b28c442062b1786e47829929b1dec22b18d2c5b040877b228ce00140693
+14    8965-2 block 0x2b64ba40eeaaf91ea3699e283c5f1e8341ff47c025297902febe2952708e6a36  tx 0xd6608a04bd3379ea4d1c4e8d2f8600c22ddeb9dd8992ae633030e813c9efc063
+15    8978-2 block 0xc2f79eadeda4f06f7cd872dd4f49ad5ee42e99a79260c437e1c8e264316dda74  tx 0xca594ba44626772a25b755c072022885437e7d0cf4deb4ea4a4e08aa1317f354
+16    8979-2 block 0x668fbbe5eb9e9ecbc3adcadf28b4a218a5c86931bc7854b4b8d89d305c5a1ce4  tx 0x3189606be5b73c5dcad0d58e94e2f897206de306b42c14df5a335db3b8d2ca7c
+17    8984-2 block 0x954bb22f1b0ead10d3b8e8b78df0141d72e7362fef1444bcb4b65e0572af8497  tx 0xe479a94173a0a94a74e298d4760f6f88ff6eba9e686a34c4bf9047d4dcc1ce2a
+18    8985-2 block 0x767fcd7073ee75cf14395b1efc5c12ac4d0d4c63e013e48fb93b2227c3ef712b  tx 0x6e3f6317c527377528ca33997571cb855f8152e672aa781e9e7a6becf243e37f
+19    8986-2 block 0x499d188b9e9bbdd0319f067a1427b6f241ee3055f6bf261e2121778592c2f964  tx 0x543e977ca7eb136f87dc014633bd521754ec34eb51adc5d4c4b6a3117c99531e
+20    8987-2 block 0xd7860dd65d1cf1384d176cbfa2503fd47ed824bdf99850c44147f3f8cfbd573f  tx 0x22af2e295b3be94b673dbcf86e84b82e7554747c74b11589a22a6c3f88dd270d
+21    8988-2 block 0x4c1e356452ad2ce3482622abeb5d782f89eb51b8678c326063c2ed3933c587fb  tx 0x712338d2e5173827434439327da4fe9850f34caf8ef04c3459c92818a5b02392
+22    9003-2 block 0xb0465431123c2776ddb939ffc374627e806a29c4c4f89fb459698d3c8f50c4d7  tx 0xa93db25e7f3c4f4e9e9abebb20f7ce50ccf4b4b95fb2daa505a5ae535b201c1e
+23    9004-2 block 0xe22f48813d99a67107f3b5906fe7c5cb4ddbfaa0868eeb182d2d7d61aaf1042d  tx 0xa2622da69d9f46d46f80b8a10492ddf158cb92960df1a4eda50b3419ab3fe19d
+24    9005-2 block 0x8e52968f00b80eea780498287cb3e728d3210cc40dcfd618818b788353780ea1  tx 0x464a8cf533bd249515be921a9f8bcd71bb8e68c119d4b7f74633e8442687e88b
+25    9006-2 block 0x081cc662d20bf082fae62678b35191ac5a5d518a5012f6332e1bdef87c44a39c  tx 0x7e76d85e16bfd30335d29b5d286e88870642bdc2f2e055454d14c661d4dba44b
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ scratch team == role map (owner/issuer M_mint, admin M_admin, freezer M_watch): expected `['5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb', '5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb', '5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM', '5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D']`, observed `['5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb', '5Db6UvShSCpfZVnEbY45a5pD8mrxJq9sDs5BJoMwP6MNyXjb', '5F9C9ndpaBsuzoRS6kU7o7wYupydLTRoxBTGiWySyuuivFDM', '5CirPpif8EYwQgCQHjAiYzTFnsQoPtkVow9SkmWfHzbmwh4D']` at block `0x8f91eaa5808dc097afa437470fd81ec12960041d2bcde1ff16a4773ac8b74884`
+- ✅ bot refuses an unannounced watcher rotation: expected `['refused', True]`, observed `['refused', True]` at block `bot`
+- ✅ bot refuses before the announcement is K blocks old: expected `['refused', True]`, observed `['refused', True]` at block `bot`
+- ✅ freezer after the co-signed rotation == M_watch': expected `5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK`, observed `5D7DdmaALPZvdHJWgYPMz5v4S1mArz8dMGQQPU7iBaiiosiK` at block `head`
+- ✅ asset still live after the old set's attempt: expected `False`, observed `False` at block `head`
+- ✅ admin after the co-signed rotation == M_admin': expected `5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq`, observed `5H1nwMQ7pu98XrgqoxY84uTacpKxEohv9MJsq6HPyoyJCcGq` at block `head`
+- ✅ community watcher, every provider down for 30 s: exit 4 (not frozen), no freeze submitted: expected `[4, False]`, observed `[4, False]` at block `watcher log`
+- ✅ …its checks all read 'outage' with 'never fail-closed': expected `True`, observed `True` at block `watcher log`
+- ✅ the freeze's trigger: community mode, pinned block, every provider short: expected `['community', True, 2]`, observed `['community', True, 2]` at block `watcher log`
+- ✅ bot refuses the wind-down thaw while a holder is open: expected `['refused', True]`, observed `['refused', True]` at block `bot`
+- ✅ asset live after the wind-down thaw: expected `False`, observed `False` at block `head`
+- ✅ every holder with a balance individually frozen: expected `[['Judge (holder)', True], ['Peer (holder)', True]]`, observed `[['Judge (holder)', True], ['Peer (holder)', True]]` at block `head`
+- ✅ community watcher after the thaw: deficit but winddown-hold, no freeze (exit 4): expected `[True, False, 4]`, observed `[True, False, 4]` at block `watcher log`
+- ✅ the redemption executed atomically: Thawed + Burned in one extrinsic: expected `[True, True]`, observed `[True, True]` at block `receipt`
+- ✅ after the redemption: S1, reserves, and r unchanged: expected `[20000000, 49000000, '0.7000']`, observed `[20000000, 49000000, '0.7000']` at block `head + evm latest`
+- ✅ the judge's EVM address received r x 30.00: expected `21000000`, observed `21000000` at block `evm latest`
+
+
+### ReserveOracle v2 — trip() by a listed watcher, cleared only by a later post — 2026-10-31T01:17:58Z
+
+Chain: **standin-upstream (polkadot-sdk substrate-node --dev, NOT V3)** · reserve: **none — the oracle mirrors B's attestation; this drill posts a fixed drill status** · raw JSON: [`evidence/oracle-trip-standin-upstream-20261031T011758Z.json`](../evidence/oracle-trip-standin-upstream-20261031T011758Z.json) · result: **PASS** (9/9 steps as expected, 9/9 state checks) · source: `910048a` (clean)
+
+| # | Step | Call (signer) | Extrinsic id | Expected | Observed |
+|---|---|---|---|---|---|
+| 1 | W1 maps its account in Revive | `Revive.map_account` (W1 (watcher)) | `8873-2` | Ok | ✅ Ok |
+| 2 | W2 maps its account in Revive | `Revive.map_account` (W2 (watcher)) | `8874-2` | Ok | ✅ Ok |
+| 3 | Judge maps its account in Revive | `Revive.map_account` (Judge (not a watcher)) | `8875-2` | Ok | ✅ Ok |
+| 4 | B deploys ReserveOracle v2 (attester = B, watchers = W1, W2) | `Revive.instantiate_with_code(ReserveOracle)` (B (reserve bot)) | `8876-2` | Ok + Revive.Instantiated | ✅ Ok · Revive.Instantiated |
+| 5 | B posts a backed drill status (pdBlock #8876) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `8877-2` | Ok + Revive.ContractEmitted | ✅ Ok · Revive.ContractEmitted |
+| 6 | Judge (not a listed watcher) calls trip() | `Revive.call(ReserveOracle.trip)` (Judge (not a watcher)) | `8878-2` | Err (NotWatcher revert) | ✅ Err(Revive.ContractReverted) |
+| 7 | W1 (listed watcher) calls trip() | `Revive.call(ReserveOracle.trip)` (W1 (watcher)) | `8879-2` | Ok + Revive.ContractEmitted (Tripped) | ✅ Ok · Revive.ContractEmitted |
+| 8 | B posts frozen=false with pdBlock = trippedBlock #8879 (a reading not after the trip) | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `8880-2` | Err (TripNotCleared revert) | ✅ Err(Revive.ContractReverted) |
+| 9 | B posts frozen=false with pdBlock #8880 > trippedBlock | `Revive.call(ReserveOracle.post)` (B (reserve bot)) | `8881-2` | Ok + Revive.ContractEmitted | ✅ Ok · Revive.ContractEmitted |
+
+Block and transaction hashes (full):
+
+```
+ 1    8873-2 block 0xb354ebd0a7c657a4586236f7b234426b3462345f79559bf9194018400fae6bc9  tx 0xd4a5287291ba867ce1e88f5e46ddbab1e7bd9061a3c29d81a178d2474d24e61d
+ 2    8874-2 block 0xf64f36e4043e0e7dc9792616242902ac469f12d723aa712887bdca5573ede46b  tx 0xca36feb8775974b0f3a6b499990ec5b03fb36f55b3150e03f11addd84741173a
+ 3    8875-2 block 0xca4fbeb0e95321d2d5fe958d8cb126f0a31ccefec6044906d72c473419b02773  tx 0xf609f9e7f7340113bc006684ecf59ee50df61e10f42407e384389d6d74c25dbd
+ 4    8876-2 block 0x4e06f8092ce6a60977acc605e7a52703f86093bfef7bcd47141d390cd2262801  tx 0xc956f1c675ef449f9eb7e614e672a9a4b73db7b3f173c2b2f8e00b7ae3edd7ae
+ 5    8877-2 block 0xe759abc314dbef318caebbf912abd16fd71f4a492a7d04fa5690f17da2f3fbdf  tx 0xea6042f09df3ec0e823793fd652ab71ae0d59347087276b38596a133537a5b50
+ 6    8878-2 block 0x7e9fbb48caae21e08209e50fd013b4feed3a25133a689d3608ec7d5e4f382521  tx 0xdab257a0b4229d2d10b2e6f33c64d78fc3994c7375941d2c71c0185c9f690e74
+ 7    8879-2 block 0xa957d224bbad7bc348cedaff1cddcbd8630bc753f3f478d1bba160d7a1f6b01d  tx 0xc2ff4fa9bacfea722b701ccd2026f8936784a09e086186527378f2fc20c758fd
+ 8    8880-2 block 0xbbaa2a9e211c3e4d6bcc8ac65bf34db5e9f470c581ef1c7707d57f3c5e94dd92  tx 0xa96f7b37dbb5215f182ebb96c8f2034f363570a67282512df9e0a27ef2979bae
+ 9    8881-2 block 0x30b567b75e8ac914499dd94cdcaa39d9c552e6cac4c3ca009e272dc08c09451c  tx 0x1fa823380e9368307d7c2eb3d4e05a6a95cc6651b673af42c40adf3c5a05dcad
+```
+
+State checks (storage/events read at the step's block):
+
+- ✅ watchers() == [W1, W2] H160: expected `['0x8bc7fdbd3f6c91b9f622f8c4c20ae7050ca1d9e8', '0x04c14605607939412a6e0d191d52d573bc6ffc41']`, observed `['0x8bc7fdbd3f6c91b9f622f8c4c20ae7050ca1d9e8', '0x04c14605607939412a6e0d191d52d573bc6ffc41']` at block `0x4e06f8092ce6a60977acc605e7a52703f86093bfef7bcd47141d390cd2262801`
+- ✅ isBacked(3600) after the backed post: expected `True`, observed `True` at block `0xe759abc314dbef318caebbf912abd16fd71f4a492a7d04fa5690f17da2f3fbdf`
+- ✅ isBacked(3600) unchanged after the refused trip: expected `True`, observed `True` at block `0x7e9fbb48caae21e08209e50fd013b4feed3a25133a689d3608ec7d5e4f382521`
+- ✅ trippedBlock() == the trip extrinsic's Portaldot block (Revive block.number): expected `8879`, observed `8879` at block `0xa957d224bbad7bc348cedaff1cddcbd8630bc753f3f478d1bba160d7a1f6b01d`
+- ✅ status().frozen after the trip: expected `True`, observed `True` at block `0xa957d224bbad7bc348cedaff1cddcbd8630bc753f3f478d1bba160d7a1f6b01d`
+- ✅ status().reserves / pdBlock unchanged by the trip: expected `[100000000, 8876]`, observed `[100000000, 8876]` at block `0xa957d224bbad7bc348cedaff1cddcbd8630bc753f3f478d1bba160d7a1f6b01d`
+- ✅ isBacked(3600) after the trip: expected `False`, observed `False` at block `0xa957d224bbad7bc348cedaff1cddcbd8630bc753f3f478d1bba160d7a1f6b01d`
+- ✅ isBacked(3600) still false: expected `False`, observed `False` at block `0xbbaa2a9e211c3e4d6bcc8ac65bf34db5e9f470c581ef1c7707d57f3c5e94dd92`
+- ✅ isBacked(3600) after a post from after the trip: expected `True`, observed `True` at block `0x30b567b75e8ac914499dd94cdcaa39d9c552e6cac4c3ca009e272dc08c09451c`
+
 
 ### Role-split drill — gated mint, over-mint refused, drain -> freeze, gated thaw — 2026-10-14T15:02:11Z
 

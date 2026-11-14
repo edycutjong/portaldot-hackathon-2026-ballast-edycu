@@ -13,7 +13,7 @@
     "@nomicfoundation/hardhat-network-helpers": "1.1.2",
     "chai": "4.5.0",
     "ethers": "6.17.0",
-    "hardhat": "2.29.1"
+    "hardhat": "2.29.2"
   },
   "overrides": {
     "serialize-javascript": "^7.0.5",
